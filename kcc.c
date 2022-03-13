@@ -25,9 +25,24 @@ struct Token {
 // 現在着目しているトークン
 Token *token;
 
+// 入力プログラム
+char *user_input;
+
 void error(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
+
+void error_at(char *loc, char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int pos = loc - user_input;
+    fprintf(stderr, "%s\n", user_input);
+    fprintf(stderr, "%*s", pos, " ");
+    fprintf(stderr, "^ ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
@@ -45,7 +60,7 @@ bool consume(char op) {
 // それ以外の場合、エラー
 void expect(char op) {
     if(token->kind != TK_RESERVED || token->str[0] != op) {
-        error("it's not '%c'", op);
+        error_at(token->str, "it's not '%c'", op);
     }
     token = token->next;
 }
@@ -53,7 +68,7 @@ void expect(char op) {
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す
 // それ以外の場合、エラー
 int expect_number() {
-    if(token->kind != TK_NUM) error("it's not a number.");
+    if(token->kind != TK_NUM) error_at(token->str, "it's not a number.");
     int val = token->val;
     token = token->next;
     return val;
@@ -91,7 +106,7 @@ Token *tokenize(char *p) {
             cur->val = strtol(p, &p, 10);
             continue;
         }
-        error("it can't be tokenized.");
+        error_at(token->str, "it can't be tokenized.");
     }
 
     new_token(TK_EOF, cur, p);
@@ -100,10 +115,11 @@ Token *tokenize(char *p) {
 
 int main(int argc, char **argv) {
     if(argc != 2) {
-        error("the number of argments is not correct.");
+        error_at(token->str, "the number of argments is not correct.");
         return 1;
     }
 
+    user_input = argv[1];
     token = tokenize(argv[1]);
 
     printf(".intel_syntax noprefix\n");
