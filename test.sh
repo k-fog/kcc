@@ -42,4 +42,4 @@ assert 1 "64 >= 64"
 assert 0 "10 > 11"
 assert 0 "10 >= 11"
 
-echo OK
+echo -e "\033[32m OK \033[m"
