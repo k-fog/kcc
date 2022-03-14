@@ -45,7 +45,7 @@ void program() {
 
 Node *stmt() {
     Node *node = expr();
-    if(!consume(";")) error("parse errror @stmt.");
+    expect(";");
     return node;
 }
 
