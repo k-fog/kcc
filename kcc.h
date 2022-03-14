@@ -12,7 +12,7 @@ typedef struct Token Token;
 
 // トークンの種類
 typedef enum {
-    TK_RESERVED, // 記号
+    TK_PUNCT,    // 記号
     TK_IDENT,    // 識別子
     TK_NUM,      // 整数
     TK_EOF,      // 入力の終わり
@@ -31,7 +31,6 @@ extern Token *token;
 
 extern void error(char *fmt, ...);
 extern void error_at(char *loc, char *fmt, ...);
-extern bool is_alnum(char c);
 extern bool consume(char *op);
 extern bool token_is(TokenKind tk);
 extern void expect(char *op);
@@ -39,7 +38,6 @@ extern int expect_number();
 extern Token *expect_ident();
 extern bool at_eof();
 extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
-extern bool startswith(char *p, char *q);
 extern Token *tokenize(char *p);
 
 /*
@@ -63,6 +61,9 @@ typedef enum {
     ND_NUM,    // number
     ND_LVAR,   // local variable
     ND_RETURN, // return
+    ND_IF,     // if
+    ND_WHILE,  // while
+    ND_FOR,    // for
 } NodeKind;
 
 // 抽象構文木のノードの型
@@ -70,6 +71,14 @@ struct Node {
     NodeKind kind;  // ノードの型
     Node *lhs;      // 左辺(left-hand side)
     Node *rhs;      // 右辺(right-hand side)
+
+    // if & for & while
+    Node *cond;
+    Node *then;
+    Node *els;
+    Node *init;
+    Node *inc;
+
     int val;        // ND_NUMの場合、その数値
     int offset;     // ND_LVARの場合、RBPからのオフセット
 };
@@ -85,11 +94,15 @@ struct LVar {
 extern LVar *locals;
 
 extern Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+extern Node *new_node_empty(NodeKind kind);
 extern Node *new_node_num(int val);
 extern Node *new_node_lvar(Token *token);
 extern LVar *find_lvar(Token *token);
 extern void program();
 extern Node *stmt();
+extern Node *stmt_if();
+extern Node *stmt_for();
+extern Node *stmt_while();
 extern Node *expr();
 extern Node *assign();
 extern Node *equality();

@@ -30,10 +30,10 @@ bool is_alnum(char c) {
            (c == '_');
 }
 
-// 次のトークンが期待した記号の場合、トークンを1つ読み進めて真を返す
+// 次のトークンが期待した記号or識別子の場合、トークンを1つ読み進めて真を返す
 // それ以外の場合、偽を返す
 bool consume(char *op) {
-    if(token->kind != TK_RESERVED ||
+    if((token->kind != TK_PUNCT && token->kind != TK_IDENT) ||
        strlen(op) != token-> len ||
        memcmp(token->str, op, token->len)) {
         return false;
@@ -51,7 +51,7 @@ bool token_is(TokenKind tk) {
 // 次のトークンが期待した記号の場合、トークンを1つ読み進める
 // それ以外の場合、エラー
 void expect(char *op) {
-    if(token->kind != TK_RESERVED ||
+    if((token->kind != TK_PUNCT && token->kind != TK_IDENT) ||
        strlen(op) != token-> len ||
        memcmp(token->str, op, token->len)) {
         error_at(token->str, "expected \"%s\".", op);
@@ -95,6 +95,15 @@ bool startswith(char *p, char *q) {
     return memcmp(p, q, strlen(q)) == 0;
 }
 
+int read_ident(char *p) {
+   int len = 0;
+   while(is_alnum(*p)) {
+       len++;
+       p++;
+   }
+   return len;
+}
+
 Token *tokenize(char *p) {
     Token head;
     head.next = NULL;
@@ -107,12 +116,12 @@ Token *tokenize(char *p) {
         }
         if(startswith(p, "==") || startswith(p, "!=") ||
            startswith(p, "<=") || startswith(p, ">=")) {
-            cur = new_token(TK_RESERVED, cur, p, 2);
+            cur = new_token(TK_PUNCT, cur, p, 2);
             p += 2;
             continue;
         }
         if(strchr("+-*/()<>=;", *p)) {
-            cur = new_token(TK_RESERVED, cur, p, 1);
+            cur = new_token(TK_PUNCT, cur, p, 1);
             p++;
             continue;
         }
@@ -123,22 +132,15 @@ Token *tokenize(char *p) {
             cur->len = p - q;
             continue;
         }
-        if(startswith(p, "return") && !is_alnum(p[6])) {
-            cur = new_token(TK_RESERVED, cur, p, 6);
-            p += 6;
-            continue;
-        }
-        if('a' <= *p && *p <= 'z') {
-            cur = new_token(TK_IDENT, cur, p++, 1);
-            while('a' <= *p && *p <= 'z') {
-                cur->len++;
-                p++;
-            }
+        int ident_len = read_ident(p);
+        if(ident_len != 0) {
+            cur = new_token(TK_IDENT, cur, p, ident_len);
+            p += ident_len;
             continue;
         }
         error_at(token->str, "it can't be tokenized.");
     }
 
-    new_token(TK_EOF, cur, p, 0);
+    cur = new_token(TK_EOF, cur, p, 0);
     return head.next;
 }

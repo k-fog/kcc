@@ -11,16 +11,20 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
-Node *new_node_num(int val) {
+Node *new_node_empty(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_NUM;
+    node->kind = kind;
+    return node;
+}
+
+Node *new_node_num(int val) {
+    Node *node = new_node_empty(ND_NUM);
     node->val = val;
     return node;
 }
 
 Node *new_node_lvar(Token *token) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_LVAR;
+    Node *node = new_node_empty(ND_LVAR);
     LVar *var = find_lvar(token);
     if(var) {
         node->offset = var->offset;
@@ -67,15 +71,56 @@ void program() {
 }
 
 Node *stmt() {
-    Node *node = NULL;
+    Node *node;
     if(consume("return")) {
-        node = calloc(1, sizeof(Node));
-        node->kind = ND_RETURN;
-        node->lhs = expr();
+        node = new_node(ND_RETURN, expr(), NULL);
+    } else if(consume("if")) {
+        node = stmt_if();
+    } else if(consume("for")) {
+        node = stmt_for();
+    } else if(consume("while")) {
+        node = stmt_while();
     } else {
         node = expr();
     }
     expect(";");
+    return node;
+}
+
+Node *stmt_if() {
+    Node *node = new_node_empty(ND_IF);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
+    if(consume("else")) node->els = stmt();
+    return node;
+}
+
+Node *stmt_for() {
+    Node *node = new_node_empty(ND_FOR);
+    expect("(");
+    if(!consume(";")) {
+        node->init = expr();
+        expect(";");
+    }
+    if(!consume(";")) {
+        node->cond = expr();
+        expect(";");
+    }
+    if(!consume(";")) {
+        node->inc = expr();
+        expect(";");
+    }
+    return node;
+}
+
+Node *stmt_while() {
+    Node *node = new_node_empty(ND_WHILE);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
     return node;
 }
 
