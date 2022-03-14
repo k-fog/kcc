@@ -35,6 +35,16 @@ bool consume(char *op) {
     return true;
 }
 
+// 次のトークンが数値か否か
+bool consume_num() {
+    return token->kind == TK_NUM;
+}
+
+// 次のトークンが識別子か否か
+bool consume_ident() {
+    return token->kind == TK_IDENT;
+}
+
 // 次のトークンが期待した記号の場合、トークンを1つ読み進める
 // それ以外の場合、エラー
 void expect(char *op) {
@@ -49,10 +59,19 @@ void expect(char *op) {
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す
 // それ以外の場合、エラー
 int expect_number() {
-    if(token->kind != TK_NUM) error_at(token->str, "it's not a number.");
+    if(token->kind != TK_NUM) error_at(token->str, "expect a number.");
     int val = token->val;
     token = token->next;
     return val;
+}
+
+// 次のトークンが識別子の場合、トークンを1つ読み進めてその識別子を返す
+// それ以外の場合、エラー
+char *expect_ident() {
+    if(token->kind != TK_IDENT) error_at(token->str, "expect an identifier.");
+    char *ident = token->str;
+    token = token->next;
+    return ident;
 }
 
 bool at_eof() {
@@ -91,6 +110,11 @@ Token *tokenize(char *p) {
         }
         if(strchr("+-*/()<>", *p)) {
             cur = new_token(TK_RESERVED, cur, p, 1);
+            p++;
+            continue;
+        }
+        if('a' <= *p && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p, 1);
             p++;
             continue;
         }
