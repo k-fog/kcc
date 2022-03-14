@@ -15,6 +15,7 @@ typedef enum {
     TK_RESERVED, // 記号
     TK_IDENT,    // 識別子
     TK_NUM,      // 整数
+    TK_RETURN,   // return
     TK_EOF,      // 入力の終わり
 } TokenKind;
 
@@ -31,12 +32,13 @@ extern Token *token;
 
 extern void error(char *fmt, ...);
 extern void error_at(char *loc, char *fmt, ...);
+extern bool is_alnum(char c);
 extern bool consume(char *op);
-extern bool consume_num();
-extern bool consume_ident();
+extern bool token_is(TokenKind tk);
 extern void expect(char *op);
 extern int expect_number();
 extern Token *expect_ident();
+extern void expect_return();
 extern bool at_eof();
 extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 extern bool startswith(char *p, char *q);
@@ -61,7 +63,8 @@ typedef enum {
     ND_LE,     // <=
     ND_ASSIGN, // =
     ND_NUM,    // number
-    ND_LVAR    // local variable
+    ND_LVAR,   // local variable
+    ND_RETURN, // return
 } NodeKind;
 
 // 抽象構文木のノードの型

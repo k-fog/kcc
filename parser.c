@@ -46,7 +46,7 @@ LVar *find_lvar(Token *token) {
 
 /*
  * program    = stmt*
- * stmt       = expr ";"
+ * stmt       = expr ";" | "return" expr ";"
  * expr       = assign
  * assign     = equality ("=" assign)?
  * equality   = relational ("==" relational | "!=" relational)*
@@ -64,7 +64,15 @@ void program() {
 }
 
 Node *stmt() {
-    Node *node = expr();
+    Node *node = NULL;
+    if(token_is(TK_RETURN)) {
+        expect_return();
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_RETURN;
+        node->lhs = expr();
+    } else {
+        node = expr();
+    }
     expect(";");
     return node;
 }
@@ -148,9 +156,9 @@ Node *primary() {
         expect(")");
         return node;
     }
-    if(consume_ident()) return new_node_lvar(expect_ident());
-    if(consume_num()) return new_node_num(expect_number());
-    error("parse error @primary.");
+    if(token_is(TK_IDENT)) return new_node_lvar(expect_ident());
+    if(token_is(TK_NUM)) return new_node_num(expect_number());
+    error_at(token->str, "parse error @primary.");
     exit(1);
 }
 

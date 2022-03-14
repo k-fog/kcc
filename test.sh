@@ -51,5 +51,7 @@ assert 1 "3;2;1;"
 
 assert 5 "foo = 5; foo;"
 assert 12 "hoge = 2; fuga = 6; hoge * fuga;"
+assert 1 "return 1;"
+assert 8 "a = 10; b = 2; return a + b - b * 2;"
 
 echo -e "\033[32m OK \033[m"

@@ -23,6 +23,13 @@ void error_at(char *loc, char *fmt, ...) {
     exit(1);
 }
 
+bool is_alnum(char c) {
+    return ('a' <= c && c <= 'z') ||
+           ('A' <= c && c <= 'Z') ||
+           ('0' <= c && c <= '9') ||
+           (c == '_');
+}
+
 // 次のトークンが期待した記号の場合、トークンを1つ読み進めて真を返す
 // それ以外の場合、偽を返す
 bool consume(char *op) {
@@ -35,14 +42,10 @@ bool consume(char *op) {
     return true;
 }
 
-// 次のトークンが数値か否か
-bool consume_num() {
-    return token->kind == TK_NUM;
-}
-
-// 次のトークンが識別子か否か
-bool consume_ident() {
-    return token->kind == TK_IDENT;
+// 次のトークンが期待したタイプの場合、真を返す
+// それ以外の場合、偽を返す
+bool token_is(TokenKind tk) {
+    return token->kind == tk;
 }
 
 // 次のトークンが期待した記号の場合、トークンを1つ読み進める
@@ -72,6 +75,11 @@ Token *expect_ident() {
     Token *t = token;
     token = token->next;
     return t;
+}
+
+void expect_return() {
+    if(token->kind != TK_RETURN) error_at(token->str, "expect a number.");
+    token = token->next;
 }
 
 bool at_eof() {
@@ -118,6 +126,12 @@ Token *tokenize(char *p) {
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
+            continue;
+        }
+        if(startswith(p, "return") && !is_alnum(p[6])) {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
+            printf("%c\n", *p);
             continue;
         }
         if('a' <= *p && *p <= 'z') {
