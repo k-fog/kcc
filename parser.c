@@ -1,5 +1,8 @@
 #include "kcc.h"
 
+Node *code[256];
+LVar *locals;
+
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
@@ -15,14 +18,31 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_lvar(char *str) {
+Node *new_node_lvar(Token *token) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
-    node->offset = (str[0] - 'a' + 1) * 8;
+    LVar *var = find_lvar(token);
+    if(var) {
+        node->offset = var->offset;
+    } else {
+        var = calloc(1, sizeof(LVar));
+        var->next = locals;
+        var->name = token->str;
+        var->len = token->len;
+        var->offset = locals ? locals->offset + 8 : 0;
+        node->offset = var->offset;
+        locals = var;
+    }
     return node;
 }
 
-Node *code[256];
+LVar *find_lvar(Token *token) {
+    for(LVar *var = locals; var; var = var->next) {
+        if(var->len == token->len && !memcmp(token->str, var->name, var->len))
+            return var;
+    }
+    return NULL;
+}
 
 /*
  * program    = stmt*

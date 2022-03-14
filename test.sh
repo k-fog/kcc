@@ -49,4 +49,7 @@ assert 12 "a=12;a;"
 assert 12 "b=4;b=b+8;b;"
 assert 1 "3;2;1;"
 
+assert 5 "foo = 5; foo;"
+assert 12 "hoge = 2; fuga = 6; hoge * fuga;"
+
 echo -e "\033[32m OK \033[m"

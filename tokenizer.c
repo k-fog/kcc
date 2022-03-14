@@ -67,11 +67,11 @@ int expect_number() {
 
 // 次のトークンが識別子の場合、トークンを1つ読み進めてその識別子を返す
 // それ以外の場合、エラー
-char *expect_ident() {
+Token *expect_ident() {
     if(token->kind != TK_IDENT) error_at(token->str, "expect an identifier.");
-    char *ident = token->str;
+    Token *t = token;
     token = token->next;
-    return ident;
+    return t;
 }
 
 bool at_eof() {
@@ -113,16 +113,19 @@ Token *tokenize(char *p) {
             p++;
             continue;
         }
-        if('a' <= *p && *p <= 'z') {
-            cur = new_token(TK_IDENT, cur, p, 1);
-            p++;
-            continue;
-        }
         if(isdigit(*p)) {
             cur = new_token(TK_NUM, cur, p, 0);
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
+            continue;
+        }
+        if('a' <= *p && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p++, 1);
+            while('a' <= *p && *p <= 'z') {
+                cur->len++;
+                p++;
+            }
             continue;
         }
         error_at(token->str, "it can't be tokenized.");

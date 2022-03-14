@@ -36,7 +36,7 @@ extern bool consume_num();
 extern bool consume_ident();
 extern void expect(char *op);
 extern int expect_number();
-extern char *expect_ident();
+extern Token *expect_ident();
 extern bool at_eof();
 extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 extern bool startswith(char *p, char *q);
@@ -46,6 +46,7 @@ extern Token *tokenize(char *p);
  * parser.c
  */
 typedef struct Node Node;
+typedef struct LVar LVar;
 extern Node *code[];
 
 // 抽象構文木のノードの種類
@@ -72,10 +73,20 @@ struct Node {
     int offset;     // ND_LVARの場合、RBPからのオフセット
 };
 
+// ローカル変数
+struct LVar {
+    LVar *next;  // 次の変数かNULL
+    char *name;  // 変数名
+    int len;
+    int offset;
+};
+
+extern LVar *locals;
 
 extern Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 extern Node *new_node_num(int val);
-extern Node *new_node_lvar(char *str);
+extern Node *new_node_lvar(Token *token);
+extern LVar *find_lvar(Token *token);
 extern void program();
 extern Node *stmt();
 extern Node *expr();
