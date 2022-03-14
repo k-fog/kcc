@@ -74,6 +74,7 @@ Node *stmt() {
     Node *node;
     if(consume("return")) {
         node = new_node(ND_RETURN, expr(), NULL);
+        expect(";");
     } else if(consume("if")) {
         node = stmt_if();
     } else if(consume("for")) {
@@ -82,8 +83,8 @@ Node *stmt() {
         node = stmt_while();
     } else {
         node = expr();
+        expect(";");
     }
-    expect(";");
     return node;
 }
 

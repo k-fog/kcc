@@ -53,5 +53,8 @@ assert 5 "foo = 5; foo;"
 assert 12 "hoge = 2; fuga = 6; hoge * fuga;"
 assert 1 "return 1;"
 assert 8 "a = 10; b = 2; return a + b - b * 2;"
+assert 1 "x = 0; if(x == 0) return 1;"
+assert 2 "x = 0; if(x != 0) return 1; else return 2;"
+assert 1 "hoge = 12; hoge = hoge - 2; if(hoge>5) return 1; 123;"
 
 echo -e "\033[32m OK \033[m"
