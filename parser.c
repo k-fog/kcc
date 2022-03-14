@@ -37,10 +37,10 @@ Node *code[256];
  * primary    = num | "(" expr ")"
 */
 
-void *program() {
+void program() {
     int i = 0;
     while(!at_eof()) code[i++] = stmt();
-    code[i] = NULL;
+    code[i] = NULL; // 末尾
 }
 
 Node *stmt() {

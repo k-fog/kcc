@@ -76,7 +76,7 @@ struct Node {
 extern Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 extern Node *new_node_num(int val);
 extern Node *new_node_lvar(char *str);
-extern void *program();
+extern void program();
 extern Node *stmt();
 extern Node *expr();
 extern Node *assign();
