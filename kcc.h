@@ -15,7 +15,6 @@ typedef enum {
     TK_RESERVED, // 記号
     TK_IDENT,    // 識別子
     TK_NUM,      // 整数
-    TK_RETURN,   // return
     TK_EOF,      // 入力の終わり
 } TokenKind;
 
@@ -38,7 +37,6 @@ extern bool token_is(TokenKind tk);
 extern void expect(char *op);
 extern int expect_number();
 extern Token *expect_ident();
-extern void expect_return();
 extern bool at_eof();
 extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 extern bool startswith(char *p, char *q);

@@ -77,11 +77,6 @@ Token *expect_ident() {
     return t;
 }
 
-void expect_return() {
-    if(token->kind != TK_RETURN) error_at(token->str, "expect a number.");
-    token = token->next;
-}
-
 bool at_eof() {
     return token->kind == TK_EOF;
 }
@@ -129,9 +124,8 @@ Token *tokenize(char *p) {
             continue;
         }
         if(startswith(p, "return") && !is_alnum(p[6])) {
-            cur = new_token(TK_RETURN, cur, p, 6);
+            cur = new_token(TK_RESERVED, cur, p, 6);
             p += 6;
-            printf("%c\n", *p);
             continue;
         }
         if('a' <= *p && *p <= 'z') {
