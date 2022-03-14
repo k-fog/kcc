@@ -1,5 +1,7 @@
 #include "kcc.h"
 
+int label_count = 0;
+
 // ノードが変数を指しているとき、
 // 変数のアドレスをスタックにpush
 void gen_lval(Node *node) {
@@ -40,12 +42,13 @@ void gen(Node *node) {
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je .Lels000\n");
+            printf("  je .Lels%04d\n", label_count);
             gen(node->then);
-            printf("  jmp .Lend000\n");
-            printf(".Lels000:\n");
+            printf("  jmp .Lend%04d\n", label_count);
+            printf(".Lels%04d:\n", label_count);
             gen(node->els);
-            printf(".Lend000:\n");
+            printf(".Lend%04d:\n", label_count);
+            label_count++;
             return;
         default:
             break;

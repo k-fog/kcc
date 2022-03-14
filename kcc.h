@@ -115,6 +115,7 @@ extern Node *primary();
 /*
  * codegen.c
  */
+extern int label_count;
 extern void gen(Node *node);
 
 
