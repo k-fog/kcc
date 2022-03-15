@@ -42,36 +42,36 @@ void gen(Node *node) {
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je .Lels%04d\n", label_count);
+            printf("  je .Lels%d\n", label_count);
             gen(node->then);
-            printf("  jmp .Lend%04d\n", label_count);
-            printf(".Lels%04d:\n", label_count);
+            printf("  jmp .Lend%d\n", label_count);
+            printf(".Lels%d:\n", label_count);
             gen(node->els);
-            printf(".Lend%04d:\n", label_count);
+            printf(".Lend%d:\n", label_count);
             label_count++;
             return;
         case ND_FOR:
             gen(node->init);
-            printf(".Lbegin%04d:\n", label_count);
+            printf(".Lbegin%d:\n", label_count);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je .Lend%04d\n", label_count);
+            printf("  je .Lend%d\n", label_count);
             gen(node->lhs);
             gen(node->inc);
-            printf("  jmp .Lbegin%04d\n", label_count);
-            printf(".Lend%04d:\n", label_count);
+            printf("  jmp .Lbegin%d\n", label_count);
+            printf(".Lend%d:\n", label_count);
             label_count++;
             return;
         case ND_WHILE:
-            printf(".Lbegin%04d:\n", label_count);
+            printf(".Lbegin%d:\n", label_count);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je .Lend%04d\n", label_count);
+            printf("  je .Lend%d\n", label_count);
             gen(node->then);
-            printf("  jmp .Lbegin%04d\n", label_count);
-            printf(".Lend%04d:\n", label_count);
+            printf("  jmp .Lbegin%d\n", label_count);
+            printf(".Lend%d:\n", label_count);
             label_count++;
             return;
         default:
