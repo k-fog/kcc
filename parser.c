@@ -109,10 +109,9 @@ Node *stmt_for() {
         node->cond = expr();
         expect(";");
     }
-    if(!consume(";")) {
-        node->inc = expr();
-        expect(";");
-    }
+    node->inc = expr();
+    expect(")");
+    node->lhs = stmt();
     return node;
 }
 

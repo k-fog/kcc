@@ -58,5 +58,6 @@ assert 2 "x = 0; if(x != 0) return 1; else return 2;"
 assert 1 "hoge = 12; hoge = hoge - 2; if(hoge>5) return 1; 123;"
 
 assert 11 "i=0;while(i<=10)i=i+1;11;"
+assert 55 "s=0;for(i=0;i<=10;i=i+1) s=s+i;s;"
 
 echo -e "\033[32m OK \033[m"
