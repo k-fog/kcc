@@ -65,6 +65,7 @@ typedef enum {
     ND_WHILE,  // while
     ND_FOR,    // for
     ND_BLOCK,  // { ...  }
+    ND_FNCALL, // function call
 } NodeKind;
 
 // 抽象構文木のノードの型
@@ -84,8 +85,12 @@ struct Node {
     Node *next;
     Node *body;
 
+    // function call
+    Node *args;
+
     int val;        // ND_NUMの場合、その数値
     int offset;     // ND_LVARの場合、RBPからのオフセット
+    char *name;     // ND_FNCALLの場合、その名前
 };
 
 // ローカル変数
@@ -100,6 +105,7 @@ extern LVar *locals;
 
 extern Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 extern Node *new_node_empty(NodeKind kind);
+extern Node *new_node_name(NodeKind kind, char *name);
 extern Node *new_node_num(int val);
 extern Node *new_node_lvar(Token *token);
 extern LVar *find_lvar(Token *token);

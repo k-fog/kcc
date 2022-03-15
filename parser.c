@@ -17,6 +17,12 @@ Node *new_node_empty(NodeKind kind) {
     return node;
 }
 
+Node *new_node_name(NodeKind kind, char *name) {
+    Node *node = new_node_empty(kind);
+    node->name = name;
+    return node;
+}
+
 Node *new_node_num(int val) {
     Node *node = new_node_empty(ND_NUM);
     node->val = val;
@@ -62,7 +68,7 @@ LVar *find_lvar(Token *token) {
  * add        = mul ("+" mul | "-" mul)
  * mul        = unary ("*" unary | "/" unary)*
  * unary      = ("+" | "-")? primary
- * primary    = num | "(" expr ")"
+ * primary    = NUM | IDENT ("(" ")")? | "(" expr ")"
 */
 
 void program() {
@@ -194,7 +200,6 @@ Node *add() {
 
 Node *mul() {
     Node *node = unary();
-
     for(;;) {
         if(consume("*"))
             node = new_node(ND_MUL, node, unary());
@@ -219,7 +224,17 @@ Node *primary() {
         expect(")");
         return node;
     }
-    if(token_is(TK_IDENT)) return new_node_lvar(expect_ident());
+    if(token_is(TK_IDENT)) {
+        Token *t = expect_ident();
+        if(consume("(")) {
+            char *fn_name = calloc(1, sizeof(char) * (t->len + 1));
+            strncpy(fn_name, t->str, t->len);
+            Node *node = new_node_name(ND_FNCALL, fn_name);
+            expect(")");
+            return node;
+        }
+        return new_node_lvar(t);
+    }
     if(token_is(TK_NUM)) return new_node_num(expect_number());
     error_at(token->str, "parse error @primary.");
     exit(1);

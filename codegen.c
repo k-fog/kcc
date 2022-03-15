@@ -81,6 +81,10 @@ void gen(Node *node) {
                 printf("  pop rax\n");
             }
             return;
+        case ND_FNCALL:
+            printf("  mov rax, 0\n");
+            printf("  call %s\n", node->name);
+            return;
         default:
             break;
     }
