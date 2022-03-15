@@ -64,6 +64,7 @@ typedef enum {
     ND_IF,     // if
     ND_WHILE,  // while
     ND_FOR,    // for
+    ND_BLOCK,  // { ...  }
 } NodeKind;
 
 // 抽象構文木のノードの型
@@ -78,6 +79,10 @@ struct Node {
     Node *els;
     Node *init;
     Node *inc;
+
+    // code block
+    Node *next;
+    Node *body;
 
     int val;        // ND_NUMの場合、その数値
     int offset;     // ND_LVARの場合、RBPからのオフセット
@@ -103,6 +108,7 @@ extern Node *stmt();
 extern Node *stmt_if();
 extern Node *stmt_for();
 extern Node *stmt_while();
+extern Node *stmt_block();
 extern Node *expr();
 extern Node *assign();
 extern Node *equality();

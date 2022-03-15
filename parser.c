@@ -51,8 +51,9 @@ LVar *find_lvar(Token *token) {
 /*
  * program    = stmt*
  * stmt       = expr ";" | "return" expr ";" |
- *              "if" "(" expr ")" stmt ("else" stmt)?
- *              "while" "(" expr ")" stmt
+ *              "{" stmt* "}" |
+ *              "if" "(" expr ")" stmt ("else" stmt)? |
+ *              "while" "(" expr ")" stmt |
  *              "for" "(" expr? ";" expr? ";" expr?")" stmt
  * expr       = assign
  * assign     = equality ("=" assign)?
@@ -81,6 +82,8 @@ Node *stmt() {
         node = stmt_for();
     } else if(consume("while")) {
         node = stmt_while();
+    } else if(consume("{")) {
+        node = stmt_block();
     } else {
         node = expr();
         expect(";");
@@ -122,6 +125,19 @@ Node *stmt_while() {
     expect(")");
     node->then = stmt();
     return node;
+}
+
+Node *stmt_block() {
+    Node *head = new_node_empty(ND_BLOCK);
+    head->body = stmt();
+    Node *before = head;
+    while(!consume("}")) {
+        Node *node = new_node_empty(ND_BLOCK);
+        before->next = node;
+        node->body = stmt();
+        before = node;
+    }
+    return head;
 }
 
 Node *expr() {
