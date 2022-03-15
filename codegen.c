@@ -86,6 +86,7 @@ void gen(Node *node) {
             gen(node->args);
             printf("  mov rax, 0\n"); // 正しいかは不明
             printf("  call %s\n", node->name);
+            printf("  push rax\n");
             return;
         case ND_ARGS: {
             int cnt_args = 0;
