@@ -68,7 +68,8 @@ LVar *find_lvar(Token *token) {
  * add        = mul ("+" mul | "-" mul)
  * mul        = unary ("*" unary | "/" unary)*
  * unary      = ("+" | "-")? primary
- * primary    = NUM | IDENT ("(" ")")? | "(" expr ")"
+ * primary    = NUM | IDENT ("(" args? ")")? | "(" expr ")"
+ * args       = expr ( "," expr )*
 */
 
 void program() {
@@ -230,7 +231,7 @@ Node *primary() {
             char *fn_name = calloc(1, sizeof(char) * (t->len + 1));
             strncpy(fn_name, t->str, t->len);
             Node *node = new_node_name(ND_FNCALL, fn_name);
-            expect(")");
+            node->args = args();
             return node;
         }
         return new_node_lvar(t);
@@ -240,3 +241,17 @@ Node *primary() {
     exit(1);
 }
 
+Node *args() {
+    if(consume(")")) return NULL;
+    Node *head = new_node_empty(ND_ARGS);
+    head->body = expr();
+    Node *before = head;
+    while(consume(",")) {
+        Node *node = new_node_empty(ND_ARGS);
+        before->next = node;
+        node->body = expr();
+        before = node;
+    }
+    expect(")");
+    return head;
+}

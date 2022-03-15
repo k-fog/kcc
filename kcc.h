@@ -66,6 +66,7 @@ typedef enum {
     ND_FOR,    // for
     ND_BLOCK,  // { ...  }
     ND_FNCALL, // function call
+    ND_ARGS,   // function args
 } NodeKind;
 
 // 抽象構文木のノードの型
@@ -81,7 +82,7 @@ struct Node {
     Node *init;
     Node *inc;
 
-    // code block
+    // code block & args
     Node *next;
     Node *body;
 
@@ -123,6 +124,7 @@ extern Node *add();
 extern Node *mul();
 extern Node *unary();
 extern Node *primary();
+extern Node *args();
 
 /*
  * codegen.c

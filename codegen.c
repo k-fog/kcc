@@ -1,6 +1,7 @@
 #include "kcc.h"
 
 int label_count = 0;
+static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 // ノードが変数を指しているとき、
 // 変数のアドレスをスタックにpush
@@ -82,9 +83,22 @@ void gen(Node *node) {
             }
             return;
         case ND_FNCALL:
-            printf("  mov rax, 0\n");
+            gen(node->args);
+            printf("  mov rax, 0\n"); // 正しいかは不明
             printf("  call %s\n", node->name);
             return;
+        case ND_ARGS: {
+            int cnt_args = 0;
+            while(node) {
+                cnt_args++;
+                gen(node->body);
+                node = node->next;
+            }
+            while(cnt_args > 0) {
+                printf("  pop %s\n", argreg[--cnt_args]);
+            }
+            return;
+        }
         default:
             break;
     }
