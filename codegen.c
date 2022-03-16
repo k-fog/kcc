@@ -18,7 +18,7 @@ void gen_funcdef(Node *node) {
     // prologue
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, 80\n");
+    printf("  sub rsp, %d\n", node->locals_num * 8);
 
     gen(node->args);
     gen(node->body);

@@ -1,7 +1,13 @@
 #include "kcc.h"
 
 Node *code[256];
-LVar *locals;
+Func *current_func;
+
+Func *new_func() {
+    Func *fn = calloc(1, sizeof(Func));
+    fn->locals_num = 0;
+    return fn;
+}
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
@@ -29,25 +35,26 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_lvar(Token *token) {
+Node *new_node_lvar(Func *fn, Token *token) {
     Node *node = new_node_empty(ND_LVAR);
-    LVar *var = find_lvar(token);
+    LVar *var = find_lvar(fn, token);
     if(var) {
         node->offset = var->offset;
     } else {
         var = calloc(1, sizeof(LVar));
-        var->next = locals;
+        var->next = fn->locals;
         var->name = token->str;
         var->len = token->len;
-        var->offset = locals ? locals->offset + 8 : 0;
+        var->offset = fn->locals ? fn->locals->offset + 8 : 0;
         node->offset = var->offset;
-        locals = var;
+        fn->locals = var;
+        fn->locals_num++;
     }
     return node;
 }
 
-LVar *find_lvar(Token *token) {
-    for(LVar *var = locals; var; var = var->next) {
+LVar *find_lvar(Func *fn, Token *token) {
+    for(LVar *var = fn->locals; var; var = var->next) {
         if(var->len == token->len && !memcmp(token->str, var->name, var->len))
             return var;
     }
@@ -75,7 +82,11 @@ LVar *find_lvar(Token *token) {
 
 void program() {
     int i = 0;
-    while(!at_eof()) code[i++] = funcdef();
+    while(!at_eof()) {
+        current_func = new_func();
+        code[i++] = funcdef();
+        free(current_func);
+    }
     code[i] = NULL; // 末尾
 }
 
@@ -233,7 +244,7 @@ Node *primary() {
             node->args = args();
             return node;
         }
-        return new_node_lvar(t);
+        return new_node_lvar(current_func, t);
     }
     if(token_is(TK_NUM)) return new_node_num(expect_number());
     error_at(token->str, "parse error @primary.");
@@ -262,5 +273,6 @@ Node *funcdef() {
     expect("(");
     node->args = args();
     node->body = stmt();
+    node->locals_num = current_func->locals_num;
     return node;
 }

@@ -45,6 +45,7 @@ extern Token *tokenize(char *p);
  * parser.c
  */
 typedef struct Node Node;
+typedef struct Func Func;
 typedef struct LVar LVar;
 extern Node *code[];
 
@@ -94,6 +95,15 @@ struct Node {
     int val;        // ND_NUMの場合、その数値
     int offset;     // ND_LVARの場合、RBPからのオフセット
     char *name;     // ND_FNCALLの場合、その名前
+    int locals_num; // ND_FNDEFの場合、そのローカル変数の個数
+};
+
+// 関数
+struct Func {
+    // char *name;
+    // int len;
+    int locals_num;
+    LVar *locals;
 };
 
 // ローカル変数
@@ -104,14 +114,14 @@ struct LVar {
     int offset;
 };
 
-extern LVar *locals;
+extern Func *current_func;
 
 extern Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 extern Node *new_node_empty(NodeKind kind);
 extern Node *new_node_name(NodeKind kind, char *name);
 extern Node *new_node_num(int val);
-extern Node *new_node_lvar(Token *token);
-extern LVar *find_lvar(Token *token);
+extern Node *new_node_lvar(Func *fn, Token *token);
+extern LVar *find_lvar(Func *fn, Token *token);
 extern void program();
 extern Node *stmt();
 extern Node *stmt_if();
