@@ -70,11 +70,12 @@ LVar *find_lvar(Token *token) {
  * unary      = ("+" | "-")? primary
  * primary    = NUM | IDENT ("(" args? ")")? | "(" expr ")"
  * args       = expr ( "," expr )*
+ * funcdef    = IDENT "(" args ")" stmt
 */
 
 void program() {
     int i = 0;
-    while(!at_eof()) code[i++] = stmt();
+    while(!at_eof()) code[i++] = funcdef();
     code[i] = NULL; // 末尾
 }
 
@@ -228,9 +229,7 @@ Node *primary() {
     if(token_is(TK_IDENT)) {
         Token *t = expect_ident();
         if(consume("(")) {
-            char *fn_name = calloc(1, sizeof(char) * (t->len + 1));
-            strncpy(fn_name, t->str, t->len);
-            Node *node = new_node_name(ND_FNCALL, fn_name);
+            Node *node = new_node_name(ND_FNCALL, get_token_str(t));
             node->args = args();
             return node;
         }
@@ -254,4 +253,14 @@ Node *args() {
     }
     expect(")");
     return head;
+}
+
+Node *funcdef() {
+    Node *head = new_node_empty(ND_FNDEF);
+    Token *t = expect_ident();
+    Node *node = new_node_name(ND_FNCALL, get_token_str(t));
+    expect("(");
+    node->args = args();
+    node->body = stmt();
+    return node;
 }

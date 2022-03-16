@@ -36,6 +36,7 @@ extern bool token_is(TokenKind tk);
 extern void expect(char *op);
 extern int expect_number();
 extern Token *expect_ident();
+extern char *get_token_str(Token *token);
 extern bool at_eof();
 extern Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 extern Token *tokenize(char *p);
@@ -65,6 +66,7 @@ typedef enum {
     ND_WHILE,  // while
     ND_FOR,    // for
     ND_BLOCK,  // { ...  }
+    ND_FNDEF,  // function definition
     ND_FNCALL, // function call
     ND_ARGS,   // function args
 } NodeKind;
@@ -82,7 +84,7 @@ struct Node {
     Node *init;
     Node *inc;
 
-    // code block & args
+    // code block & args & funcDef
     Node *next;
     Node *body;
 
@@ -125,11 +127,13 @@ extern Node *mul();
 extern Node *unary();
 extern Node *primary();
 extern Node *args();
+extern Node *funcdef();
 
 /*
  * codegen.c
  */
 extern int label_count;
+extern void gen_funcdef(Node *node);
 extern void gen(Node *node);
 
 

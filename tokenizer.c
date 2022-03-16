@@ -77,6 +77,12 @@ Token *expect_ident() {
     return t;
 }
 
+char *get_token_str(Token *token) {
+    char *name = calloc(1, sizeof(char) * (token->len + 1));
+    strncpy(name, token->str, token->len);
+    return name;
+}
+
 bool at_eof() {
     return token->kind == TK_EOF;
 }
