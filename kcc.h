@@ -96,12 +96,14 @@ struct Node {
     int offset;     // ND_LVARの場合、RBPからのオフセット
     char *name;     // ND_FNCALLの場合、その名前
     int locals_num; // ND_FNDEFの場合、そのローカル変数の個数
+    int args_num;
 };
 
 // 関数
 struct Func {
     // char *name;
     // int len;
+    int args_num;
     int locals_num;
     LVar *locals;
 };
@@ -136,7 +138,7 @@ extern Node *add();
 extern Node *mul();
 extern Node *unary();
 extern Node *primary();
-extern Node *args();
+extern Node *fncall_args();
 extern Node *funcdef();
 
 /*

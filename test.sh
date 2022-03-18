@@ -22,6 +22,9 @@ assert() {
 assert 0 "main(){return 0;}"
 assert 0 "fn(){return 123;} main(){return fn()-123;}"
 assert 55 "main(){s=0;i=0;while(i<=10){s=s+i;i=i+1;}return s;}"
+assert 0 "fn(x){return x;} main(){return fn(0);}"
+assert 3 "add(x,y){return x+y;} main(){return add(1,2);}"
+assert 1 "fib(i){if(i==0||i==1)return i;return fib(i-1) + fib(i-2);} main(){return fib(1);}"
 
 # assert 0 "0;"
 # assert 42 "42;"

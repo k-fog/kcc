@@ -45,7 +45,7 @@ Node *new_node_lvar(Func *fn, Token *token) {
         var->next = fn->locals;
         var->name = token->str;
         var->len = token->len;
-        var->offset = fn->locals ? fn->locals->offset + 8 : 0;
+        var->offset = fn->locals ? fn->locals->offset + 8 : 8;
         node->offset = var->offset;
         fn->locals = var;
         fn->locals_num++;
@@ -75,9 +75,9 @@ LVar *find_lvar(Func *fn, Token *token) {
  * add        = mul ("+" mul | "-" mul)
  * mul        = unary ("*" unary | "/" unary)*
  * unary      = ("+" | "-")? primary
- * primary    = NUM | IDENT ("(" args? ")")? | "(" expr ")"
- * args       = expr ( "," expr )*
- * funcdef    = IDENT "(" args ")" stmt
+ * primary    = NUM | IDENT ("(" fncall-args? ")")? | "(" expr ")"
+ * fncall-args= expr ( "," expr )*
+ * funcdef    = IDENT "(" IDENT ( "," IDENT )* ")" stmt
 */
 
 void program() {
@@ -241,7 +241,7 @@ Node *primary() {
         Token *t = expect_ident();
         if(consume("(")) {
             Node *node = new_node_name(ND_FNCALL, get_token_str(t));
-            node->args = args();
+            node->args = fncall_args();
             return node;
         }
         return new_node_lvar(current_func, t);
@@ -251,7 +251,7 @@ Node *primary() {
     exit(1);
 }
 
-Node *args() {
+Node *fncall_args() {
     if(consume(")")) return NULL;
     Node *head = new_node_empty(ND_ARGS);
     head->body = expr();
@@ -267,11 +267,22 @@ Node *args() {
 }
 
 Node *funcdef() {
-    Node *head = new_node_empty(ND_FNDEF);
     Token *t = expect_ident();
-    Node *node = new_node_name(ND_FNCALL, get_token_str(t));
+    Node *node = new_node_name(ND_FNDEF, get_token_str(t));
     expect("(");
-    node->args = args();
+    node->args = NULL;
+    if(!consume(")")) {
+        Node *head = new_node_lvar(current_func, expect_ident());
+        Node *cur = head;
+        while(consume(",")) {
+            Node *n = new_node_lvar(current_func, expect_ident());
+            cur->next = n;
+            cur = n;
+        }
+        expect(")");
+        node->args = head;
+    }
+    node->args_num = current_func->locals_num;
     node->body = stmt();
     node->locals_num = current_func->locals_num;
     return node;
