@@ -13,14 +13,21 @@ void gen_lval(Node *node) {
 }
 
 void gen_funcdef(Node *node) {
+    if(node->kind != ND_FNDEF) error("It's not function definition.");
     printf("%s:\n", node->name);
 
     // prologue
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", node->locals_num * 8);
+    int alloc = node->locals_num * 8;
+    printf("  sub rsp, %d\n", alloc);
 
-    gen(node->args);
+    printf("  mov rax, rbp\n");
+    for(int i = 0; i < node->args_num; i++) {
+        printf("  sub rax, 8\n");
+        printf("  mov [rax], %s\n", argreg[i]);
+    }
+
     gen(node->body);
 
     // epilogue
