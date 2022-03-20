@@ -108,9 +108,20 @@ void gen(Node *node) {
             return;
         case ND_FNCALL:
             gen(node->args);
-            printf("  mov rax, 0\n"); // 正しいかは不明
+            printf("  mov rax, rsp\n");
+            printf("  and rax, 15\n");
+            printf("  jnz .L.call.%d\n", label_count);
+            printf("  mov rax, 0\n");
             printf("  call %s\n", node->name);
+            printf("  jmp .L.end.%d\n", label_count);
+            printf(".L.call.%d:\n", label_count);
+            printf("  sub rsp, 8\n");
+            printf("  mov rax, 0\n");
+            printf("  call %s\n", node->name);
+            printf("  add rsp, 8\n");
+            printf(".L.end.%d:\n", label_count);
             printf("  push rax\n");
+            label_count++;
             return;
         case ND_ARGS: {
             int cnt_args = 0;
