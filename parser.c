@@ -37,19 +37,21 @@ Node *new_node_num(int val) {
 
 Node *new_node_lvar(Func *fn, Token *token) {
     Node *node = new_node_empty(ND_LVAR);
+    LVar *var = calloc(1, sizeof(LVar));
+    var->next = fn->locals;
+    var->name = token->str;
+    var->len = token->len;
+    var->offset = fn->locals ? fn->locals->offset + 8 : 8;
+    node->offset = var->offset;
+    fn->locals = var;
+    fn->locals_num++;
+    return node;
+}
+
+Node *get_node_lvar(Func *fn, Token *token) {
+    Node *node = new_node_empty(ND_LVAR);
     LVar *var = find_lvar(fn, token);
-    if(var) {
-        node->offset = var->offset;
-    } else {
-        var = calloc(1, sizeof(LVar));
-        var->next = fn->locals;
-        var->name = token->str;
-        var->len = token->len;
-        var->offset = fn->locals ? fn->locals->offset + 8 : 8;
-        node->offset = var->offset;
-        fn->locals = var;
-        fn->locals_num++;
-    }
+    node->offset = var->offset;
     return node;
 }
 
@@ -61,9 +63,12 @@ LVar *find_lvar(Func *fn, Token *token) {
     return NULL;
 }
 
+// TODO: var_decl周辺の定義
+
 /*
  * program    = stmt*
- * stmt       = expr ";" | "return" expr ";" |
+ * var_decl   = IDENT
+ * stmt       = expr ";" | "return" expr ";" | "int" var_decl ";" |
  *              "{" stmt* "}" |
  *              "if" "(" expr ")" stmt ("else" stmt)? |
  *              "while" "(" expr ")" stmt |
@@ -76,8 +81,8 @@ LVar *find_lvar(Func *fn, Token *token) {
  * mul        = unary ("*" unary | "/" unary)*
  * unary      = ("+" | "-")? primary | "*" unary | "&" unary
  * primary    = NUM | IDENT ("(" fncall-args? ")")? | "(" expr ")"
- * fncall-args= expr ( "," expr )*
- * funcdef    = IDENT "(" IDENT ( "," IDENT )* ")" stmt
+ * fncall_args= expr ( "," expr  )*
+ * funcdef    = IDENT "(" "int" var_decl ( ", int" var_decl)* ")" stmt
 */
 
 void program() {
@@ -88,6 +93,10 @@ void program() {
         free(current_func);
     }
     code[i] = NULL; // 末尾
+}
+
+Node *var_decl() {
+    return new_node_lvar(current_func, expect_ident());
 }
 
 Node *stmt() {
@@ -103,6 +112,9 @@ Node *stmt() {
         node = stmt_while();
     } else if(consume("{")) {
         node = stmt_block();
+    } else if(consume("int")) {
+        node = var_decl();
+        expect(";");
     } else {
         node = expr();
         expect(";");
@@ -254,7 +266,7 @@ Node *primary() {
             node->args = fncall_args();
             return node;
         }
-        return new_node_lvar(current_func, t);
+        return get_node_lvar(current_func, t);
     }
     if(token_is(TK_NUM)) return new_node_num(expect_number());
     error_at(token->str, "parse error @primary.");
@@ -277,14 +289,17 @@ Node *fncall_args() {
 }
 
 Node *funcdef() {
+    expect("int");
     Token *t = expect_ident();
     Node *node = new_node_name(ND_FNDEF, get_token_str(t));
     expect("(");
     node->args = NULL;
     if(!consume(")")) {
+        expect("int");
         Node *head = new_node_lvar(current_func, expect_ident());
         Node *cur = head;
         while(consume(",")) {
+            expect("int");
             Node *n = new_node_lvar(current_func, expect_ident());
             cur->next = n;
             cur = n;
