@@ -45,6 +45,7 @@ extern Token *tokenize(char *p);
  * parser.c
  */
 typedef struct Node Node;
+typedef struct Type Type;
 typedef struct Func Func;
 typedef struct LVar LVar;
 extern Node *code[];
@@ -99,6 +100,13 @@ struct Node {
     char *name;     // ND_FNCALLの場合、その名前
     int locals_num; // ND_FNDEFの場合、そのローカル変数の個数
     int args_num;
+    Type *type;
+};
+
+// 型
+struct Type {
+    enum {INT, PTR} ty;
+    Type *ptr_to; // only used when type==PTR
 };
 
 // 関数
@@ -116,6 +124,7 @@ struct LVar {
     char *name;  // 変数名
     int len;
     int offset;
+    Type *type;
 };
 
 extern Func *current_func;

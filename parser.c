@@ -68,7 +68,7 @@ LVar *find_lvar(Func *fn, Token *token) {
 /*
  * program    = stmt*
  * var_decl   = IDENT
- * stmt       = expr ";" | "return" expr ";" | "int" var_decl ";" |
+ * stmt       = expr ";" | "return" expr ";" | "int" "*"* var_decl ";" |
  *              "{" stmt* "}" |
  *              "if" "(" expr ")" stmt ("else" stmt)? |
  *              "while" "(" expr ")" stmt |
@@ -113,7 +113,16 @@ Node *stmt() {
     } else if(consume("{")) {
         node = stmt_block();
     } else if(consume("int")) {
+        Type *type = calloc(1, sizeof(Type));
+        type->ty = INT;
+        while(consume("*")) {
+            Type *cur_type = calloc(1, sizeof(Type));
+            cur_type->ty = PTR;
+            cur_type->ptr_to = type;
+            type = cur_type;
+        }
         node = var_decl();
+        node->type = type;
         expect(";");
     } else {
         node = expr();

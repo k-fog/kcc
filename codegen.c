@@ -6,6 +6,10 @@ static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 // ノードが変数を指しているとき、
 // 変数のアドレスをスタックにpush
 void gen_lval(Node *node) {
+    if(node->kind == ND_DEREF) {
+        gen(node->lhs);
+        return;
+    }
     if(node->kind != ND_LVAR) error("The left-value is not a variable.");
     printf("  mov rax, rbp\n");
     printf("  sub rax, %d\n", node->offset);

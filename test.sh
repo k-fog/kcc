@@ -69,7 +69,7 @@ assert 1 "int main(){int n;n=1;if(n==0)return n;return n;}"
 assert 1 "int main(){int n;n=1;if(0)return 0;return n;}"
 assert 55 "int fib(int n){if(n==0)return 0; if(n==1)return 1; return fib(n-1)+fib(n-2);} int main(){return fib(10);}"
 
-assert 0 "int main(){int s;int p;s=0;p=&s;return *p;}"
-assert 3 "int main(){int x;int y;int z;x=3;y=5;z=&y+8;return *z;}" # 今のところOK
+assert 0 "int main(){int s;int *p;s=0;p=&s;return *p;}"
+assert 3 "int main(){int x; int *y; y = &x; *y=3; return x;}"
 
 echo -e "\033[32m OK \033[m"
