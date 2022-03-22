@@ -74,7 +74,7 @@ LVar *find_lvar(Func *fn, Token *token) {
  * relational = add ("<" add | "<=" add | ">" add | ">=" add)*
  * add        = mul ("+" mul | "-" mul)
  * mul        = unary ("*" unary | "/" unary)*
- * unary      = ("+" | "-")? primary
+ * unary      = ("+" | "-")? primary | "*" unary | "&" unary
  * primary    = NUM | IDENT ("(" fncall-args? ")")? | "(" expr ")"
  * fncall-args= expr ( "," expr )*
  * funcdef    = IDENT "(" IDENT ( "," IDENT )* ")" stmt
@@ -228,6 +228,16 @@ Node *unary() {
         return primary();
     if(consume("-"))
         return new_node(ND_SUB, new_node_num(0), primary());
+    if(consume("&")) {
+        Node *node = new_node_empty(ND_ADDR);
+        node->lhs = unary();
+        return node;
+    }
+    if(consume("*")) {
+        Node *node = new_node_empty(ND_DEREF);
+        node->lhs = unary();
+        return node;
+    }
     return primary();
 }
 

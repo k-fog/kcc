@@ -69,4 +69,7 @@ assert 1 "main(){n=1;if(n==0)return n;return n;}"
 assert 1 "main(){n=1;if(0)return 0;return n;}"
 assert 55 "fib(n){if(n==0)return 0; if(n==1)return 1; return fib(n-1)+fib(n-2);} main(){return fib(10);}"
 
+assert 0 "main(){s=0;p=&s;return *p;}"
+assert 3 "main(){x=3;y=5;z=&y+8;return *z;}" # 今のところOK
+
 echo -e "\033[32m OK \033[m"

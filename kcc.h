@@ -70,6 +70,8 @@ typedef enum {
     ND_FNDEF,  // function definition
     ND_FNCALL, // function call
     ND_ARGS,   // function args
+    ND_ADDR,   // address(&)
+    ND_DEREF,  // dereference(*)
 } NodeKind;
 
 // 抽象構文木のノードの型
