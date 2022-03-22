@@ -22,7 +22,7 @@ void gen_funcdef(Node *node) {
     int alloc = node->locals_num * 8;
     printf("  sub rsp, %d\n", alloc);
 
-    printf("  mov rax, rbp\n");
+    if(node->args_num > 0) printf("  mov rax, rbp\n");
     for(int i = 0; i < node->args_num; i++) {
         printf("  sub rax, 8\n");
         printf("  mov [rax], %s\n", argreg[i]);
@@ -63,66 +63,70 @@ void gen(Node *node) {
             printf("  pop rbp\n");
             printf("  ret\n");
             return;
-        case ND_IF:
+        case ND_IF: {
+            int c = label_count++;
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je .L.els%d\n", label_count);
+            printf("  je .L.else.%d\n", c);
             gen(node->then);
-            printf("  jmp .L.end%d\n", label_count);
-            printf(".L.els%d:\n", label_count);
+            printf("  jmp .L.end.%d\n", c);
+            printf(".L.else.%d:\n", c);
             gen(node->els);
-            printf(".L.end%d:\n", label_count);
-            label_count++;
+            printf(".L.end.%d:\n", c);
             return;
-        case ND_FOR:
+        }
+        case ND_FOR: {
+            int c = label_count++;
             gen(node->init);
-            printf(".L.begin%d:\n", label_count);
+            printf(".L.begin.%d:\n", c);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je .L.end%d\n", label_count);
+            printf("  je .L.end.%d\n", c);
             gen(node->lhs);
             gen(node->inc);
-            printf("  jmp .L.begin%d\n", label_count);
-            printf(".L.end%d:\n", label_count);
-            label_count++;
+            printf("  jmp .L.begin.%d\n", c);
+            printf(".L.end.%d:\n", c);
             return;
-        case ND_WHILE:
-            printf(".L.begin%d:\n", label_count);
+        }
+        case ND_WHILE: {
+            int c = label_count++;
+            printf(".L.begin.%d:\n", c);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je .L.end%d\n", label_count);
+            printf("  je .L.end.%d\n", c);
             gen(node->then);
-            printf("  jmp .L.begin%d\n", label_count);
-            printf(".L.end%d:\n", label_count);
-            label_count++;
+            printf("  jmp .L.begin.%d\n", c);
+            printf(".L.end.%d:\n", c);
             return;
+        }
         case ND_BLOCK:
             while(node) {
                 gen(node->body);
                 node = node->next;
-                printf("  pop rax\n");
+                // printf("  pop rax #blc\n");
             }
             return;
-        case ND_FNCALL:
+        case ND_FNCALL: {
+            int c = label_count++;
             gen(node->args);
             printf("  mov rax, rsp\n");
             printf("  and rax, 15\n");
-            printf("  jnz .L.call.%d\n", label_count);
+            printf("  jnz .L.call.%d\n", c);
             printf("  mov rax, 0\n");
             printf("  call %s\n", node->name);
-            printf("  jmp .L.end.%d\n", label_count);
-            printf(".L.call.%d:\n", label_count);
+            printf("  jmp .L.end.%d\n", c);
+            printf(".L.call.%d:\n", c);
             printf("  sub rsp, 8\n");
             printf("  mov rax, 0\n");
             printf("  call %s\n", node->name);
             printf("  add rsp, 8\n");
-            printf(".L.end.%d:\n", label_count);
+            printf(".L.end.%d:\n", c);
             printf("  push rax\n");
-            label_count++;
             return;
+        }
         case ND_ARGS: {
             int cnt_args = 0;
             while(node) {
