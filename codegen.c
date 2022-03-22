@@ -36,8 +36,52 @@ void gen_funcdef(Node *node) {
     printf("  ret\n");
 }
 
+void gen_binexpr(Node *node) {
+    gen(node->lhs);
+    gen(node->rhs);
+    printf("  pop rdi\n");
+    printf("  pop rax\n");
+    switch(node->kind) {
+        case ND_ADD:
+            printf("  add rax, rdi\n");
+            break;
+        case ND_SUB:
+            printf("  sub rax, rdi\n");
+            break;
+        case ND_MUL:
+            printf("  imul rax, rdi\n");
+            break;
+        case ND_DIV:
+            printf("  cqo\n");
+            printf("  idiv rdi\n");
+            break;
+        case ND_EQ:
+            printf("  cmp rax, rdi\n");
+            printf("  sete al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case ND_NE:
+            printf("  cmp rax, rdi\n");
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case ND_LT:
+            printf("  cmp rax, rdi\n");
+            printf("  setl al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case ND_LE:
+            printf("  cmp rax, rdi\n");
+            printf("  setle al\n");
+            printf("  movzb rax, al\n");
+            break;
+        default:
+            break;
+    }
+    printf("  push rax\n");
+}
+
 void gen(Node *node) {
-    if(!node) return;
     switch(node->kind) {
         case ND_NUM:
             printf("  push %d\n", node->val);
@@ -81,7 +125,7 @@ void gen(Node *node) {
             gen(node->then);
             printf("  jmp .L.end.%d\n", c);
             printf(".L.else.%d:\n", c);
-            gen(node->els);
+            if(node->els) gen(node->els);
             printf(".L.end.%d:\n", c);
             return;
         }
@@ -120,7 +164,7 @@ void gen(Node *node) {
             return;
         case ND_FNCALL: {
             int c = label_count++;
-            gen(node->args);
+            if(node->args) gen(node->args);
             printf("  mov rax, rsp\n");
             printf("  and rax, 15\n");
             printf("  jnz .L.call.%d\n", c);
@@ -148,52 +192,20 @@ void gen(Node *node) {
             }
             return;
         }
-        default:
-            break;
-    }
-    gen(node->lhs);
-    gen(node->rhs);
-    printf("  pop rdi\n");
-    printf("  pop rax\n");
-    switch(node->kind) {
         case ND_ADD:
-            printf("  add rax, rdi\n");
-            break;
         case ND_SUB:
-            printf("  sub rax, rdi\n");
-            break;
         case ND_MUL:
-            printf("  imul rax, rdi\n");
-            break;
         case ND_DIV:
-            printf("  cqo\n");
-            printf("  idiv rdi\n");
-            break;
         case ND_EQ:
-            printf("  cmp rax, rdi\n");
-            printf("  sete al\n");
-            printf("  movzb rax, al\n");
-            break;
         case ND_NE:
-            printf("  cmp rax, rdi\n");
-            printf("  setne al\n");
-            printf("  movzb rax, al\n");
-            break;
         case ND_LT:
-            printf("  cmp rax, rdi\n");
-            printf("  setl al\n");
-            printf("  movzb rax, al\n");
-            break;
         case ND_LE:
-            printf("  cmp rax, rdi\n");
-            printf("  setle al\n");
-            printf("  movzb rax, al\n");
-            break;
+            gen_binexpr(node);
+            return;
         default:
+            error("not implemented.");
             break;
     }
-
-    printf("  push rax\n");
 }
 
 
