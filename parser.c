@@ -77,8 +77,10 @@ static Node *integer(Parser *parser) {
 
 static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = integer(parser);
-    int prec = precedences[peek(parser)->tag];
-    while (peek(parser)->tag != TT_EOF && min_bp < prec) {
+    while (peek(parser)->tag != TT_EOF) {
+        int prec = precedences[peek(parser)->tag];
+        if (min_bp >= prec) break;
+
         lhs = expr_new(consume(parser), lhs, NULL);
         lhs->expr.rhs = expr_bp(parser, prec);
     }

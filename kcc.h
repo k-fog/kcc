@@ -59,3 +59,6 @@ struct Node {
 
 Parser *parser_new(Token *tokens);
 Node *parse(Parser *parser);
+
+// codegen
+void gen(Node *node);

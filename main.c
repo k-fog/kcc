@@ -46,7 +46,11 @@ int main(int argc, char *argv[]) {
     Token *tokens = tokenize(lexer);
     Parser *parser = parser_new(tokens);
     Node *root = parse(parser);
-    dump_nodes(root);
-    printf("\n");
+    printf(".intel_syntax noprefix\n");
+    printf(".globl main\n");
+    printf("main:\n");
+    gen(root);
+    printf("  pop rax\n");
+    printf("  ret\n");
     return 0;
 }
