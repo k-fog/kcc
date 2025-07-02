@@ -14,10 +14,11 @@ enum OpPrecedence {
 };
 
 int precedences[] = {
-    [TT_PLUS]  = PREC_ADD,
-    [TT_MINUS] = PREC_ADD,
-    [TT_STAR]  = PREC_MUL,
-    [TT_SLASH] = PREC_MUL,
+    [TT_PLUS]   = PREC_ADD,
+    [TT_MINUS]  = PREC_ADD,
+    [TT_STAR]   = PREC_MUL,
+    [TT_SLASH]  = PREC_MUL,
+    [TT_LPAREN] = PREC_CALL,
 };
 
 Parser *parser_new(Token *tokens) {
@@ -37,6 +38,18 @@ static Node *node_new(NodeTag tag, Token *main_token) {
 static Node *int_new(Token *token, int val) {
     Node *node = node_new(NT_INT, token);
     node->integer = val;
+    return node;
+}
+
+static Node *unary_new(Token *token, Node *expr) {
+    NodeTag tag;
+    switch (token->tag) {
+        case TT_PLUS:  return expr;
+        case TT_MINUS: tag = NT_NEG; break;
+        default: panic("unary_new: invalid token TokenTag=%d", token->tag);
+    }
+    Node *node = node_new(tag, token);
+    node->unary_expr = expr;
     return node;
 }
 
@@ -65,6 +78,12 @@ static Token *consume(Parser *parser) {
     return token;
 }
 
+static Node *integer(Parser *parser);
+static Node *unary(Parser *parser);
+static Node *expr_prefix(Parser *parser);
+static Node *expr_bp(Parser *parser, int min_bp);
+static Node *expr(Parser *parser);
+
 static Node *integer(Parser *parser) {
     int val = 0;
     Token *token = consume(parser);
@@ -75,8 +94,31 @@ static Node *integer(Parser *parser) {
     return int_new(token, val);
 }
 
+static Node *unary(Parser *parser) {
+    Token *token = consume(parser);
+    return unary_new(token, expr_bp(parser, PREC_PREFIX));
+}
+
+static Node *expr_prefix(Parser *parser) {
+    Node *node;
+    switch (peek(parser)->tag) {
+        case TT_INT:
+            node = integer(parser);
+            break;
+        case TT_LPAREN:
+            consume(parser);
+            node = expr(parser);
+            if (consume(parser)->tag != TT_RPAREN) panic("expected \')\'");
+            break;
+        default:
+            node = unary(parser);
+            break;
+    }
+    return node;
+}
+
 static Node *expr_bp(Parser *parser, int min_bp) {
-    Node *lhs = integer(parser);
+    Node *lhs = expr_prefix(parser);
     while (peek(parser)->tag != TT_EOF) {
         int prec = precedences[peek(parser)->tag];
         if (min_bp >= prec) break;

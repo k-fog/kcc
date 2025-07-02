@@ -1,8 +1,8 @@
 #!/bin/bash
 
 assert() {
-    expected="$1"
-    input="$2"
+    input="$1"
+    expected="$2"
 
     ./kcc "$input" > tmp.s
     cc -o tmp tmp.s
@@ -19,7 +19,17 @@ assert() {
 
 assert 0 0 
 assert 42 42
-assert 6 '1+2+3'
-assert 5 '1*2+3'
-assert 2 '10/2-3'
-assert 5 '10-2*3+1'
+assert '1+2+3' 6
+assert '1*2+3' 5
+assert '10/2-3' 2
+assert '10-2*3+1' 5
+assert ' 12 + 34 - 5 ' 41
+assert '5+6*7' 47
+assert '5*(9-6)' 15
+assert '(3+5)/2' 4
+assert '4+((1+2)*3)' 13
+assert '+1' 1
+assert '-3+10' 7
+assert '-10+20' 10
+assert '- -10' 10
+assert '- - +10' 10

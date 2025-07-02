@@ -4,6 +4,12 @@ void gen(Node *node) {
     if (node->tag == NT_INT) {
         printf("  push %d\n", node->integer);
         return;
+    } else if (node->tag == NT_NEG) {
+        gen(node->unary_expr);
+        printf("  pop rax\n");
+        printf("  neg rax\n");
+        printf("  push rax\n");
+        return;
     }
 
     gen(node->expr.lhs);

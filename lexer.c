@@ -46,6 +46,10 @@ Token *tokenize(Lexer *lexer) {
             token->next = token_new(TT_STAR, consume(lexer), 1);
         } else if (c == '/') {
             token->next = token_new(TT_SLASH, consume(lexer), 1);
+        } else if (c == '(') {
+            token->next = token_new(TT_LPAREN, consume(lexer), 1);
+        } else if (c == ')') {
+            token->next = token_new(TT_RPAREN, consume(lexer), 1);
         } else if (isdigit(c)) {
             while (isdigit(peek(lexer))) end = consume(lexer);
             token->next = token_new(TT_INT, start, end - start + 1);

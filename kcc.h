@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,8 +15,9 @@ typedef struct {
 } Lexer;
 
 typedef enum {
-    TT_PLUS, TT_MINUS,  // + -
-    TT_STAR, TT_SLASH,  // * /
+    TT_PLUS, TT_MINUS,    // + -
+    TT_STAR, TT_SLASH,    // * /
+    TT_LPAREN, TT_RPAREN, // ( )
     TT_INT,
     TT_IDENT,
     TT_EOF,
@@ -41,11 +43,12 @@ typedef struct {
 } Parser;
 
 typedef enum {
-    NT_INT,  // data->integer
-    NT_ADD,  // data->binop
-    NT_SUB,  // data->binop
-    NT_MUL,  // data->binop
-    NT_DIV,  // data->binop
+    NT_INT,  // integer
+    NT_ADD,  // expr
+    NT_SUB,  // expr
+    NT_MUL,  // expr
+    NT_DIV,  // expr
+    NT_NEG,  // unary_expr
 } NodeTag;
 
 struct Node {
@@ -53,6 +56,7 @@ struct Node {
     Token *main_token;
     union {
         int integer;
+        Node *unary_expr;
         struct {Node *lhs, *rhs;} expr;
     };
 };
