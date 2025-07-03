@@ -49,12 +49,12 @@ int main(int argc, char *argv[]) {
     }
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
-    dump_tokens(tokens);
+    // dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
     Node *root = parse(parser);
-    dump_nodes(root);
-    printf("\n");
-    return 0;
+    // dump_nodes(root);
+    // printf("\n");
+    // return 0;
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");

@@ -32,7 +32,27 @@ void gen(Node *node) {
             printf("  cqo\n");
             printf("  idiv rax, rdi\n");
             break;
-        default: panic("codegen: invalid node");
+        case NT_EQ:
+            printf("  cmp rax, rdi\n");
+            printf("  sete al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case NT_NE:
+            printf("  cmp rax, rdi\n");
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case NT_LT:
+            printf("  cmp rax, rdi\n");
+            printf("  setl al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case NT_LE:
+            printf("  cmp rax, rdi\n");
+            printf("  setle al\n");
+            printf("  movzb rax, al\n");
+            break;
+        default: panic("codegen: invalid node NodeTag=%d", node->tag);
     }
     printf("  push rax\n");
 }

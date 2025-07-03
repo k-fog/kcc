@@ -2,3 +2,4 @@ kcc
 *.o
 *.s
 tmp
+*.out

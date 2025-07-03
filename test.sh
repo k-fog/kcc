@@ -33,3 +33,11 @@ assert '-3+10' 7
 assert '-10+20' 10
 assert '- -10' 10
 assert '- - +10' 10
+assert '1<2+3' 1
+assert '1>(2*4)+3' 0
+assert '1*3<1' 0
+assert '1<=1' 1
+assert '0>=3' 0
+assert '1==1' 1
+assert '1!=2' 1
+assert '3>2==3<5' 1
