@@ -44,3 +44,7 @@ assert '3>2==3<5' 1
 assert '!1' 0
 assert '!0' 1
 assert '!(2==2)' 0
+assert 'a = 3;
+b = 5 * 6 - 8;
+a + b / 2;'
+

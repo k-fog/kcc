@@ -9,9 +9,15 @@ void panic(char *fmt, ...) {
 }
 
 void dump_nodes(Node *node) {
+    char buf[36];
     switch (node->tag) {
         case NT_INT:
             printf("%d ", node->integer);
+            return;
+        case NT_IDENT:
+            strncpy(buf, node->main_token->start, node->main_token->len);
+            buf[node->main_token->len] = '\0';
+            printf("%s ", buf);
             return;
         case NT_NEG:
             printf("(- ");
@@ -26,6 +32,7 @@ void dump_nodes(Node *node) {
             if (node->tag == NT_NE) printf("(!= ");
             if (node->tag == NT_LT) printf("(< ");
             if (node->tag == NT_LE) printf("(<= ");
+            if (node->tag == NT_ASSIGN) printf("(= ");
             dump_nodes(node->expr.lhs);
             dump_nodes(node->expr.rhs);
             break;
@@ -49,12 +56,12 @@ int main(int argc, char *argv[]) {
     }
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
-    // dump_tokens(tokens);
+    dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
     Node *root = parse(parser);
-    // dump_nodes(root);
-    // printf("\n");
-    // return 0;
+    dump_nodes(root);
+    printf("\n");
+    return 0;
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");

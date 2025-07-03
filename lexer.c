@@ -59,7 +59,7 @@ Token *tokenize(Lexer *lexer) {
                 break;
             case '=':
                 if (peek(lexer) != '=') {
-                    panic("'=' unimplemented");
+                    token->next = token_new(TT_EQ, start, 1);
                 } else {
                     consume(lexer);
                     token->next = token_new(TT_EQ_EQ, start, 2);

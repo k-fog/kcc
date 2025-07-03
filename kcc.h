@@ -15,6 +15,7 @@ typedef struct {
 } Lexer;
 
 typedef enum {
+    TT_EQ,                  // =
     TT_PLUS, TT_MINUS,      // + -
     TT_STAR, TT_SLASH,      // * /
     TT_BANG,                // !
@@ -49,7 +50,8 @@ typedef struct {
 } Parser;
 
 typedef enum {
-    NT_INT,      // int integer
+    NT_INT,      // <integer> integer
+    NT_IDENT,    // <identifier> main_token
     NT_ADD,      // + expr
     NT_SUB,      // - expr
     NT_MUL,      // * expr
@@ -58,8 +60,9 @@ typedef enum {
     NT_NE,       // != expr
     NT_LT,       // < expr
     NT_LE,       // <= expr
-    NT_NEG,      // unary_expr
-    NT_BOOL_NOT, // unary_expr
+    NT_NEG,      // - unary_expr
+    NT_BOOL_NOT, // ! unary_expr
+    NT_ASSIGN,   // = expr
 } NodeTag;
 
 struct Node {

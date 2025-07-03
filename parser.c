@@ -2,6 +2,7 @@
 
 enum OpPrecedence {
     PREC_LOWEST = 0,
+    PREC_ASSIGN,
     PREC_EQUALS,
     PREC_LOGICAL,
     PREC_LESSGREATER,
@@ -14,17 +15,38 @@ enum OpPrecedence {
 };
 
 int precedences[] = {
-    [TT_PLUS]       = PREC_ADD,
-    [TT_MINUS]      = PREC_ADD,
-    [TT_STAR]       = PREC_MUL,
-    [TT_SLASH]      = PREC_MUL,
-    [TT_PAREN_L]    = PREC_CALL,
+    [TT_EQ]         = PREC_ASSIGN,
     [TT_EQ_EQ]      = PREC_EQUALS,
     [TT_BANG_EQ]    = PREC_EQUALS,
     [TT_ANGLE_L]    = PREC_LESSGREATER,
     [TT_ANGLE_R]    = PREC_LESSGREATER,
     [TT_ANGLE_L_EQ] = PREC_LESSGREATER,
     [TT_ANGLE_R_EQ] = PREC_LESSGREATER,
+    [TT_PLUS]       = PREC_ADD,
+    [TT_MINUS]      = PREC_ADD,
+    [TT_STAR]       = PREC_MUL,
+    [TT_SLASH]      = PREC_MUL,
+    [TT_PAREN_L]    = PREC_CALL,
+};
+
+typedef enum {
+    ASSOC_LEFT,  // binding power (l), r > l, (r)
+    ASSOC_RIGHT, // binding power (l), r < l, (r)
+} OpAssoc;
+
+OpAssoc assocs[] = {
+    [TT_EQ]         = ASSOC_RIGHT,
+    [TT_PLUS]       = ASSOC_LEFT,
+    [TT_MINUS]      = ASSOC_LEFT,
+    [TT_STAR]       = ASSOC_LEFT,
+    [TT_SLASH]      = ASSOC_LEFT,
+    [TT_PAREN_L]    = ASSOC_LEFT,
+    [TT_EQ_EQ]      = ASSOC_LEFT,
+    [TT_BANG_EQ]    = ASSOC_LEFT,
+    [TT_ANGLE_L]    = ASSOC_LEFT,
+    [TT_ANGLE_R]    = ASSOC_LEFT,
+    [TT_ANGLE_L_EQ] = ASSOC_LEFT,
+    [TT_ANGLE_R_EQ] = ASSOC_LEFT,
 };
 
 Parser *parser_new(Token *tokens) {
@@ -47,6 +69,10 @@ static Node *int_new(Token *token, int val) {
     return node;
 }
 
+static Node *ident_new(Token *token) {
+    return node_new(NT_IDENT, token);
+}
+
 static Node *unary_new(Token *token, Node *expr) {
     NodeTag tag;
     switch (token->tag) {
@@ -63,6 +89,7 @@ static Node *unary_new(Token *token, Node *expr) {
 static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
     NodeTag tag;
     switch (token->tag) {
+        case TT_EQ:         tag = NT_ASSIGN; break;
         case TT_PLUS:       tag = NT_ADD; break;
         case TT_MINUS:      tag = NT_SUB; break;
         case TT_STAR:       tag = NT_MUL; break;
@@ -92,6 +119,7 @@ static Token *consume(Parser *parser) {
 }
 
 static Node *integer(Parser *parser);
+static Node *identifier(Parser *parser);
 static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_bp(Parser *parser, int min_bp);
@@ -107,6 +135,12 @@ static Node *integer(Parser *parser) {
     return int_new(token, val);
 }
 
+static Node *identifier(Parser *parser) {
+    Token *token = consume(parser);
+    if (token->tag != TT_IDENT) panic("expected an identifier");
+    return ident_new(token);
+}
+
 static Node *unary(Parser *parser) {
     Token *token = consume(parser);
     return unary_new(token, expr_bp(parser, PREC_PREFIX));
@@ -117,6 +151,9 @@ static Node *expr_prefix(Parser *parser) {
     switch (peek(parser)->tag) {
         case TT_INT:
             node = integer(parser);
+            break;
+        case TT_IDENT:
+            node = identifier(parser);
             break;
         case TT_PAREN_L:
             consume(parser);
@@ -134,11 +171,13 @@ static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = expr_prefix(parser);
     while (peek(parser)->tag != TT_EOF) {
         int prec = precedences[peek(parser)->tag];
-        if (min_bp >= prec) break;
+        int assoc = assocs[peek(parser)->tag];
+        if (assoc == ASSOC_LEFT && prec <= min_bp) break;
+        else if (assoc == ASSOC_RIGHT && prec < min_bp) break;
 
         Token *token = consume(parser);
-        lhs = expr_new(token, lhs, NULL);
-        lhs->expr.rhs = expr_bp(parser, prec);
+        Node *rhs = expr_bp(parser, prec);
+        lhs = expr_new(token, lhs, rhs);
 
         // if token is ">" or ">=", swap lhs, rhs
         if (token->tag == TT_ANGLE_R || token->tag == TT_ANGLE_R_EQ) {

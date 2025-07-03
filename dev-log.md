@@ -13,3 +13,26 @@
 ## 2025-07-03
 - 比較演算子を実装した
 - 単項`!`
+  - !x <=> x==0
+  - x86_64の`cmp`っていろいろなオペランドをとれるのか、すごい
+- 代入演算子`=`の構文解析
+  - `=`は右結合なのでこのままではうまくいかない
+  - YouTubeで[Pratt Parsingのわかりやすいアニメーションと解説](https://youtu.be/0c8b7YfsBKs?si=caL7g6vM6oz02IS4)を見つけた
+  - 演算子ごとに左結合か右結合かを指定することでパースできた
+- '1<2<3'みたいなのがコンパイルできてしまう
+- codegenは明日やる
+
+```sh
+% ./kcc 'a=b=1+2+3'
+a       TokenTag=15
+=       TokenTag=0
+b       TokenTag=15
+=       TokenTag=0
+1       TokenTag=14
++       TokenTag=1
+2       TokenTag=14
++       TokenTag=1
+3       TokenTag=14
+        TokenTag=16
+(= a (= b (+ (+ 1 2) 3)))
+```
