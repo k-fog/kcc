@@ -17,6 +17,7 @@ typedef struct {
 typedef enum {
     TT_PLUS, TT_MINUS,      // + -
     TT_STAR, TT_SLASH,      // * /
+    TT_BANG,                // !
     TT_PAREN_L, TT_PAREN_R, // ( )
     TT_EQ_EQ,               // ==
     TT_BANG_EQ,             // !=
@@ -48,16 +49,17 @@ typedef struct {
 } Parser;
 
 typedef enum {
-    NT_INT, // int integer
-    NT_ADD, // + expr
-    NT_SUB, // - expr
-    NT_MUL, // * expr
-    NT_DIV, // / expr
-    NT_EQ,  // == expr
-    NT_NE,  // != expr
-    NT_LT,  // < expr
-    NT_LE,  // <= expr
-    NT_NEG, // unary_expr
+    NT_INT,      // int integer
+    NT_ADD,      // + expr
+    NT_SUB,      // - expr
+    NT_MUL,      // * expr
+    NT_DIV,      // / expr
+    NT_EQ,       // == expr
+    NT_NE,       // != expr
+    NT_LT,       // < expr
+    NT_LE,       // <= expr
+    NT_NEG,      // unary_expr
+    NT_BOOL_NOT, // unary_expr
 } NodeTag;
 
 struct Node {

@@ -10,6 +10,14 @@ void gen(Node *node) {
         printf("  neg rax\n");
         printf("  push rax\n");
         return;
+    } else if (node->tag == NT_BOOL_NOT) {
+        gen(node->unary_expr);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  sete al\n");
+        printf("  movzx rax, al\n");
+        printf("  push rax\n");
+        return;
     }
 
     gen(node->expr.lhs);

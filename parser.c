@@ -52,6 +52,7 @@ static Node *unary_new(Token *token, Node *expr) {
     switch (token->tag) {
         case TT_PLUS:  return expr;
         case TT_MINUS: tag = NT_NEG; break;
+        case TT_BANG:  tag = NT_BOOL_NOT; break;
         default: panic("unary_new: invalid token TokenTag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
