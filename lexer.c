@@ -32,33 +32,76 @@ Token *tokenize(Lexer *lexer) {
     Token head, *token = &head;
     while (token->tag != TT_EOF) {
         skip_space(lexer);
-        const char *start = &lexer->input[lexer->pos], *end;
-        char c = peek(lexer);
+        const char *start = consume(lexer);
+        const char *end = start;
 
-        if (c == '\0') {
-            token->next = token_new(TT_EOF, consume(lexer), 1);
-            break;
-        } else if (c == '+') {
-            token->next = token_new(TT_PLUS, consume(lexer), 1);
-        } else if (c == '-') {
-            token->next = token_new(TT_MINUS, consume(lexer), 1);
-        } else if (c == '*') {
-            token->next = token_new(TT_STAR, consume(lexer), 1);
-        } else if (c == '/') {
-            token->next = token_new(TT_SLASH, consume(lexer), 1);
-        } else if (c == '(') {
-            token->next = token_new(TT_LPAREN, consume(lexer), 1);
-        } else if (c == ')') {
-            token->next = token_new(TT_RPAREN, consume(lexer), 1);
-        } else if (isdigit(c)) {
-            while (isdigit(peek(lexer))) end = consume(lexer);
-            token->next = token_new(TT_INT, start, end - start + 1);
-        } else if (isalpha(c)) {
-            while (isalnum(peek(lexer) || peek(lexer) == '_')) end = consume(lexer);
-            token->next = token_new(TT_IDENT, start, end - start + 1);
-        } else {
-            fprintf(stderr, "tokenize error\n");
-            exit(1);
+        switch (*start) {
+            case '\0':
+                token->next = token_new(TT_EOF, start, 1);
+                break;
+            case '+':
+                token->next = token_new(TT_PLUS, start, 1);
+                break;
+            case '-':
+                token->next = token_new(TT_MINUS, start, 1);
+                break;
+            case '*':
+                token->next = token_new(TT_STAR, start, 1);
+                break;
+            case '/':
+                token->next = token_new(TT_SLASH, start, 1);
+                break;
+            case '(':
+                token->next = token_new(TT_PAREN_L, start, 1);
+                break;
+            case ')':
+                token->next = token_new(TT_PAREN_R, start, 1);
+                break;
+            case '=':
+                if (peek(lexer) != '=') {
+                    panic("'=' unimplemented");
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_EQ_EQ, start, 2);
+                }
+
+                break;
+            case '!':
+                if (peek(lexer) != '=') {
+                    panic("'!' unimplemented");
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_BANG_EQ, start, 2);
+                }
+
+                break;
+            case '<':
+                if (peek(lexer) != '=') {
+                    token->next = token_new(TT_ANGLE_L, start, 1);
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_ANGLE_L_EQ, start, 2);
+                }
+                break;
+            case '>':
+                if (peek(lexer) != '=') {
+                    token->next = token_new(TT_ANGLE_R, start, 1);
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_ANGLE_R_EQ, start, 2);
+                }
+                break;
+            default:
+                if (isdigit(*start)) {
+                    while (isdigit(peek(lexer))) end = consume(lexer);
+                    token->next = token_new(TT_INT, start, end - start + 1);
+                } else if (isalpha(*start)) {
+                    while (isalnum(peek(lexer) || peek(lexer) == '_')) end = consume(lexer);
+                    token->next = token_new(TT_IDENT, start, end - start + 1);
+                } else {
+                    panic("tokenize error");
+                }
+                break;
         }
         token = token->next;
     }

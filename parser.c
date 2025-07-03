@@ -14,11 +14,17 @@ enum OpPrecedence {
 };
 
 int precedences[] = {
-    [TT_PLUS]   = PREC_ADD,
-    [TT_MINUS]  = PREC_ADD,
-    [TT_STAR]   = PREC_MUL,
-    [TT_SLASH]  = PREC_MUL,
-    [TT_LPAREN] = PREC_CALL,
+    [TT_PLUS]       = PREC_ADD,
+    [TT_MINUS]      = PREC_ADD,
+    [TT_STAR]       = PREC_MUL,
+    [TT_SLASH]      = PREC_MUL,
+    [TT_PAREN_L]    = PREC_CALL,
+    [TT_EQ_EQ]      = PREC_EQUALS,
+    [TT_BANG_EQ]    = PREC_EQUALS,
+    [TT_ANGLE_L]    = PREC_LESSGREATER,
+    [TT_ANGLE_R]    = PREC_LESSGREATER,
+    [TT_ANGLE_L_EQ] = PREC_LESSGREATER,
+    [TT_ANGLE_R_EQ] = PREC_LESSGREATER,
 };
 
 Parser *parser_new(Token *tokens) {
@@ -56,10 +62,16 @@ static Node *unary_new(Token *token, Node *expr) {
 static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
     NodeTag tag;
     switch (token->tag) {
-        case TT_PLUS:  tag = NT_ADD; break;
-        case TT_MINUS: tag = NT_SUB; break;
-        case TT_STAR:  tag = NT_MUL; break;
-        case TT_SLASH: tag = NT_DIV; break;
+        case TT_PLUS:       tag = NT_ADD; break;
+        case TT_MINUS:      tag = NT_SUB; break;
+        case TT_STAR:       tag = NT_MUL; break;
+        case TT_SLASH:      tag = NT_DIV; break;
+        case TT_EQ_EQ:      tag = NT_EQ; break;
+        case TT_BANG_EQ:    tag = NT_NE; break;
+        case TT_ANGLE_L:
+        case TT_ANGLE_R:    tag = NT_LT; break;
+        case TT_ANGLE_L_EQ:
+        case TT_ANGLE_R_EQ: tag = NT_LE; break;
         default: panic("expr_new: invalid token tag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
@@ -105,10 +117,10 @@ static Node *expr_prefix(Parser *parser) {
         case TT_INT:
             node = integer(parser);
             break;
-        case TT_LPAREN:
+        case TT_PAREN_L:
             consume(parser);
             node = expr(parser);
-            if (consume(parser)->tag != TT_RPAREN) panic("expected \')\'");
+            if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
             break;
         default:
             node = unary(parser);
@@ -123,8 +135,16 @@ static Node *expr_bp(Parser *parser, int min_bp) {
         int prec = precedences[peek(parser)->tag];
         if (min_bp >= prec) break;
 
-        lhs = expr_new(consume(parser), lhs, NULL);
+        Token *token = consume(parser);
+        lhs = expr_new(token, lhs, NULL);
         lhs->expr.rhs = expr_bp(parser, prec);
+
+        // if token is ">" or ">=", swap lhs, rhs
+        if (token->tag == TT_ANGLE_R || token->tag == TT_ANGLE_R_EQ) {
+            Node *tmp = lhs->expr.lhs;
+            lhs->expr.lhs = lhs->expr.rhs;
+            lhs->expr.rhs = tmp;
+        }
     }
     return lhs;
 }

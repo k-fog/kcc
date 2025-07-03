@@ -15,9 +15,14 @@ typedef struct {
 } Lexer;
 
 typedef enum {
-    TT_PLUS, TT_MINUS,    // + -
-    TT_STAR, TT_SLASH,    // * /
-    TT_LPAREN, TT_RPAREN, // ( )
+    TT_PLUS, TT_MINUS,      // + -
+    TT_STAR, TT_SLASH,      // * /
+    TT_PAREN_L, TT_PAREN_R, // ( )
+    TT_EQ_EQ,               // ==
+    TT_BANG_EQ,             // !=
+    TT_ANGLE_L, TT_ANGLE_R, // < >
+    TT_ANGLE_L_EQ,          // <=
+    TT_ANGLE_R_EQ,          // >=
     TT_INT,
     TT_IDENT,
     TT_EOF,
@@ -43,12 +48,16 @@ typedef struct {
 } Parser;
 
 typedef enum {
-    NT_INT,  // integer
-    NT_ADD,  // expr
-    NT_SUB,  // expr
-    NT_MUL,  // expr
-    NT_DIV,  // expr
-    NT_NEG,  // unary_expr
+    NT_INT, // int integer
+    NT_ADD, // + expr
+    NT_SUB, // - expr
+    NT_MUL, // * expr
+    NT_DIV, // / expr
+    NT_EQ,  // == expr
+    NT_NE,  // != expr
+    NT_LT,  // < expr
+    NT_LE,  // <= expr
+    NT_NEG, // unary_expr
 } NodeTag;
 
 struct Node {
