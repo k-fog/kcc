@@ -16,17 +16,18 @@ typedef struct {
 
 typedef enum {
     TT_EQ,                  // =
-    TT_PLUS, TT_MINUS,      // + -
-    TT_STAR, TT_SLASH,      // * /
-    TT_BANG,                // !
-    TT_PAREN_L, TT_PAREN_R, // ( )
     TT_EQ_EQ,               // ==
     TT_BANG_EQ,             // !=
     TT_ANGLE_L, TT_ANGLE_R, // < >
     TT_ANGLE_L_EQ,          // <=
     TT_ANGLE_R_EQ,          // >=
+    TT_PLUS, TT_MINUS,      // + -
+    TT_STAR, TT_SLASH,      // * /
+    TT_BANG,                // !
+    TT_PAREN_L, TT_PAREN_R, // ( )
     TT_INT,
     TT_IDENT,
+    TT_SEMICOLON,           // ;
     TT_EOF,
 } TokenTag;
 
@@ -42,8 +43,6 @@ Lexer *lexer_new(const char *input);
 Token *tokenize(Lexer *lexer);
 
 // parser
-typedef struct Node Node;
-
 typedef struct {
     const Token *tokens;
     Token *current_token;
@@ -65,6 +64,7 @@ typedef enum {
     NT_ASSIGN,   // = expr
 } NodeTag;
 
+typedef struct Node Node;
 struct Node {
     NodeTag tag;
     Token *main_token;
@@ -75,8 +75,18 @@ struct Node {
     };
 };
 
+typedef struct {
+    Node **nodes;
+    int len;
+    int capacity;
+} NodeList;
+
+#define DEFAULT_NODELIST_CAP 128
+NodeList *nodelist_new(int capacity);
+void nodelist_append(NodeList *nlist, Node *node);
+
 Parser *parser_new(Token *tokens);
-Node *parse(Parser *parser);
+NodeList *parse(Parser *parser);
 
 // codegen
 void gen(Node *node);

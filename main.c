@@ -23,6 +23,10 @@ void dump_nodes(Node *node) {
             printf("(- ");
             dump_nodes(node->unary_expr);
             break;
+        case NT_BOOL_NOT:
+            printf("(! ");
+            dump_nodes(node->unary_expr);
+            break;
         default: // expr
             if (node->tag == NT_ADD) printf("(+ ");
             if (node->tag == NT_SUB) printf("(- ");
@@ -49,6 +53,13 @@ void dump_tokens(Token *tokens) {
     }
 }
 
+void dump_nodelist(NodeList *nlist) {
+    for (int i = 0; i < nlist->len; i++) {
+        dump_nodes(nlist->nodes[i]);
+        printf("\n");
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "invalid arg\n");
@@ -56,18 +67,17 @@ int main(int argc, char *argv[]) {
     }
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
-    dump_tokens(tokens);
+    // dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
-    Node *root = parse(parser);
-    dump_nodes(root);
-    printf("\n");
+    NodeList *root = parse(parser);
+    dump_nodelist(root);
     return 0;
 
-    printf(".intel_syntax noprefix\n");
-    printf(".globl main\n");
-    printf("main:\n");
-    gen(root);
-    printf("  pop rax\n");
-    printf("  ret\n");
-    return 0;
+    // printf(".intel_syntax noprefix\n");
+    // printf(".globl main\n");
+    // printf("main:\n");
+    // gen(root);
+    // printf("  pop rax\n");
+    // printf("  ret\n");
+    // return 0;
 }

@@ -49,6 +49,22 @@ OpAssoc assocs[] = {
     [TT_ANGLE_R_EQ] = ASSOC_LEFT,
 };
 
+NodeList *nodelist_new(int capacity) {
+    NodeList *nlist = calloc(1, sizeof(NodeList));
+    nlist->nodes = calloc(capacity, sizeof(Node*));
+    nlist->len = 0;
+    nlist->capacity = capacity;
+    return nlist;
+}
+
+void nodelist_append(NodeList *nlist, Node *node) {
+    if (nlist->capacity <= nlist->len) {
+        nlist->capacity = nlist->capacity * 2 + 1;
+        nlist->nodes = realloc(nlist->nodes, nlist->capacity * sizeof(Node*));
+    }
+    nlist->nodes[nlist->len++] = node;
+}
+
 Parser *parser_new(Token *tokens) {
     Parser *parser = calloc(1, sizeof(Parser));
     parser->tokens = tokens;
@@ -124,6 +140,7 @@ static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_bp(Parser *parser, int min_bp);
 static Node *expr(Parser *parser);
+static Node *stmt(Parser *parser);
 
 static Node *integer(Parser *parser) {
     int val = 0;
@@ -160,16 +177,18 @@ static Node *expr_prefix(Parser *parser) {
             node = expr(parser);
             if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
             break;
-        default:
+        case TT_MINUS:
+        case TT_BANG:
             node = unary(parser);
             break;
+        default: panic("expected token TokenTag=%d", peek(parser)->tag);
     }
     return node;
 }
 
 static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = expr_prefix(parser);
-    while (peek(parser)->tag != TT_EOF) {
+    while (peek(parser)->tag != TT_SEMICOLON && peek(parser)->tag != TT_EOF) {
         int prec = precedences[peek(parser)->tag];
         int assoc = assocs[peek(parser)->tag];
         if (assoc == ASSOC_LEFT && prec <= min_bp) break;
@@ -193,6 +212,17 @@ static Node *expr(Parser *parser) {
     return expr_bp(parser, PREC_LOWEST);
 }
 
-Node *parse(Parser *parser) {
-    return expr(parser);
+static Node *stmt(Parser *parser) {
+    Node *node = expr(parser);
+    if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
+    return node;
+}
+
+NodeList *parse(Parser *parser) {
+    NodeList *stmts = nodelist_new(DEFAULT_NODELIST_CAP);
+    while (peek(parser)->tag != TT_EOF) {
+        Node *node = stmt(parser);
+        nodelist_append(stmts, node);
+    }
+    return stmts;
 }

@@ -64,7 +64,6 @@ Token *tokenize(Lexer *lexer) {
                     consume(lexer);
                     token->next = token_new(TT_EQ_EQ, start, 2);
                 }
-
                 break;
             case '!':
                 if (peek(lexer) != '=') {
@@ -73,7 +72,6 @@ Token *tokenize(Lexer *lexer) {
                     consume(lexer);
                     token->next = token_new(TT_BANG_EQ, start, 2);
                 }
-
                 break;
             case '<':
                 if (peek(lexer) != '=') {
@@ -90,6 +88,9 @@ Token *tokenize(Lexer *lexer) {
                     consume(lexer);
                     token->next = token_new(TT_ANGLE_R_EQ, start, 2);
                 }
+                break;
+            case ';':
+                token->next = token_new(TT_SEMICOLON, start, 1);
                 break;
             default:
                 if (isdigit(*start)) {
