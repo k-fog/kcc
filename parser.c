@@ -177,11 +177,9 @@ static Node *expr_prefix(Parser *parser) {
             node = expr(parser);
             if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
             break;
-        case TT_MINUS:
-        case TT_BANG:
+        default:
             node = unary(parser);
             break;
-        default: panic("expected token TokenTag=%d", peek(parser)->tag);
     }
     return node;
 }

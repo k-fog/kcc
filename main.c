@@ -70,14 +70,22 @@ int main(int argc, char *argv[]) {
     // dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
     NodeList *root = parse(parser);
-    dump_nodelist(root);
-    return 0;
-
-    // printf(".intel_syntax noprefix\n");
-    // printf(".globl main\n");
-    // printf("main:\n");
-    // gen(root);
-    // printf("  pop rax\n");
-    // printf("  ret\n");
+    // dump_nodelist(root);
     // return 0;
+
+    printf(".intel_syntax noprefix\n");
+    printf(".globl main\n");
+    printf("main:\n");
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, 208\n");
+    for (int i = 0; i < root->len; i++) {
+        gen(root->nodes[i]);
+        printf("  pop rax\n");
+        printf("\n");
+    }
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+    return 0;
 }
