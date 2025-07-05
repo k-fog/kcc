@@ -48,4 +48,5 @@ assert 'a=1;b=2;a+b;' 3
 assert 'a = 3;
 b = 5 * 6 - 8;
 a + b / 2;' 14
-
+assert 'var=123;var;' 123
+assert 'var=123; var_2=23; var_3=var-var_2; var_3;' 100

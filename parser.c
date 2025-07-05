@@ -49,6 +49,8 @@ OpAssoc assocs[] = {
     [TT_ANGLE_R_EQ] = ASSOC_LEFT,
 };
 
+// NodeList
+
 NodeList *nodelist_new(int capacity) {
     NodeList *nlist = calloc(1, sizeof(NodeList));
     nlist->nodes = calloc(capacity, sizeof(Node*));
@@ -65,10 +67,44 @@ void nodelist_append(NodeList *nlist, Node *node) {
     nlist->nodes[nlist->len++] = node;
 }
 
+
+// Var
+
+Var *var_new(Token *ident, int offset, Var *next) {
+    Var *var = calloc(1, sizeof(Var));
+    var->name = ident->start;
+    var->len = ident->len;
+    var->offset = offset;
+    var->next = next;
+    return var;
+}
+
+static Var *append_local_var(Parser *parser, Token *ident) {
+    int current_offset = parser->locals ? parser->locals->offset : 0;
+    Var *var = var_new(ident, current_offset + 8, parser->locals);
+    parser->locals = var;
+    return var;
+}
+
+Var *find_local_var(Var *env, Token *ident) {
+    for (Var *var = env; var != NULL; var = var->next) {
+        if (ident->len != var->len) continue;
+        if (strncmp(var->name, ident->start, var->len) == 0) return var;
+    }
+    return NULL;
+}
+
+Var *get_local_vars(Parser *parser) {
+    return parser->locals;
+}
+
+// Parser
+
 Parser *parser_new(Token *tokens) {
     Parser *parser = calloc(1, sizeof(Parser));
     parser->tokens = tokens;
     parser->current_token = tokens;
+    parser->locals = NULL;
     return parser;
 }
 
@@ -155,6 +191,7 @@ static Node *integer(Parser *parser) {
 static Node *identifier(Parser *parser) {
     Token *token = consume(parser);
     if (token->tag != TT_IDENT) panic("expected an identifier");
+    if (find_local_var(parser->locals, token) == NULL) append_local_var(parser, token);
     return ident_new(token);
 }
 

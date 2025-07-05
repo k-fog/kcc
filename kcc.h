@@ -43,9 +43,12 @@ Lexer *lexer_new(const char *input);
 Token *tokenize(Lexer *lexer);
 
 // parser
+typedef struct Var Var;
+
 typedef struct {
     const Token *tokens;
     Token *current_token;
+    Var *locals;
 } Parser;
 
 typedef enum {
@@ -85,8 +88,19 @@ typedef struct {
 NodeList *nodelist_new(int capacity);
 void nodelist_append(NodeList *nlist, Node *node);
 
+struct Var {
+    const char *name;
+    int len;
+    int offset;
+    Var *next;
+};
+
+Var *var_new(Token *ident, int offset, Var *next);
+Var *find_local_var(Var *env, Token *ident);
+
 Parser *parser_new(Token *tokens);
 NodeList *parse(Parser *parser);
+Var *get_local_vars(Parser *parser);
 
 // codegen
-void gen(Node *node);
+void gen(NodeList *nlist, Var *env);

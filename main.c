@@ -60,6 +60,15 @@ void dump_nodelist(NodeList *nlist) {
     }
 }
 
+void dump_locals(Parser *parser) {
+    char buf[36];
+    for (Var *var = parser->locals; var != NULL; var = var->next) {
+        strncpy(buf, var->name, var->len);
+        buf[var->len] = '\0';
+        printf("name: %s\toffset:%d\n", buf, var->offset);
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "invalid arg\n");
@@ -69,23 +78,11 @@ int main(int argc, char *argv[]) {
     Token *tokens = tokenize(lexer);
     // dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
-    NodeList *root = parse(parser);
+    NodeList *nlist = parse(parser);
+    Var *env = get_local_vars(parser);
     // dump_nodelist(root);
+    // dump_locals(parser);
     // return 0;
-
-    printf(".intel_syntax noprefix\n");
-    printf(".globl main\n");
-    printf("main:\n");
-    printf("  push rbp\n");
-    printf("  mov rbp, rsp\n");
-    printf("  sub rsp, 208\n");
-    for (int i = 0; i < root->len; i++) {
-        gen(root->nodes[i]);
-        printf("  pop rax\n");
-        printf("\n");
-    }
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
+    gen(nlist, env);
     return 0;
 }
