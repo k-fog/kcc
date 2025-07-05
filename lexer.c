@@ -97,7 +97,7 @@ Token *tokenize(Lexer *lexer) {
                     while (isdigit(peek(lexer))) end = consume(lexer);
                     token->next = token_new(TT_INT, start, end - start + 1);
                 } else if (isalpha(*start)) {
-                    while (isalnum(peek(lexer) || peek(lexer) == '_')) end = consume(lexer);
+                    while (isalnum(peek(lexer)) || peek(lexer) == '_') end = consume(lexer);
                     token->next = token_new(TT_IDENT, start, end - start + 1);
                 } else {
                     panic("tokenize error");
