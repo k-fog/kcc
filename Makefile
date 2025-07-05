@@ -4,7 +4,11 @@ SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 kcc: $(OBJS)
-	$(CC) -o $@ $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+
+debug: CFLAGS += -DDEBUG
+debug: clean $(OBJS)
+	$(CC) $(CFLAGS) -o kcc $(OBJS) $(LDFLAGS)
 
 $(OBJS): kcc.h
 
@@ -14,4 +18,4 @@ test: kcc
 clean:
 	rm -f kcc *.o *~ tmp*
 
-.PHONY: test clean
+.PHONY: debug test clean

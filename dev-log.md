@@ -59,3 +59,5 @@ b       TokenTag=15
   % ./kcc 'func(a, b+c, d);'
   (func a (+ b c) d)
   ```
+- `make debug`をできるようにした。
+  debug用にビルドしたバイナリの場合は、テストを走らせる前に手動で`make clean`をする

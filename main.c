@@ -85,6 +85,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "invalid arg\n");
         return 1;
     }
+
+#ifdef DEBUG
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
     dump_tokens(tokens);
@@ -92,8 +94,16 @@ int main(int argc, char *argv[]) {
     NodeList *nlist = parse(parser);
     Var *env = get_local_vars(parser);
     dump_nodelist(nlist);
-    // dump_locals(parser);
-    return 0;
+    dump_locals(parser);
     gen(nlist, env);
     return 0;
+#else
+    Lexer *lexer = lexer_new(argv[1]);
+    Token *tokens = tokenize(lexer);
+    Parser *parser = parser_new(tokens);
+    NodeList *nlist = parse(parser);
+    Var *env = get_local_vars(parser);
+    gen(nlist, env);
+    return 0;
+#endif
 }
