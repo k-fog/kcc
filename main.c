@@ -27,16 +27,27 @@ void dump_nodes(Node *node) {
             printf("(! ");
             dump_nodes(node->unary_expr);
             break;
+        case NT_RETURN:
+            printf("(return ");
+            dump_nodes(node->unary_expr);
+            break;
+        case NT_FNCALL:
+            printf("(");
+            dump_nodes(node->fncall.ident);
+            for (int i = 0; i < node->fncall.args->len; i++) {
+                dump_nodes(node->fncall.args->nodes[i]);
+            }
+            break;
         default: // expr
             if (node->tag == NT_ADD) printf("(+ ");
-            if (node->tag == NT_SUB) printf("(- ");
-            if (node->tag == NT_MUL) printf("(* ");
-            if (node->tag == NT_DIV) printf("(/ ");
-            if (node->tag == NT_EQ) printf("(== ");
-            if (node->tag == NT_NE) printf("(!= ");
-            if (node->tag == NT_LT) printf("(< ");
-            if (node->tag == NT_LE) printf("(<= ");
-            if (node->tag == NT_ASSIGN) printf("(= ");
+            else if (node->tag == NT_SUB) printf("(- ");
+            else if (node->tag == NT_MUL) printf("(* ");
+            else if (node->tag == NT_DIV) printf("(/ ");
+            else if (node->tag == NT_EQ) printf("(== ");
+            else if (node->tag == NT_NE) printf("(!= ");
+            else if (node->tag == NT_LT) printf("(< ");
+            else if (node->tag == NT_LE) printf("(<= ");
+            else if (node->tag == NT_ASSIGN) printf("(= ");
             dump_nodes(node->expr.lhs);
             dump_nodes(node->expr.rhs);
             break;
@@ -76,13 +87,13 @@ int main(int argc, char *argv[]) {
     }
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
-    // dump_tokens(tokens);
+    dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
     NodeList *nlist = parse(parser);
     Var *env = get_local_vars(parser);
-    // dump_nodelist(root);
+    dump_nodelist(nlist);
     // dump_locals(parser);
-    // return 0;
+    return 0;
     gen(nlist, env);
     return 0;
 }

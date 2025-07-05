@@ -1,7 +1,8 @@
 #include "kcc.h"
 
 enum OpPrecedence {
-    PREC_LOWEST = 0,
+    PREC_NONE = 0, // for syntax error check
+    PREC_LOWEST,
     PREC_ASSIGN,
     PREC_EQUALS,
     PREC_LOGICAL,
@@ -14,7 +15,7 @@ enum OpPrecedence {
     PREC_INDEX,
 };
 
-int precedences[] = {
+int precedences[META_TT_NUM] = {
     [TT_EQ]         = PREC_ASSIGN,
     [TT_EQ_EQ]      = PREC_EQUALS,
     [TT_BANG_EQ]    = PREC_EQUALS,
@@ -27,6 +28,7 @@ int precedences[] = {
     [TT_STAR]       = PREC_MUL,
     [TT_SLASH]      = PREC_MUL,
     [TT_PAREN_L]    = PREC_CALL,
+    // otherwise PREC_NONE (== 0)
 };
 
 typedef enum {
@@ -36,18 +38,22 @@ typedef enum {
 
 OpAssoc assocs[] = {
     [TT_EQ]         = ASSOC_RIGHT,
-    [TT_PLUS]       = ASSOC_LEFT,
-    [TT_MINUS]      = ASSOC_LEFT,
-    [TT_STAR]       = ASSOC_LEFT,
-    [TT_SLASH]      = ASSOC_LEFT,
-    [TT_PAREN_L]    = ASSOC_LEFT,
     [TT_EQ_EQ]      = ASSOC_LEFT,
     [TT_BANG_EQ]    = ASSOC_LEFT,
     [TT_ANGLE_L]    = ASSOC_LEFT,
     [TT_ANGLE_R]    = ASSOC_LEFT,
     [TT_ANGLE_L_EQ] = ASSOC_LEFT,
     [TT_ANGLE_R_EQ] = ASSOC_LEFT,
+    [TT_PLUS]       = ASSOC_LEFT,
+    [TT_MINUS]      = ASSOC_LEFT,
+    [TT_STAR]       = ASSOC_LEFT,
+    [TT_SLASH]      = ASSOC_LEFT,
+    [TT_PAREN_L]    = ASSOC_LEFT,
 };
+
+static bool is_infix(TokenTag tag) {
+    return precedences[tag] != PREC_NONE;
+}
 
 // NodeList
 
@@ -125,6 +131,13 @@ static Node *ident_new(Token *token) {
     return node_new(NT_IDENT, token);
 }
 
+static Node *fncall_new(Token *token, Node *ident, NodeList *args) {
+    Node *node = node_new(NT_FNCALL, token);
+    node->fncall.ident = ident;
+    node->fncall.args = args;
+    return node;
+}
+
 static Node *unary_new(Token *token, Node *expr) {
     NodeTag tag;
     switch (token->tag) {
@@ -172,6 +185,7 @@ static Token *consume(Parser *parser) {
 
 static Node *integer(Parser *parser);
 static Node *identifier(Parser *parser);
+static NodeList *args(Parser *parser);
 static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_bp(Parser *parser, int min_bp);
@@ -188,9 +202,31 @@ static Node *integer(Parser *parser) {
     return int_new(token, val);
 }
 
+static NodeList *args(Parser *parser) {
+    NodeList *args = nodelist_new(DEFAULT_NODELIST_CAP);
+    if (peek(parser)->tag == TT_PAREN_R) return args;
+    do {
+        nodelist_append(args, expr(parser));
+    } while (peek(parser)->tag == TT_COMMA && consume(parser));
+    if (peek(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    return args;
+}
+
 static Node *identifier(Parser *parser) {
     Token *token = consume(parser);
+    NodeList *arg_nodes;
     if (token->tag != TT_IDENT) panic("expected an identifier");
+    // parse postfix
+    switch (peek(parser)->tag) {
+        case TT_PAREN_L:
+            consume(parser); // (
+            arg_nodes = args(parser);
+            consume(parser); // )
+            return fncall_new(token, ident_new(token), arg_nodes);
+        case TT_PLUS_PLUS: panic("not implemented"); break;
+        case TT_MINUS_MINUS: panic("not implemented"); break;
+        default: break;
+    }
     if (find_local_var(parser->locals, token) == NULL) append_local_var(parser, token);
     return ident_new(token);
 }
@@ -223,7 +259,7 @@ static Node *expr_prefix(Parser *parser) {
 
 static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = expr_prefix(parser);
-    while (peek(parser)->tag != TT_SEMICOLON && peek(parser)->tag != TT_EOF) {
+    while (is_infix(peek(parser)->tag)) {
         int prec = precedences[peek(parser)->tag];
         int assoc = assocs[peek(parser)->tag];
         if (assoc == ASSOC_LEFT && prec <= min_bp) break;

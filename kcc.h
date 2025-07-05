@@ -25,11 +25,15 @@ typedef enum {
     TT_STAR, TT_SLASH,      // * /
     TT_BANG,                // !
     TT_PAREN_L, TT_PAREN_R, // ( )
+    TT_COMMA,               // ,
+    TT_PLUS_PLUS,           // ++
+    TT_MINUS_MINUS,         // --
     TT_INT,
     TT_IDENT,
     TT_SEMICOLON,           // ;
     TT_RETURN,              // return
     TT_EOF,
+    META_TT_NUM,
 } TokenTag;
 
 typedef struct Token Token;
@@ -52,7 +56,7 @@ typedef struct {
     Var *locals;
 } Parser;
 
-typedef enum {
+typedef enum {   // token node->???
     NT_INT,      // <integer> integer
     NT_IDENT,    // <identifier> main_token
     NT_ADD,      // + expr
@@ -66,25 +70,29 @@ typedef enum {
     NT_NEG,      // - unary_expr
     NT_BOOL_NOT, // ! unary_expr
     NT_ASSIGN,   // = expr
+    NT_FNCALL,   // <function call> fncall
     NT_RETURN,   // return unary_expr
 } NodeTag;
 
 typedef struct Node Node;
+typedef struct NodeList NodeList;
+
 struct Node {
     NodeTag tag;
     Token *main_token;
     union {
         int integer;
         Node *unary_expr;
-        struct {Node *lhs, *rhs;} expr;
+        struct { Node *lhs, *rhs; } expr;
+        struct { Node *ident; NodeList *args; } fncall;
     };
 };
 
-typedef struct {
+struct NodeList {
     Node **nodes;
     int len;
     int capacity;
-} NodeList;
+};
 
 #define DEFAULT_NODELIST_CAP 128
 NodeList *nodelist_new(int capacity);

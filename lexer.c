@@ -57,10 +57,20 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_EOF, start, 1);
                 break;
             case '+':
-                token->next = token_new(TT_PLUS, start, 1);
+                if (peek(lexer) != '+') {
+                    token->next = token_new(TT_PLUS, start, 1);
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_PLUS_PLUS, start, 2);
+                }
                 break;
             case '-':
-                token->next = token_new(TT_MINUS, start, 1);
+                if (peek(lexer) != '-') {
+                    token->next = token_new(TT_MINUS, start, 1);
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_MINUS_MINUS, start, 2);
+                }
                 break;
             case '*':
                 token->next = token_new(TT_STAR, start, 1);
@@ -108,6 +118,9 @@ Token *tokenize(Lexer *lexer) {
                 break;
             case ';':
                 token->next = token_new(TT_SEMICOLON, start, 1);
+                break;
+            case ',':
+                token->next = token_new(TT_COMMA, start, 1);
                 break;
             default:
                 if (isdigit(*start)) {
