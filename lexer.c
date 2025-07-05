@@ -1,5 +1,12 @@
 #include "kcc.h"
 
+struct {
+    char *str; TokenTag tag;
+} keywords[] = {
+    {"return", TT_RETURN},
+    {NULL, -1},
+};
+
 Lexer *lexer_new(const char *input) {
     Lexer *lexer = calloc(1, sizeof(Lexer));
     lexer->input = input;
@@ -26,6 +33,16 @@ static const char *consume(Lexer *lexer) {
 
 static void skip_space(Lexer *lexer) {
     while (isspace(peek(lexer))) consume(lexer);
+}
+
+// if the given token matches a keyword, return its TokenTag.
+// otherwise, return TT_IDENT.
+static TokenTag lookup_ident(const char *str, int len) {
+    for (int i = 0; keywords[i].str != NULL; i++) {
+        if (strlen(keywords[i].str) != len) continue;
+        else if (strncmp(str, keywords[i].str, len) == 0) return keywords[i].tag;
+    }
+    return TT_IDENT;
 }
 
 Token *tokenize(Lexer *lexer) {
@@ -98,7 +115,9 @@ Token *tokenize(Lexer *lexer) {
                     token->next = token_new(TT_INT, start, end - start + 1);
                 } else if (isalpha(*start)) {
                     while (isalnum(peek(lexer)) || peek(lexer) == '_') end = consume(lexer);
-                    token->next = token_new(TT_IDENT, start, end - start + 1);
+                    int len = end - start + 1;
+                    TokenTag tag = lookup_ident(start, len); // TT_IDENT or TT_<keyword>
+                    token->next = token_new(tag, start, end - start + 1);
                 } else {
                     panic("tokenize error");
                 }

@@ -42,7 +42,13 @@ static void gen_expr(Node *node, Var *env) {
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
         return;
-
+    } else if (node->tag == NT_RETURN) {
+        gen_expr(node->unary_expr, env);
+        printf("  pop rax\n");
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+        return;
     }
 
     gen_expr(node->expr.lhs, env);

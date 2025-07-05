@@ -28,6 +28,7 @@ typedef enum {
     TT_INT,
     TT_IDENT,
     TT_SEMICOLON,           // ;
+    TT_RETURN,              // return
     TT_EOF,
 } TokenTag;
 
@@ -65,6 +66,7 @@ typedef enum {
     NT_NEG,      // - unary_expr
     NT_BOOL_NOT, // ! unary_expr
     NT_ASSIGN,   // = expr
+    NT_RETURN,   // return unary_expr
 } NodeTag;
 
 typedef struct Node Node;

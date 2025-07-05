@@ -248,7 +248,13 @@ static Node *expr(Parser *parser) {
 }
 
 static Node *stmt(Parser *parser) {
-    Node *node = expr(parser);
+    Node *node;
+    if (peek(parser)->tag == TT_RETURN) {
+        node = node_new(NT_RETURN, consume(parser));
+        node->unary_expr = expr(parser);
+    } else {
+        node = expr(parser);
+    }
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     return node;
 }
