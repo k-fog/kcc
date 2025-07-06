@@ -9,15 +9,13 @@ void panic(char *fmt, ...) {
 }
 
 void dump_nodes(Node *node) {
-    char buf[36];
     switch (node->tag) {
         case NT_INT:
             printf("%d ", node->integer);
             return;
         case NT_IDENT:
-            strncpy(buf, node->main_token->start, node->main_token->len);
-            buf[node->main_token->len] = '\0';
-            printf("%s ", buf);
+            print_token(node->main_token);
+            printf(" ");
             return;
         case NT_NEG:
             printf("(- ");
@@ -56,11 +54,9 @@ void dump_nodes(Node *node) {
 }
 
 void dump_tokens(Token *tokens) {
-    char buf[36];
     for (Token *t = tokens; t != NULL; t = t->next) {
-        strncpy(buf, t->start, t->len);
-        buf[t->len] = '\0';
-        printf("%s\tTokenTag=%d\n", buf, t->tag);
+        print_token(t);
+        printf("\tTokenTag=%d\n", t->tag);
     }
 }
 
@@ -72,11 +68,10 @@ void dump_nodelist(NodeList *nlist) {
 }
 
 void dump_locals(Parser *parser) {
-    char buf[36];
     for (Var *var = parser->locals; var != NULL; var = var->next) {
-        strncpy(buf, var->name, var->len);
-        buf[var->len] = '\0';
-        printf("name: %s\toffset:%d\n", buf, var->offset);
+        const char *start = var->name;
+        int len = var->len;
+        printf("name:%.*s\toffset:%d\n", len, start, var->offset);
     }
 }
 

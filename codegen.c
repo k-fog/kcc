@@ -1,12 +1,43 @@
 #include "kcc.h"
 
-void gen_local_var(Node *node, Var *env) {
+void print_token(Token *token) {
+    const char *start = token->start;
+    int len = token->len;
+    printf("%.*s", len, start);
+}
+
+static void gen_local_var(Node *node, Var *env);
+static void gen_fncall(Node *node, Var *env);
+static void gen_expr(Node *node, Var *env);
+
+static int align_16(int n) {
+    // return ((n + 15) / 16) * 16;
+    return (n + 15) & ~0xF;
+}
+
+static void gen_local_var(Node *node, Var *env) {
     if (node->tag != NT_IDENT) panic("expected an identifier");
     Var *var = find_local_var(env, node->main_token);
     if (var == NULL) panic("undefined variable");
     int offset = var->offset;
     printf("  mov rax, rbp\n");
     printf("  sub rax, %d\n", offset);
+    printf("  push rax\n");
+}
+
+static void gen_fncall(Node *node, Var *env) {
+    static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+    Node **nodes = node->fncall.args->nodes;
+    int narg = node->fncall.args->len;
+    if (sizeof(argreg) / sizeof(char*) < narg) panic("too many args");
+    for (int i = 0; i < narg; i++) gen_expr(nodes[i], env);
+    for (int i = narg - 1; 0 <= i; i--) {
+        printf("  pop rax\n");
+        printf("  mov %s, rax\n", argreg[i]);
+    }
+    printf("  call ");
+    print_token(node->main_token);
+    printf("\n");
     printf("  push rax\n");
 }
 
@@ -42,12 +73,8 @@ static void gen_expr(Node *node, Var *env) {
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
         return;
-    } else if (node->tag == NT_RETURN) {
-        gen_expr(node->unary_expr, env);
-        printf("  pop rax\n");
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
-        printf("  ret\n");
+    } else if (node->tag == NT_FNCALL) {
+        gen_fncall(node, env);
         return;
     }
 
@@ -96,6 +123,23 @@ static void gen_expr(Node *node, Var *env) {
     printf("  push rax\n");
 }
 
+static void gen_stmt(NodeList *nlist, Var *env) {
+    for (int i = 0; i < nlist->len; i++) {
+        Node *node = nlist->nodes[i];
+        if (node->tag == NT_RETURN) {
+            gen_expr(node->unary_expr, env);
+            printf("  pop rax\n");
+            printf("  mov rsp, rbp\n");
+            printf("  pop rbp\n");
+            printf("  ret\n");
+            continue;
+        }
+        gen_expr(nlist->nodes[i], env);
+        printf("  pop rax\n");
+        printf("\n");
+    }
+}
+
 void gen(NodeList *nlist, Var *env) {
     int offset = env ? env->offset : 0;
     printf(".intel_syntax noprefix\n");
@@ -103,12 +147,8 @@ void gen(NodeList *nlist, Var *env) {
     printf("main:\n");
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", offset);
-    for (int i = 0; i < nlist->len; i++) {
-        gen_expr(nlist->nodes[i], env);
-        printf("  pop rax\n");
-        printf("\n");
-    }
+    printf("  sub rsp, %d\n", align_16(offset));
+    gen_stmt(nlist, env);
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");

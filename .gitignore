@@ -3,3 +3,4 @@ kcc
 *.s
 tmp
 *.out
+test_fncall

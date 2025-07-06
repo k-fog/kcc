@@ -1,11 +1,22 @@
 #!/bin/bash
 
+TEST_FNCALL="test_fncall"
+
+cat <<EOF | gcc -xc - -c -o $TEST_FNCALL
+int ident(int a) { return a; }
+int add2(int a, int b) { return a + b; }
+int add3(int a, int b, int c) { return a + b + c; }
+int add4(int a, int b, int c, int d) { return a + b + c + d; }
+int add5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
+int add6(int a, int b, int c, int d, int e, int f) { return a + b + c + d + e + f; }
+EOF
+
 assert() {
     input="$1"
     expected="$2"
 
     ./kcc "$input" > tmp.s
-    cc -o tmp tmp.s
+    cc -o tmp tmp.s $TEST_FNCALL
     ./tmp
     actual="$?"
 
@@ -51,3 +62,11 @@ return a + b / 2;' 14
 assert 'var=123; return var;' 123
 assert 'var=123; var_2=23; var_3=var-var_2; return var_3;' 100
 assert '1;2;3; return 4; 5;6;7;' 4
+assert 'return ident(123);' 123
+assert 'return add2(1, 2);' 3
+assert 'return add3(1,2,4-3);' 4
+assert 'return add4(1+2,2,3,4);' 12
+assert 'return add5(1,2,3,4,5);' 15
+assert 'return add6(1,2,3,4,5,6);' 21
+
+echo "all tests passed"

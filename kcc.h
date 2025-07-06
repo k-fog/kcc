@@ -113,4 +113,5 @@ NodeList *parse(Parser *parser);
 Var *get_local_vars(Parser *parser);
 
 // codegen
+void print_token(Token *token);
 void gen(NodeList *nlist, Var *env);
