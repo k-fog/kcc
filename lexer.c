@@ -4,7 +4,11 @@ struct {
     char *str; TokenTag tag;
 } keywords[] = {
     {"return", TT_RETURN},
-    {NULL, -1},
+    {"if",     TT_IF},
+    {"else",   TT_ELSE},
+    {"for",    TT_FOR},
+    {"while",  TT_WHILE},
+    {NULL,     -1},
 };
 
 Lexer *lexer_new(const char *input) {

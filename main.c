@@ -29,6 +29,16 @@ void dump_nodes(Node *node) {
             printf("(return ");
             dump_nodes(node->unary_expr);
             break;
+        case NT_IF:
+            printf("(if ");
+            dump_nodes(node->ifstmt.cond);
+            printf("\b ");
+            dump_nodes(node->ifstmt.then);
+            if (node->ifstmt.els != NULL) {
+                printf("\b ");
+                dump_nodes(node->ifstmt.els);
+            }
+            break;
         case NT_FNCALL:
             printf("(");
             dump_nodes(node->fncall.ident);

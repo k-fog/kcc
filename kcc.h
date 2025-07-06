@@ -32,6 +32,10 @@ typedef enum {
     TT_IDENT,
     TT_SEMICOLON,           // ;
     TT_RETURN,              // return
+    TT_IF,                  // if
+    TT_ELSE,                // else
+    TT_WHILE,               // while
+    TT_FOR,                 // for
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -72,6 +76,9 @@ typedef enum {   // token node->???
     NT_ASSIGN,   // = expr
     NT_FNCALL,   // <function call> fncall
     NT_RETURN,   // return unary_expr
+    NT_IF,       // if ifstmt
+    NT_WHILE,    // while whilestmt
+    NT_FOR,      // for forstmt
 } NodeTag;
 
 typedef struct Node Node;
@@ -85,6 +92,9 @@ struct Node {
         Node *unary_expr;
         struct { Node *lhs, *rhs; } expr;
         struct { Node *ident; NodeList *args; } fncall;
+        struct { Node *cond; Node *then; Node *els; } ifstmt;
+        struct { Node *cond; Node *body; } whilestmt;
+        struct { Node *def; Node *cond; Node *next; } forstmt;
     };
 };
 

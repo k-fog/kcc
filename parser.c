@@ -190,6 +190,9 @@ static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_bp(Parser *parser, int min_bp);
 static Node *expr(Parser *parser);
+static Node *if_stmt(Parser *parser);
+static Node *while_stmt(Parser *parser);
+static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
 
 static Node *integer(Parser *parser) {
@@ -283,13 +286,40 @@ static Node *expr(Parser *parser) {
     return expr_bp(parser, PREC_LOWEST);
 }
 
+static Node *if_stmt(Parser *parser) {
+    Node *node = node_new(NT_IF, consume(parser));
+    if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
+    node->ifstmt.cond = expr(parser);
+    if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    node->ifstmt.then = stmt(parser);
+    if (peek(parser)->tag == TT_ELSE) {
+        consume(parser);
+        node->ifstmt.els = stmt(parser);
+    } else {
+        node->ifstmt.els = NULL;
+    }
+    return node;
+}
+
 static Node *stmt(Parser *parser) {
     Node *node;
-    if (peek(parser)->tag == TT_RETURN) {
-        node = node_new(NT_RETURN, consume(parser));
-        node->unary_expr = expr(parser);
-    } else {
-        node = expr(parser);
+    switch (peek(parser)->tag) {
+        case TT_IF:
+            node = if_stmt(parser);
+            return node;
+        case TT_FOR:
+            panic("not implemented");
+            break;
+        case TT_WHILE:
+            panic("not implemented");
+            break;
+        case TT_RETURN:
+            node = node_new(NT_RETURN, consume(parser));
+            node->unary_expr = expr(parser);
+            break;
+        default:
+            node = expr(parser);
+            break;
     }
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     return node;

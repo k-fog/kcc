@@ -68,5 +68,9 @@ assert 'return add3(1,2,4-3);' 4
 assert 'return add4(1+2,2,3,4);' 12
 assert 'return add5(1,2,3,4,5);' 15
 assert 'return add6(1,2,3,4,5,6);' 21
+assert 'a=0; if(a==0) return 3; return 1;' 3
+assert 'a=0; if(a==2) return 3; else return 1;' 1
+assert 'a=0; if(a==0) a = a + 2; else a = a + 3; return a;' 2
+assert 'a=0; if(a==2) a = a + 2; else a = a + 3; return a;' 3
 
 echo "all tests passed"

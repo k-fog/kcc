@@ -9,6 +9,7 @@ void print_token(Token *token) {
 static void gen_local_var(Node *node, Var *env);
 static void gen_fncall(Node *node, Var *env);
 static void gen_expr(Node *node, Var *env);
+static void gen_stmt(Node *node, Var *env);
 
 static int align_16(int n) {
     // return ((n + 15) / 16) * 16;
@@ -123,21 +124,31 @@ static void gen_expr(Node *node, Var *env) {
     printf("  push rax\n");
 }
 
-static void gen_stmt(NodeList *nlist, Var *env) {
-    for (int i = 0; i < nlist->len; i++) {
-        Node *node = nlist->nodes[i];
-        if (node->tag == NT_RETURN) {
-            gen_expr(node->unary_expr, env);
-            printf("  pop rax\n");
-            printf("  mov rsp, rbp\n");
-            printf("  pop rbp\n");
-            printf("  ret\n");
-            continue;
-        }
-        gen_expr(nlist->nodes[i], env);
+static void gen_stmt(Node *node, Var *env) {
+    static int id = 0;
+    if (node->tag == NT_RETURN) {
+        gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
-        printf("\n");
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+        return;
+    } else if (node->tag == NT_IF) {
+        gen_expr(node->ifstmt.cond, env);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .L%d.ELSE\n", id);
+        gen_stmt(node->ifstmt.then, env);
+        printf("  jmp .L%d.END\n", id);
+        printf(".L%d.ELSE:\n", id);
+        if (node->ifstmt.els != NULL) {
+            gen_stmt(node->ifstmt.els, env);
+        }
+        printf(".L%d.END:\n", id);
+        id++;
+        return;
     }
+    gen_expr(node, env);
 }
 
 void gen(NodeList *nlist, Var *env) {
@@ -148,7 +159,12 @@ void gen(NodeList *nlist, Var *env) {
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", align_16(offset));
-    gen_stmt(nlist, env);
+    for (int i = 0; i < nlist->len; i++) {
+        Node *node = nlist->nodes[i];
+        gen_stmt(node, env);
+        printf("  pop rax\n");
+        printf("\n");
+    }
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
