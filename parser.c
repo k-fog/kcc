@@ -190,6 +190,7 @@ static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_bp(Parser *parser, int min_bp);
 static Node *expr(Parser *parser);
+static Node *block(Parser *parser);
 static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
@@ -286,6 +287,16 @@ static Node *expr(Parser *parser) {
     return expr_bp(parser, PREC_LOWEST);
 }
 
+static Node *block(Parser *parser) {
+    Node *node = node_new(NT_BLOCK, consume(parser));
+    node->block = nodelist_new(DEFAULT_NODELIST_CAP);
+    while (peek(parser)->tag != TT_BRACE_R) {
+        nodelist_append(node->block, stmt(parser));
+    }
+    if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
+    return node;
+}
+
 static Node *if_stmt(Parser *parser) {
     Node *node = node_new(NT_IF, consume(parser));
     if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
@@ -304,6 +315,9 @@ static Node *if_stmt(Parser *parser) {
 static Node *stmt(Parser *parser) {
     Node *node;
     switch (peek(parser)->tag) {
+        case TT_BRACE_L:
+            node = block(parser);
+            return node;
         case TT_IF:
             node = if_stmt(parser);
             return node;

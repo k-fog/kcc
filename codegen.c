@@ -133,6 +133,12 @@ static void gen_stmt(Node *node, Var *env) {
         printf("  pop rbp\n");
         printf("  ret\n");
         return;
+    } else if (node->tag == NT_BLOCK) {
+        for (int i = 0; i < node->block->len; i++) {
+            gen_stmt(node->block->nodes[i], env);
+            printf("  pop rax\n");
+        }
+        return;
     } else if (node->tag == NT_IF) {
         gen_expr(node->ifstmt.cond, env);
         printf("  pop rax\n");

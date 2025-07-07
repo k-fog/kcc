@@ -29,6 +29,13 @@ void dump_nodes(Node *node) {
             printf("(return ");
             dump_nodes(node->unary_expr);
             break;
+        case NT_BLOCK:
+            printf("(block \n");
+            for (int i = 0; i < node->block->len; i++) {
+                dump_nodes(node->block->nodes[i]);
+                printf("\n");
+            }
+            break;
         case NT_IF:
             printf("(if ");
             dump_nodes(node->ifstmt.cond);

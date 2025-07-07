@@ -30,6 +30,7 @@ typedef enum {
     TT_MINUS_MINUS,         // --
     TT_INT,
     TT_IDENT,
+    TT_BRACE_L, TT_BRACE_R, // { }
     TT_SEMICOLON,           // ;
     TT_RETURN,              // return
     TT_IF,                  // if
@@ -75,6 +76,7 @@ typedef enum {   // token node->???
     NT_BOOL_NOT, // ! unary_expr
     NT_ASSIGN,   // = expr
     NT_FNCALL,   // <function call> fncall
+    NT_BLOCK,    // {<stmt>*} block
     NT_RETURN,   // return unary_expr
     NT_IF,       // if ifstmt
     NT_WHILE,    // while whilestmt
@@ -95,6 +97,7 @@ struct Node {
         struct { Node *cond; Node *then; Node *els; } ifstmt;
         struct { Node *cond; Node *body; } whilestmt;
         struct { Node *def; Node *cond; Node *next; } forstmt;
+        NodeList *block;
     };
 };
 
