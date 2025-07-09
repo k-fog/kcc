@@ -53,12 +53,14 @@ Lexer *lexer_new(const char *input);
 Token *tokenize(Lexer *lexer);
 
 // parser
+typedef struct Node Node;
+typedef struct NodeList NodeList;
 typedef struct Var Var;
 
 typedef struct {
     const Token *tokens;
     Token *current_token;
-    Var *locals;
+    Node *current_func;
 } Parser;
 
 typedef enum {   // token node->???
@@ -81,10 +83,8 @@ typedef enum {   // token node->???
     NT_IF,       // if ifstmt
     NT_WHILE,    // while whilestmt
     NT_FOR,      // for forstmt
+    NT_FUNC,     // <function> func
 } NodeTag;
-
-typedef struct Node Node;
-typedef struct NodeList NodeList;
 
 struct Node {
     NodeTag tag;
@@ -93,11 +93,12 @@ struct Node {
         int integer;
         Node *unary_expr;
         struct { Node *lhs, *rhs; } expr;
-        struct { Node *ident; NodeList *args; } fncall;
+        struct { Node *name; NodeList *args; } fncall;
         struct { Node *cond; Node *then; Node *els; } ifstmt;
         struct { Node *cond; Node *body; } whilestmt;
         struct { Node *def; Node *cond; Node *next; Node *body; } forstmt;
         NodeList *block;
+        struct { Node *name; NodeList *params; Node *body; Var *locals; } func;
     };
 };
 
@@ -107,7 +108,7 @@ struct NodeList {
     int capacity;
 };
 
-#define DEFAULT_NODELIST_CAP 128
+#define DEFAULT_NODELIST_CAP 16
 NodeList *nodelist_new(int capacity);
 void nodelist_append(NodeList *nlist, Node *node);
 
@@ -123,8 +124,7 @@ Var *find_local_var(Var *env, Token *ident);
 
 Parser *parser_new(Token *tokens);
 NodeList *parse(Parser *parser);
-Var *get_local_vars(Parser *parser);
 
 // codegen
 void print_token(Token *token);
-void gen(NodeList *nlist, Var *env);
+void gen(NodeList *nlist);

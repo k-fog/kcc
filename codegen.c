@@ -1,5 +1,8 @@
 #include "kcc.h"
 
+
+static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 void print_token(Token *token) {
     const char *start = token->start;
     int len = token->len;
@@ -27,7 +30,6 @@ static void gen_local_var(Node *node, Var *env) {
 }
 
 static void gen_fncall(Node *node, Var *env) {
-    static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
     Node **nodes = node->fncall.args->nodes;
     int narg = node->fncall.args->len;
     if (sizeof(argreg) / sizeof(char*) < narg) panic("too many args");
@@ -182,21 +184,48 @@ static void gen_stmt(Node *node, Var *env) {
     gen_expr(node, env);
 }
 
-void gen(NodeList *nlist, Var *env) {
+void gen_func(Node *node) {
+    Var *env = node->func.locals;
     int offset = env ? env->offset : 0;
-    printf(".intel_syntax noprefix\n");
-    printf(".globl main\n");
-    printf("main:\n");
+    const char *name = node->func.name->main_token->start;
+    int name_len = node->func.name->main_token->len;
+    Node *body = node->func.body;
+
+    printf(".globl %.*s\n", name_len, name);
+    printf("%.*s:\n", name_len, name);
+    // prologue
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", align_16(offset));
-    for (int i = 0; i < nlist->len; i++) {
-        Node *node = nlist->nodes[i];
-        gen_stmt(node, env);
-        printf("  pop rax\n");
-        printf("\n");
+
+    // set args
+    NodeList *params = node->func.params;
+    int nparam = params->len;
+    for (int i = 0; i < nparam; i++) {
+        Node *node = params->nodes[i];
+        Var *var = find_local_var(env, node->main_token);
+        int offset = var->offset;
+        printf("  mov rax, rbp\n");
+        printf("  sub rax, %d\n", offset);
+        printf("  push rax\n");
+        printf("  mov [rax], %s\n", argreg[i]);
+        // printf("  mov [rbp-%d], %s\n", offset, argreg[i]);
     }
+
+    if (body->tag != NT_BLOCK) panic("codegen: expected block");
+    gen_stmt(body, env);
+
+    // epilogue
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
+}
+
+void gen(NodeList *nlist) {
+    printf(".intel_syntax noprefix\n");
+    for (int i = 0; i < nlist->len; i++) {
+        Node *node = nlist->nodes[i];
+        gen_func(node);
+        printf("\n");
+    }
 }

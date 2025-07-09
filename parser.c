@@ -86,9 +86,10 @@ Var *var_new(Token *ident, int offset, Var *next) {
 }
 
 static Var *append_local_var(Parser *parser, Token *ident) {
-    int current_offset = parser->locals ? parser->locals->offset : 0;
-    Var *var = var_new(ident, current_offset + 8, parser->locals);
-    parser->locals = var;
+    Var *locals = parser->current_func->func.locals;
+    int current_offset = locals ? locals->offset : 0;
+    Var *var = var_new(ident, current_offset + 8, locals);
+    parser->current_func->func.locals = var;
     return var;
 }
 
@@ -100,17 +101,13 @@ Var *find_local_var(Var *env, Token *ident) {
     return NULL;
 }
 
-Var *get_local_vars(Parser *parser) {
-    return parser->locals;
-}
-
 // Parser
 
 Parser *parser_new(Token *tokens) {
     Parser *parser = calloc(1, sizeof(Parser));
     parser->tokens = tokens;
     parser->current_token = tokens;
-    parser->locals = NULL;
+    parser->current_func = NULL;
     return parser;
 }
 
@@ -131,9 +128,9 @@ static Node *ident_new(Token *token) {
     return node_new(NT_IDENT, token);
 }
 
-static Node *fncall_new(Token *token, Node *ident, NodeList *args) {
+static Node *fncall_new(Token *token, Node *name, NodeList *args) {
     Node *node = node_new(NT_FNCALL, token);
-    node->fncall.ident = ident;
+    node->fncall.name = name;
     node->fncall.args = args;
     return node;
 }
@@ -195,6 +192,8 @@ static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
+static NodeList *params(Parser *parser);
+static Node *func(Parser *parser);
 
 static Node *integer(Parser *parser) {
     int val = 0;
@@ -231,7 +230,8 @@ static Node *identifier(Parser *parser) {
         case TT_MINUS_MINUS: panic("not implemented"); break;
         default: break;
     }
-    if (find_local_var(parser->locals, token) == NULL) append_local_var(parser, token);
+    if (find_local_var(parser->current_func->func.locals, token) == NULL)
+        append_local_var(parser, token);
     return ident_new(token);
 }
 
@@ -362,11 +362,35 @@ static Node *stmt(Parser *parser) {
     return node;
 }
 
+static NodeList *params(Parser *parser) {
+    NodeList *params = nodelist_new(DEFAULT_NODELIST_CAP);
+    if (peek(parser)->tag == TT_PAREN_R) return params;
+    do {
+        Token *token = consume(parser);
+        nodelist_append(params, ident_new(token));
+        append_local_var(parser, token);
+    } while (peek(parser)->tag == TT_COMMA && consume(parser));
+    if (peek(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    return params;
+}
+
+static Node *func(Parser *parser) {
+    Node *node = node_new(NT_FUNC, peek(parser));
+    parser->current_func = node;
+    node->func.locals = NULL;
+    node->func.name = ident_new(consume(parser));
+    if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
+    node->func.params = params(parser);
+    if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    node->func.body = stmt(parser);
+    return node;
+}
+
 NodeList *parse(Parser *parser) {
-    NodeList *stmts = nodelist_new(DEFAULT_NODELIST_CAP);
+    NodeList *program = nodelist_new(DEFAULT_NODELIST_CAP);
     while (peek(parser)->tag != TT_EOF) {
-        Node *node = stmt(parser);
-        nodelist_append(stmts, node);
+        Node *node = func(parser);
+        nodelist_append(program, node);
     }
-    return stmts;
+    return program;
 }

@@ -64,10 +64,20 @@ void dump_nodes(Node *node) {
             break;
         case NT_FNCALL:
             printf("(");
-            dump_nodes(node->fncall.ident);
+            dump_nodes(node->fncall.name);
             for (int i = 0; i < node->fncall.args->len; i++) {
                 dump_nodes(node->fncall.args->nodes[i]);
             }
+            break;
+        case NT_FUNC:
+            printf("(function ");
+            printf("(");
+            dump_nodes(node->func.name);
+            for (int i = 0; i < node->func.params->len; i++) {
+                dump_nodes(node->func.params->nodes[i]);
+            }
+            printf("\b) ");
+            dump_nodes(node->func.body);
             break;
         default: // expr
             if (node->tag == NT_ADD) printf("(+ ");
@@ -100,11 +110,20 @@ void dump_nodelist(NodeList *nlist) {
     }
 }
 
-void dump_locals(Parser *parser) {
-    for (Var *var = parser->locals; var != NULL; var = var->next) {
+void dump_locals(Node *node_fn) {
+    for (Var *var = node_fn->func.locals; var != NULL; var = var->next) {
         const char *start = var->name;
         int len = var->len;
         printf("name:%.*s\toffset:%d\n", len, start, var->offset);
+    }
+}
+
+void dump_funcs(NodeList *funcs) {
+    for (int i = 0; i < funcs->len; i++) {
+        Node *func = funcs->nodes[i];
+        dump_nodes(func);
+        printf("\n");
+        dump_locals(func);
     }
 }
 
@@ -119,19 +138,16 @@ int main(int argc, char *argv[]) {
     Token *tokens = tokenize(lexer);
     dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
-    NodeList *nlist = parse(parser);
-    Var *env = get_local_vars(parser);
-    dump_nodelist(nlist);
-    dump_locals(parser);
-    gen(nlist, env);
+    NodeList *funcs = parse(parser);
+    dump_funcs(funcs);
+    gen(funcs);
     return 0;
 #else
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
     Parser *parser = parser_new(tokens);
     NodeList *nlist = parse(parser);
-    Var *env = get_local_vars(parser);
-    gen(nlist, env);
+    gen(nlist);
     return 0;
 #endif
 }
