@@ -85,3 +85,10 @@ b       TokenTag=15
   - TODO: ABIを調べる
   - TODO: 構文解析でセグフォする前にエラーを出したい
     - ブロックの閉じ括弧がないとき
+```
+fib(n) {
+    if(n<=1) return n;
+    else return fib(n-1) + fib(n-2);
+}
+main(){ fib(10); } // => 55
+```
