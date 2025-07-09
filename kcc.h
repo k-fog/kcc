@@ -96,7 +96,7 @@ struct Node {
         struct { Node *ident; NodeList *args; } fncall;
         struct { Node *cond; Node *then; Node *els; } ifstmt;
         struct { Node *cond; Node *body; } whilestmt;
-        struct { Node *def; Node *cond; Node *next; } forstmt;
+        struct { Node *def; Node *cond; Node *next; Node *body; } forstmt;
         NodeList *block;
     };
 };

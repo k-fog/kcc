@@ -126,6 +126,7 @@ static void gen_expr(Node *node, Var *env) {
 
 static void gen_stmt(Node *node, Var *env) {
     static int id = 0;
+    int local_id;
     if (node->tag == NT_RETURN) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
@@ -140,18 +141,42 @@ static void gen_stmt(Node *node, Var *env) {
         }
         return;
     } else if (node->tag == NT_IF) {
+        local_id = id++;
         gen_expr(node->ifstmt.cond, env);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je .L%d.ELSE\n", id);
+        printf("  je  .L%d.ELSE\n", local_id);
         gen_stmt(node->ifstmt.then, env);
-        printf("  jmp .L%d.END\n", id);
-        printf(".L%d.ELSE:\n", id);
+        printf("  jmp .L%d.END\n", local_id);
+        printf(".L%d.ELSE:\n", local_id);
         if (node->ifstmt.els != NULL) {
             gen_stmt(node->ifstmt.els, env);
         }
-        printf(".L%d.END:\n", id);
-        id++;
+        printf(".L%d.END:\n", local_id);
+        return;
+    } else if (node->tag == NT_WHILE) {
+        local_id = id++;
+        printf(".L%d.WHILE:\n", local_id);
+        gen_expr(node->whilestmt.cond, env);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .L%d.END\n", local_id);
+        gen_stmt(node->whilestmt.body, env);
+        printf("  jmp .L%d.WHILE\n", local_id);
+        printf(".L%d.END:\n", local_id);
+        return;
+    } else if (node->tag == NT_FOR) {
+        local_id = id++;
+        gen_expr(node->forstmt.def, env);
+        printf(".L%d.FOR:\n", local_id);
+        gen_expr(node->forstmt.cond, env);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .L%d.END\n", local_id);
+        gen_stmt(node->forstmt.body, env);
+        gen_expr(node->forstmt.next, env);
+        printf("  jmp .L%d.FOR\n", local_id);
+        printf(".L%d.END:\n", local_id);
         return;
     }
     gen_expr(node, env);

@@ -312,21 +312,44 @@ static Node *if_stmt(Parser *parser) {
     return node;
 }
 
+static Node *while_stmt(Parser *parser) {
+    Node *node = node_new(NT_WHILE, consume(parser));
+    if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
+    node->whilestmt.cond = expr(parser);
+    if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    node->whilestmt.body = stmt(parser);
+    return node;
+}
+
+static Node *for_stmt(Parser *parser) {
+    Node *node = node_new(NT_FOR, consume(parser));
+    if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
+
+    // def
+    if (peek(parser)->tag != TT_SEMICOLON) node->forstmt.def = expr(parser);
+    consume(parser);
+    // cond
+    if (peek(parser)->tag != TT_SEMICOLON) node->forstmt.cond = expr(parser);
+    consume(parser);
+    // next
+    if (peek(parser)->tag != TT_PAREN_R) node->forstmt.next = expr(parser);
+
+    if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    node->forstmt.body = stmt(parser);
+    return node;
+}
+
 static Node *stmt(Parser *parser) {
     Node *node;
     switch (peek(parser)->tag) {
         case TT_BRACE_L:
-            node = block(parser);
-            return node;
+            return block(parser);
         case TT_IF:
-            node = if_stmt(parser);
-            return node;
-        case TT_FOR:
-            panic("not implemented");
-            break;
+            return if_stmt(parser);
         case TT_WHILE:
-            panic("not implemented");
-            break;
+            return while_stmt(parser);
+        case TT_FOR:
+            return for_stmt(parser);
         case TT_RETURN:
             node = node_new(NT_RETURN, consume(parser));
             node->unary_expr = expr(parser);

@@ -6,8 +6,8 @@ struct {
     {"return", TT_RETURN},
     {"if",     TT_IF},
     {"else",   TT_ELSE},
-    {"for",    TT_FOR},
     {"while",  TT_WHILE},
+    {"for",    TT_FOR},
     {NULL,     -1},
 };
 

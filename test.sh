@@ -74,5 +74,8 @@ assert 'a=0; if(a==0) a = a + 2; else a = a + 3; return a;' 2
 assert 'a=0; if(a==2) a = a + 2; else a = a + 3; return a;' 3
 assert '{ 1+2; 2+3; return 4; }' 4
 assert 'a=2; if(a==2) { a = a + 2; return a;} else { return 1; }' 4
+assert 'a=0;while(a<=10)a=a+1;return a;' 11
+assert 'a=0;for(i=0;i<=10;i=i+1)a=a+i;return a;' 55
+assert 'a=0;for(i=0;i<=10;i=i+1)a=a+i;b=0;for(i=0;i<=2;i=i+1)b=i;return a+b;' 57
 
 echo "all tests passed"

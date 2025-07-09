@@ -46,6 +46,22 @@ void dump_nodes(Node *node) {
                 dump_nodes(node->ifstmt.els);
             }
             break;
+        case NT_WHILE:
+            printf("(while ");
+            dump_nodes(node->whilestmt.cond);
+            printf("\b ");
+            dump_nodes(node->whilestmt.body);
+            break;
+        case NT_FOR:
+            printf("(for ");
+            dump_nodes(node->forstmt.def);
+            printf("\b ");
+            dump_nodes(node->forstmt.cond);
+            printf("\b ");
+            dump_nodes(node->forstmt.next);
+            printf("\b ");
+            dump_nodes(node->forstmt.body);
+            break;
         case NT_FNCALL:
             printf("(");
             dump_nodes(node->fncall.ident);
