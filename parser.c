@@ -17,6 +17,10 @@ enum OpPrecedence {
 
 int precedences[META_TT_NUM] = {
     [TT_EQ]         = PREC_ASSIGN,
+    [TT_PLUS_EQ]    = PREC_ASSIGN,
+    [TT_MINUS_EQ]   = PREC_ASSIGN,
+    [TT_STAR_EQ]    = PREC_ASSIGN,
+    [TT_SLASH_EQ]   = PREC_ASSIGN,
     [TT_EQ_EQ]      = PREC_EQUALS,
     [TT_BANG_EQ]    = PREC_EQUALS,
     [TT_ANGLE_L]    = PREC_LESSGREATER,
@@ -38,6 +42,10 @@ typedef enum {
 
 OpAssoc assocs[] = {
     [TT_EQ]         = ASSOC_RIGHT,
+    [TT_PLUS_EQ]    = ASSOC_RIGHT,
+    [TT_MINUS_EQ]   = ASSOC_RIGHT,
+    [TT_STAR_EQ]    = ASSOC_RIGHT,
+    [TT_SLASH_EQ]   = ASSOC_RIGHT,
     [TT_EQ_EQ]      = ASSOC_LEFT,
     [TT_BANG_EQ]    = ASSOC_LEFT,
     [TT_ANGLE_L]    = ASSOC_LEFT,
@@ -152,6 +160,10 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
     NodeTag tag;
     switch (token->tag) {
         case TT_EQ:         tag = NT_ASSIGN; break;
+        case TT_PLUS_EQ:    tag = NT_ASSIGN_ADD; break;
+        case TT_MINUS_EQ:   tag = NT_ASSIGN_SUB; break;
+        case TT_STAR_EQ:    tag = NT_ASSIGN_MUL; break;
+        case TT_SLASH_EQ:   tag = NT_ASSIGN_DIV; break;
         case TT_PLUS:       tag = NT_ADD; break;
         case TT_MINUS:      tag = NT_SUB; break;
         case TT_STAR:       tag = NT_MUL; break;

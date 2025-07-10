@@ -16,6 +16,10 @@ typedef struct {
 
 typedef enum {
     TT_EQ,                  // =
+    TT_PLUS_EQ,             // +=
+    TT_MINUS_EQ,            // -=
+    TT_STAR_EQ,             // *=
+    TT_SLASH_EQ,            // /=
     TT_EQ_EQ,               // ==
     TT_BANG_EQ,             // !=
     TT_ANGLE_L, TT_ANGLE_R, // < >
@@ -63,27 +67,31 @@ typedef struct {
     Node *current_func;
 } Parser;
 
-typedef enum {   // token node->???
-    NT_INT,      // <integer> integer
-    NT_IDENT,    // <identifier> main_token
-    NT_ADD,      // + expr
-    NT_SUB,      // - expr
-    NT_MUL,      // * expr
-    NT_DIV,      // / expr
-    NT_EQ,       // == expr
-    NT_NE,       // != expr
-    NT_LT,       // < expr
-    NT_LE,       // <= expr
-    NT_NEG,      // - unary_expr
-    NT_BOOL_NOT, // ! unary_expr
-    NT_ASSIGN,   // = expr
-    NT_FNCALL,   // <function call> fncall
-    NT_BLOCK,    // {<stmt>*} block
-    NT_RETURN,   // return unary_expr
-    NT_IF,       // if ifstmt
-    NT_WHILE,    // while whilestmt
-    NT_FOR,      // for forstmt
-    NT_FUNC,     // <function> func
+typedef enum {     // token node->???
+    NT_INT,        // <integer> integer
+    NT_IDENT,      // <identifier> main_token
+    NT_ADD,        // + expr
+    NT_SUB,        // - expr
+    NT_MUL,        // * expr
+    NT_DIV,        // / expr
+    NT_EQ,         // == expr
+    NT_NE,         // != expr
+    NT_LT,         // < expr
+    NT_LE,         // <= expr
+    NT_NEG,        // - unary_expr
+    NT_BOOL_NOT,   // ! unary_expr
+    NT_ASSIGN,     // = expr
+    NT_ASSIGN_ADD, // += expr
+    NT_ASSIGN_SUB, // -= expr
+    NT_ASSIGN_MUL, // *= expr
+    NT_ASSIGN_DIV, // /= expr
+    NT_FNCALL,     // <function call> fncall
+    NT_BLOCK,      // {<stmt>*} block
+    NT_RETURN,     // return unary_expr
+    NT_IF,         // if ifstmt
+    NT_WHILE,      // while whilestmt
+    NT_FOR,        // for forstmt
+    NT_FUNC,       // <function> func
 } NodeTag;
 
 struct Node {

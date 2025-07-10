@@ -87,5 +87,10 @@ assert 'fib(n) {
         }
         main(){fib(10);}' 55
 assert 'sub(a,b,c,d,e,f){return a-b-c-d-e-f;}main(){sub(100,0,1,2,3,4);}' 90
+assert 'main(){x=1;x+=5;return x;}' 6
+assert 'main(){x=1;y=x+=5;return y;}' 6
+assert 'main(){x=5;x-=3;return x;}' 2
+assert 'main(){x=3;x*=5;return x;}' 15
+assert 'main(){x=15;x/=3;return x;}' 5
 
 echo "all tests passed"

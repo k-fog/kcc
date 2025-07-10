@@ -89,6 +89,10 @@ void dump_nodes(Node *node) {
             else if (node->tag == NT_LT) printf("(< ");
             else if (node->tag == NT_LE) printf("(<= ");
             else if (node->tag == NT_ASSIGN) printf("(= ");
+            else if (node->tag == NT_ASSIGN_ADD) printf("(+= ");
+            else if (node->tag == NT_ASSIGN_SUB) printf("(-= ");
+            else if (node->tag == NT_ASSIGN_MUL) printf("(*= ");
+            else if (node->tag == NT_ASSIGN_DIV) printf("(/= ");
             dump_nodes(node->expr.lhs);
             dump_nodes(node->expr.rhs);
             break;

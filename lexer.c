@@ -61,26 +61,42 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_EOF, start, 1);
                 break;
             case '+':
-                if (peek(lexer) != '+') {
-                    token->next = token_new(TT_PLUS, start, 1);
-                } else {
+                if (peek(lexer) == '+') {
                     consume(lexer);
                     token->next = token_new(TT_PLUS_PLUS, start, 2);
+                } else if (peek(lexer) == '=') {
+                    consume(lexer);
+                    token->next = token_new(TT_PLUS_EQ, start, 2);
+                } else {
+                    token->next = token_new(TT_PLUS, start, 1);
                 }
                 break;
             case '-':
-                if (peek(lexer) != '-') {
-                    token->next = token_new(TT_MINUS, start, 1);
-                } else {
+                if (peek(lexer) == '-') {
                     consume(lexer);
                     token->next = token_new(TT_MINUS_MINUS, start, 2);
+                } else if (peek(lexer) == '=') {
+                    consume(lexer);
+                    token->next = token_new(TT_MINUS_EQ, start, 2);
+                } else {
+                    token->next = token_new(TT_MINUS, start, 1);
                 }
                 break;
             case '*':
-                token->next = token_new(TT_STAR, start, 1);
+                if (peek(lexer) == '=') {
+                    consume(lexer);
+                    token->next = token_new(TT_STAR_EQ, start, 2);
+                } else {
+                    token->next = token_new(TT_STAR, start, 1);
+                }
                 break;
             case '/':
-                token->next = token_new(TT_SLASH, start, 1);
+                if (peek(lexer) == '=') {
+                    consume(lexer);
+                    token->next = token_new(TT_SLASH_EQ, start, 2);
+                } else {
+                    token->next = token_new(TT_SLASH, start, 1);
+                }
                 break;
             case '(':
                 token->next = token_new(TT_PAREN_L, start, 1);

@@ -76,6 +76,51 @@ static void gen_expr(Node *node, Var *env) {
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
         return;
+    } else if (node->tag == NT_ASSIGN_ADD) {
+        gen_local_var(node->expr.lhs, env);
+        gen_expr(node->expr.rhs, env);
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  add [rax], rdi\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+        return;
+    } else if (node->tag == NT_ASSIGN_SUB) {
+        gen_local_var(node->expr.lhs, env);
+        gen_expr(node->expr.rhs, env);
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  sub [rax], rdi\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+        return;
+    } else if (node->tag == NT_ASSIGN_MUL) {
+        // TODO: Refactor
+        gen_local_var(node->expr.lhs, env);
+        gen_expr(node->expr.rhs, env);
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  imul rdi, rax\n");
+        gen_local_var(node->expr.lhs, env);
+        printf("  pop rax\n");
+        printf("  mov [rax], rdi\n");
+        printf("  push rdi\n");
+        return;
+    } else if (node->tag == NT_ASSIGN_DIV) {
+        // TODO: Refactor
+        gen_local_var(node->expr.lhs, env);
+        printf("  push rax\n");
+        gen_expr(node->expr.rhs, env);
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  cqo\n");
+        printf("  idiv rdi\n");
+        printf("  pop rdi\n");
+        printf("  mov [rdi], rax\n");
+        printf("  push rax\n");
+        return;
     } else if (node->tag == NT_FNCALL) {
         gen_fncall(node, env);
         return;
