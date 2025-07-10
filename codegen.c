@@ -13,6 +13,7 @@ static void gen_local_var(Node *node, Var *env);
 static void gen_fncall(Node *node, Var *env);
 static void gen_expr(Node *node, Var *env);
 static void gen_stmt(Node *node, Var *env);
+static void gen_func(Node *node);
 
 static int align_16(int n) {
     // return ((n + 15) / 16) * 16;
@@ -95,30 +96,24 @@ static void gen_expr(Node *node, Var *env) {
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN_MUL) {
-        // TODO: Refactor
         gen_local_var(node->expr.lhs, env);
         gen_expr(node->expr.rhs, env);
         printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
-        printf("  imul rdi, rax\n");
-        gen_local_var(node->expr.lhs, env);
-        printf("  pop rax\n");
-        printf("  mov [rax], rdi\n");
-        printf("  push rdi\n");
+        printf("  pop rsi\n");
+        printf("  mov rax, [rsi]\n");
+        printf("  imul rax, rdi\n");
+        printf("  mov [rsi], rax\n");
+        printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN_DIV) {
-        // TODO: Refactor
         gen_local_var(node->expr.lhs, env);
-        printf("  push rax\n");
         gen_expr(node->expr.rhs, env);
         printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
+        printf("  pop rsi\n");
+        printf("  mov rax, [rsi]\n");
         printf("  cqo\n");
-        printf("  idiv rdi\n");
-        printf("  pop rdi\n");
-        printf("  mov [rdi], rax\n");
+        printf("  idiv rax, rdi\n");
+        printf("  mov [rsi], rax\n");
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_FNCALL) {
@@ -229,7 +224,7 @@ static void gen_stmt(Node *node, Var *env) {
     gen_expr(node, env);
 }
 
-void gen_func(Node *node) {
+static void gen_func(Node *node) {
     Var *env = node->func.locals;
     int offset = env ? env->offset : 0;
     const char *name = node->func.name->main_token->start;
