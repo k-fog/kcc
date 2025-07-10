@@ -91,7 +91,15 @@ Token *tokenize(Lexer *lexer) {
                 }
                 break;
             case '/':
-                if (peek(lexer) == '=') {
+                if (peek(lexer) == '/') {
+                    while (peek(lexer) != '\n' && peek(lexer) != '\0') consume(lexer);
+                    continue;
+                } else if (peek(lexer) == '*') {
+                    char *q = strstr(consume(lexer), "*/");
+                    if (!q) panic("\'*/\' not found");
+                    lexer->pos = q - lexer->input + 2;
+                    continue;
+                } else if (peek(lexer) == '=') {
                     consume(lexer);
                     token->next = token_new(TT_SLASH_EQ, start, 2);
                 } else {

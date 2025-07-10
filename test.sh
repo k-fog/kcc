@@ -92,5 +92,9 @@ assert 'main(){x=1;y=x+=5;return y;}' 6
 assert 'main(){x=5;x-=3;return x;}' 2
 assert 'main(){x=3;x*=5;return x;}' 15
 assert 'main(){x=15;x/=3;return x;}' 5
+assert 'main(){
+    // comment
+    return 1+2 /* comment */ +3;} //comment
+    /* comment */' 6
 
 echo "all tests passed"
