@@ -55,6 +55,15 @@ static void gen_expr(Node *node, Var *env) {
         printf("  neg rax\n");
         printf("  push rax\n");
         return;
+    } else if (node->tag == NT_ADDR) {
+        gen_local_var(node->unary_expr, env);
+        return;
+    } else if (node->tag == NT_DEREF) {
+        gen_expr(node->unary_expr, env);
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+        return;
     } else if (node->tag == NT_BOOL_NOT) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");

@@ -21,6 +21,14 @@ void dump_nodes(Node *node) {
             printf("(- ");
             dump_nodes(node->unary_expr);
             break;
+        case NT_ADDR:
+            printf("(& ");
+            dump_nodes(node->unary_expr);
+            break;
+        case NT_DEREF:
+            printf("(* ");
+            dump_nodes(node->unary_expr);
+            break;
         case NT_BOOL_NOT:
             printf("(! ");
             dump_nodes(node->unary_expr);

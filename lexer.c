@@ -156,6 +156,9 @@ Token *tokenize(Lexer *lexer) {
             case ',':
                 token->next = token_new(TT_COMMA, start, 1);
                 break;
+            case '&':
+                token->next = token_new(TT_AMPERSAND, start, 1);
+                break;
             default:
                 if (isdigit(*start)) {
                     while (isdigit(peek(lexer))) end = consume(lexer);

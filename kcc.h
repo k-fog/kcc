@@ -27,6 +27,7 @@ typedef enum {
     TT_ANGLE_R_EQ,          // >=
     TT_PLUS, TT_MINUS,      // + -
     TT_STAR, TT_SLASH,      // * /
+    TT_AMPERSAND,           // &
     TT_BANG,                // !
     TT_PAREN_L, TT_PAREN_R, // ( )
     TT_COMMA,               // ,
@@ -80,6 +81,8 @@ typedef enum {     // token node->???
     NT_LE,         // <= expr
     NT_NEG,        // - unary_expr
     NT_BOOL_NOT,   // ! unary_expr
+    NT_ADDR,       // & unary_expr
+    NT_DEREF,      // * unary_expr
     NT_ASSIGN,     // = expr
     NT_ASSIGN_ADD, // += expr
     NT_ASSIGN_SUB, // -= expr

@@ -96,5 +96,6 @@ assert 'main(){
     // comment
     return 1+2 /* comment */ +3;} //comment
     /* comment */' 6
+assert 'main(){x=5; y=&x; return *y;}' 5
 
 echo "all tests passed"
