@@ -31,9 +31,20 @@ static void gen_local_var(Node *node, Var *env) {
 }
 
 static void gen_fncall(Node *node, Var *env) {
+    static int id = 0;
+    int local_id = id++;
     Node **nodes = node->fncall.args->nodes;
     int narg = node->fncall.args->len;
     if (sizeof(argreg) / sizeof(char*) < narg) panic("too many args");
+
+    printf("  push rsp\n"); // push -> rsp - 8
+    printf("  mov rax, rsp\n");
+    printf("  and rax, 0xF\n");
+    printf("  test rax, rax\n");
+    printf("  je  .L.FNCALL%d.ALIGNED\n", local_id);
+    printf("  sub rsp, 8\n");
+    printf(".L.FNCALL%d.ALIGNED:\n", local_id);
+
     for (int i = 0; i < narg; i++) gen_expr(nodes[i], env);
     for (int i = narg - 1; 0 <= i; i--) {
         printf("  pop rax\n");
@@ -42,6 +53,8 @@ static void gen_fncall(Node *node, Var *env) {
     printf("  call ");
     print_token(node->main_token);
     printf("\n");
+    printf("  add rsp, 8\n"); // rsp + 8
+    printf("  pop rsp\n");
     printf("  push rax\n");
 }
 
