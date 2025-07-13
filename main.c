@@ -33,6 +33,10 @@ void dump_nodes(Node *node) {
             printf("(! ");
             dump_nodes(node->unary_expr);
             break;
+        case NT_VAR:
+            printf("(decl int "); // temporary
+            dump_nodes(node->unary_expr);
+            break;
         case NT_RETURN:
             printf("(return ");
             dump_nodes(node->unary_expr);
@@ -138,6 +142,9 @@ void dump_funcs(NodeList *funcs) {
         dump_locals(func);
     }
 }
+
+
+Type *type_int;
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {

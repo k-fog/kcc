@@ -8,6 +8,7 @@ struct {
     {"else",   TT_ELSE},
     {"while",  TT_WHILE},
     {"for",    TT_FOR},
+    {"int",    TT_KW_INT},
     {NULL,     -1},
 };
 

@@ -42,6 +42,7 @@ typedef enum {
     TT_ELSE,                // else
     TT_WHILE,               // while
     TT_FOR,                 // for
+    TT_KW_INT,              // int
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -61,6 +62,7 @@ Token *tokenize(Lexer *lexer);
 typedef struct Node Node;
 typedef struct NodeList NodeList;
 typedef struct Var Var;
+typedef struct Type Type;
 
 typedef struct {
     const Token *tokens;
@@ -95,6 +97,7 @@ typedef enum {     // token node->???
     NT_WHILE,      // while whilestmt
     NT_FOR,        // for forstmt
     NT_FUNC,       // <function> func
+    NT_VAR,        // <local variable declaration> unary_expr
 } NodeTag;
 
 struct Node {
@@ -123,14 +126,22 @@ struct NodeList {
 NodeList *nodelist_new(int capacity);
 void nodelist_append(NodeList *nlist, Node *node);
 
+struct Type {
+    enum { TYP_INT, TYP_PTR } type;
+    Type *ptr_to;
+};
+
+extern Type *type_int;
+
 struct Var {
     const char *name;
     int len;
     int offset;
+    Type *type;
     Var *next;
 };
 
-Var *var_new(Token *ident, int offset, Var *next);
+Var *var_new(Token *ident, Type *type, int offset, Var *next);
 Var *find_local_var(Var *env, Token *ident);
 
 Parser *parser_new(Token *tokens);

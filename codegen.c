@@ -37,24 +37,26 @@ static void gen_fncall(Node *node, Var *env) {
     int narg = node->fncall.args->len;
     if (sizeof(argreg) / sizeof(char*) < narg) panic("too many args");
 
-    printf("  push rsp\n"); // push -> rsp - 8
-    printf("  mov rax, rsp\n");
-    printf("  and rax, 0xF\n");
-    printf("  test rax, rax\n");
-    printf("  je  .L.FNCALL%d.ALIGNED\n", local_id);
-    printf("  sub rsp, 8\n");
-    printf(".L.FNCALL%d.ALIGNED:\n", local_id);
-
     for (int i = 0; i < narg; i++) gen_expr(nodes[i], env);
     for (int i = narg - 1; 0 <= i; i--) {
         printf("  pop rax\n");
         printf("  mov %s, rax\n", argreg[i]);
     }
+    printf("  mov rax, rsp\n");
+    printf("  and rax, 0xF\n");
+    printf("  cmp rax, 0\n");
+    printf("  je  .L.FNCALL%d.ALIGNED\n", local_id);
+    printf("  sub rsp, 8\n");
     printf("  call ");
     print_token(node->main_token);
     printf("\n");
-    printf("  add rsp, 8\n"); // rsp + 8
-    printf("  pop rsp\n");
+    printf("  add rsp, 8\n");
+    printf("  jmp .L.FNCALL%d.END\n", local_id);
+    printf(".L.FNCALL%d.ALIGNED:\n", local_id);
+    printf("  call ");
+    print_token(node->main_token);
+    printf("\n");
+    printf(".L.FNCALL%d.END:\n", local_id);
     printf("  push rax\n");
 }
 
@@ -241,6 +243,9 @@ static void gen_stmt(Node *node, Var *env) {
         gen_expr(node->forstmt.next, env);
         printf("  jmp .L%d.FOR\n", local_id);
         printf(".L%d.END:\n", local_id);
+        return;
+    } else if (node->tag == NT_VAR) {
+        printf("  push rax\n"); // to keep consistency
         return;
     }
     gen_expr(node, env);
