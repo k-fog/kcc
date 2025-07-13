@@ -110,6 +110,15 @@ Var *find_local_var(Var *env, Token *ident) {
     return NULL;
 }
 
+// Type
+
+static Type *pointer_to(Type *base) {
+    Type *ptr = calloc(1, sizeof(Type));
+    ptr->tag = TYP_PTR;
+    ptr->ptr_to = base;
+    return ptr;
+}
+
 // Parser
 
 Parser *parser_new(Token *tokens) {
@@ -208,6 +217,8 @@ static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
+static Type *decl_spec(Parser *parser);
+static Type *pointer(Parser *parser, Type *type);
 static Node *decl(Parser *parser);
 static Node *param_decl(Parser *parser);
 static NodeList *params(Parser *parser);
@@ -362,20 +373,25 @@ static Type *decl_spec(Parser *parser) {
     return type_int;
 }
 
+static Type *pointer(Parser *parser, Type *type) {
+    while (peek(parser)->tag == TT_STAR) {
+        consume(parser);
+        type = pointer_to(type);
+    }
+    return type;
+}
+
 static Node *decl(Parser *parser) {
-    Type *type = decl_spec(parser);
-    Token *ident_token = consume(parser);
-    Node *node = node_new(NT_VAR, ident_token);
-    node->unary_expr = ident_new(ident_token);
-    append_local_var(parser, ident_token, type);
+    Node *node = param_decl(parser);
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     return node;
 }
 
 static Node *param_decl(Parser *parser) {
-    Type *type = decl_spec(parser);
+    Type *base = decl_spec(parser);
+    Type *type = pointer(parser, base);
     Token *ident_token = consume(parser);
-    Node *node = node_new(NT_VAR, ident_token);
+    Node *node = node_new(NT_VARDECL, ident_token);
     node->unary_expr = ident_new(ident_token);
     append_local_var(parser, ident_token, type);
     return node;

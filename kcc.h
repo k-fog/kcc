@@ -97,7 +97,7 @@ typedef enum {     // token node->???
     NT_WHILE,      // while whilestmt
     NT_FOR,        // for forstmt
     NT_FUNC,       // <function> func
-    NT_VAR,        // <local variable declaration> unary_expr
+    NT_VARDECL,    // <local variable declaration> unary_expr
 } NodeTag;
 
 struct Node {
@@ -127,7 +127,7 @@ NodeList *nodelist_new(int capacity);
 void nodelist_append(NodeList *nlist, Node *node);
 
 struct Type {
-    enum { TYP_INT, TYP_PTR } type;
+    enum { TYP_INT, TYP_PTR } tag;
     Type *ptr_to;
 };
 

@@ -33,8 +33,8 @@ void dump_nodes(Node *node) {
             printf("(! ");
             dump_nodes(node->unary_expr);
             break;
-        case NT_VAR:
-            printf("(decl int "); // temporary
+        case NT_VARDECL:
+            printf("(decl "); // temporary
             dump_nodes(node->unary_expr);
             break;
         case NT_RETURN:
@@ -130,7 +130,11 @@ void dump_locals(Node *node_fn) {
     for (Var *var = node_fn->func.locals; var != NULL; var = var->next) {
         const char *start = var->name;
         int len = var->len;
-        printf("name:%.*s\toffset:%d\n", len, start, var->offset);
+        printf("name:%.*s\toffset:%d\ttype:", len, start, var->offset);
+        for (Type *type = var->type; type != type_int; type = type->ptr_to) {
+            printf("*");
+        }
+        printf("int\n");
     }
 }
 
@@ -144,7 +148,7 @@ void dump_funcs(NodeList *funcs) {
 }
 
 
-Type *type_int;
+Type *type_int = &(Type){TYP_INT, NULL};
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {

@@ -97,6 +97,11 @@ assert 'int main(){
     return 1+2 /* comment */ +3;} //comment
     /* comment */' 6
 assert 'int main(){int x;int *y;x=5; y=&x; return *y;}' 5
-assert 'int main(){int x;int *y;y=&x; *y=3;return x;}' 3
+assert 'int main(){
+    int a; a = 3;
+    int *b; b = &a;
+    int **c; c = &b;
+    return **c;}' 3
+assert 'int main(){int x;int *y;y=&x;*y=3;return x;}' 3
 
 echo "all tests passed"

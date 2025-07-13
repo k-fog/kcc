@@ -94,7 +94,8 @@ static void gen_expr(Node *node, Var *env) {
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN) {
-        gen_local_var(node->expr.lhs, env);
+        if (node->expr.lhs->tag == NT_DEREF) gen_expr(node->expr.lhs->unary_expr, env);
+        else gen_local_var(node->expr.lhs, env);
         gen_expr(node->expr.rhs, env);
         printf("  pop rdi\n");
         printf("  pop rax\n");
@@ -202,7 +203,9 @@ static void gen_stmt(Node *node, Var *env) {
         return;
     } else if (node->tag == NT_BLOCK) {
         for (int i = 0; i < node->block->len; i++) {
-            gen_stmt(node->block->nodes[i], env);
+            Node *child = node->block->nodes[i];
+            if (child->tag == NT_VARDECL) continue; // skip if node is a variable declaration
+            gen_stmt(child, env);
             printf("  pop rax\n");
         }
         return;
@@ -244,9 +247,8 @@ static void gen_stmt(Node *node, Var *env) {
         printf("  jmp .L%d.FOR\n", local_id);
         printf(".L%d.END:\n", local_id);
         return;
-    } else if (node->tag == NT_VAR) {
-        printf("  push rax\n"); // to keep consistency
-        return;
+    } else if (node->tag == NT_VARDECL) {
+        panic("unreachable");
     }
     gen_expr(node, env);
 }
