@@ -94,7 +94,7 @@ static void gen_expr(Node *node, Var *env) {
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_SIZEOF) {
-        int size = node_sizeof(node->unary_expr->type);
+        int size = sizeof_type(node->unary_expr->type);
         printf("  push %d\n", size);
         return;
     } else if (node->tag == NT_IDENT) {

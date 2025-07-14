@@ -152,8 +152,6 @@ void dump_funcs(NodeList *funcs) {
 }
 
 
-Type *type_int = &(Type){TYP_INT, NULL};
-
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "invalid arg\n");

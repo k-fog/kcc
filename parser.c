@@ -110,24 +110,6 @@ Var *find_local_var(Var *env, Token *ident) {
     return NULL;
 }
 
-// Type
-
-static Type *pointer_to(Type *base) {
-    Type *ptr = calloc(1, sizeof(Type));
-    ptr->tag = TYP_PTR;
-    ptr->base = base;
-    return ptr;
-}
-
-int node_sizeof(Type *type) {
-    switch (type->tag) {
-        case TYP_INT: return 4;
-        case TYP_PTR: return 8;
-        default: panic("node_sizeof: error");
-    }
-    return 0;
-}
-
 // Parser
 
 Parser *parser_new(Token *tokens) {
@@ -322,61 +304,8 @@ static Node *expr_bp(Parser *parser, int min_bp) {
     return lhs;
 }
 
-static Node *typed_expr(Node *node, Var *env) {
-    Type *lhs_typ, *rhs_typ;
-    if (node->type != NULL) return node;
-    switch (node->tag) {
-        case NT_IDENT:
-            node->type = find_local_var(env, node->main_token)->type;
-            break;
-        case NT_INT:
-            node->type = type_int;
-            break;
-        case NT_ASSIGN:
-            // TODO: type check
-            node->type = typed_expr(node->expr.rhs, env)->type;
-            break;
-        case NT_DEREF:
-            node->type = typed_expr(node->unary_expr, env)->type->base;
-            break;
-        case NT_ADDR: {
-            Type *base = typed_expr(node->unary_expr, env)->type;
-            node->type = pointer_to(base);
-            break;
-        }
-        case NT_ADD:
-        case NT_SUB:
-            lhs_typ = typed_expr(node->expr.lhs, env)->type;
-            rhs_typ = typed_expr(node->expr.rhs, env)->type;
-            if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
-            else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
-            else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_PTR) node->type = rhs_typ;
-            else panic("undefined: ptr + ptr");
-            break;
-        case NT_MUL:
-        case NT_DIV:
-        case NT_LE:
-        case NT_LT:
-            lhs_typ = typed_expr(node->expr.lhs, env)->type;
-            rhs_typ = typed_expr(node->expr.rhs, env)->type;
-            node->type = type_int;
-            break;
-        case NT_FNCALL: // todo: determining by function return type
-            node->type = type_int;
-            break;
-        case NT_NEG:
-        case NT_BOOL_NOT:
-            node->type = typed_expr(node->unary_expr, env)->type;
-            break;
-        default:
-            break;
-    }
-    return node;
-}
-
 static Node *expr(Parser *parser) {
-    Node *expr = expr_bp(parser, PREC_LOWEST);
-    return typed_expr(expr, parser->current_func->func.locals);
+    return expr_bp(parser, PREC_LOWEST);
 }
 
 static Node *block(Parser *parser) {
@@ -517,6 +446,7 @@ NodeList *parse(Parser *parser) {
     NodeList *program = nodelist_new(DEFAULT_NODELIST_CAP);
     while (peek(parser)->tag != TT_EOF) {
         Node *node = func(parser);
+        node = typed(node, node->func.locals); // add type info to nodes
         nodelist_append(program, node);
     }
     return program;

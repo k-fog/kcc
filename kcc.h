@@ -129,13 +129,6 @@ struct NodeList {
 NodeList *nodelist_new(int capacity);
 void nodelist_append(NodeList *nlist, Node *node);
 
-struct Type {
-    enum { TYP_INT, TYP_PTR } tag;
-    Type *base; // pointer to
-};
-
-extern Type *type_int;
-
 struct Var {
     const char *name;
     int len;
@@ -150,7 +143,17 @@ Var *find_local_var(Var *env, Token *ident);
 Parser *parser_new(Token *tokens);
 NodeList *parse(Parser *parser);
 
-int node_sizeof(Type *type);
+// type
+struct Type {
+    enum { TYP_INT, TYP_PTR } tag;
+    Type *base; // pointer to
+};
+
+extern Type *type_int;
+
+int sizeof_type(Type *type);
+Type *pointer_to(Type *base);
+Node *typed(Node *node, Var *env);
 
 // codegen
 void print_token(Token *token);
