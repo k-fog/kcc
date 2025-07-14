@@ -161,10 +161,9 @@ static void gen_expr(Node *node, Var *env) {
         printf("  pop rax\n");
     } else if ((node->tag == NT_ADD || node->tag == NT_SUB) && 
             node->expr.lhs->type->tag == TYP_INT && node->expr.rhs->type->tag == TYP_PTR) {
+        printf("  pop rdi\n");
         printf("  pop rax\n");
         printf("  imul rax, 4\n");
-        printf("  pop rdi\n");
-        printf("  xchg rax, rdi\n");
     } else {
         printf("  pop rdi\n");
         printf("  pop rax\n");

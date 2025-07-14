@@ -345,11 +345,18 @@ static Node *typed_expr(Node *node, Var *env) {
             break;
         case NT_MUL:
         case NT_DIV:
-        case NT_NEG:
         case NT_LE:
         case NT_LT:
+            lhs_typ = typed_expr(node->expr.lhs, env)->type;
+            rhs_typ = typed_expr(node->expr.rhs, env)->type;
+            node->type = type_int;
+            break;
         case NT_FNCALL: // todo: determining by function return type
             node->type = type_int;
+            break;
+        case NT_NEG:
+        case NT_BOOL_NOT:
+            node->type = typed_expr(node->unary_expr, env)->type;
             break;
         default:
             break;
