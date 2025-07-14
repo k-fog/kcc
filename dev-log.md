@@ -123,4 +123,5 @@ main(){ fib(10); } // => 55
   - ~~直接ASTを編集する~~
   - codegenで対応する方針に変更
   - TODO: ptr-ptr
+  - `typed_expr`あたりがあんまり綺麗でない気がする
 

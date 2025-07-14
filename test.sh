@@ -116,5 +116,6 @@ assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int *q; q=p+2; return *q;}' 4
 assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int *q; q=3+p; return *q;}' 8
 assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int *q; q=4+p-1; return *q;}' 8
 assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int **pp; pp = &p; return *(*pp + 3);}' 8
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); return ident(*(p+1));}' 2
 
 echo "all tests passed"
