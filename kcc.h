@@ -103,6 +103,7 @@ typedef enum {     // token node->???
 struct Node {
     NodeTag tag;
     Token *main_token;
+    Type *type;
     union {
         int integer;
         Node *unary_expr;
@@ -128,7 +129,7 @@ void nodelist_append(NodeList *nlist, Node *node);
 
 struct Type {
     enum { TYP_INT, TYP_PTR } tag;
-    Type *ptr_to;
+    Type *base; // pointer to
 };
 
 extern Type *type_int;

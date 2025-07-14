@@ -3,12 +3,20 @@
 TEST_FNCALL="test_fncall"
 
 cat <<EOF | gcc -xc - -c -o $TEST_FNCALL
+#include <stdlib.h>
 int ident(int a) { return a; }
 int add2(int a, int b) { return a + b; }
 int add3(int a, int b, int c) { return a + b + c; }
 int add4(int a, int b, int c, int d) { return a + b + c + d; }
 int add5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
 int add6(int a, int b, int c, int d, int e, int f) { return a + b + c + d + e + f; }
+void alloc4(int **p, int a, int b, int c, int d) {
+    *p = malloc(4*sizeof(int));
+    (*p)[0]=a;
+    (*p)[1]=b;
+    (*p)[2]=c;
+    (*p)[3]=d;
+}
 EOF
 
 assert() {
@@ -97,11 +105,16 @@ assert 'int main(){
     return 1+2 /* comment */ +3;} //comment
     /* comment */' 6
 assert 'int main(){int x;int *y;x=5; y=&x; return *y;}' 5
+assert 'int main(){int x;x=3;return *&x;}' 3
 assert 'int main(){
     int a; a = 3;
     int *b; b = &a;
     int **c; c = &b;
     return **c;}' 3
 assert 'int main(){int x;int *y;y=&x;*y=3;return x;}' 3
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int *q; q=p+2; return *q;}' 4
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int *q; q=3+p; return *q;}' 8
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int *q; q=4+p-1; return *q;}' 8
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); int **pp; pp = &p; return *(*pp + 3);}' 8
 
 echo "all tests passed"

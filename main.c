@@ -131,7 +131,7 @@ void dump_locals(Node *node_fn) {
         const char *start = var->name;
         int len = var->len;
         printf("name:%.*s\toffset:%d\ttype:", len, start, var->offset);
-        for (Type *type = var->type; type != type_int; type = type->ptr_to) {
+        for (Type *type = var->type; type != type_int; type = type->base) {
             printf("*");
         }
         printf("int\n");
