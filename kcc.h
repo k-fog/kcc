@@ -29,6 +29,7 @@ typedef enum {
     TT_STAR, TT_SLASH,      // * /
     TT_AMPERSAND,           // &
     TT_BANG,                // !
+    TT_SIZEOF,              // sizeof
     TT_PAREN_L, TT_PAREN_R, // ( )
     TT_COMMA,               // ,
     TT_PLUS_PLUS,           // ++
@@ -98,6 +99,7 @@ typedef enum {     // token node->???
     NT_FOR,        // for forstmt
     NT_FUNC,       // <function> func
     NT_VARDECL,    // <local variable declaration> unary_expr
+    NT_SIZEOF,     // sizeof unary_expr
 } NodeTag;
 
 struct Node {
@@ -147,6 +149,8 @@ Var *find_local_var(Var *env, Token *ident);
 
 Parser *parser_new(Token *tokens);
 NodeList *parse(Parser *parser);
+
+int node_sizeof(Type *type);
 
 // codegen
 void print_token(Token *token);

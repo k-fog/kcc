@@ -33,6 +33,10 @@ void dump_nodes(Node *node) {
             printf("(! ");
             dump_nodes(node->unary_expr);
             break;
+        case NT_SIZEOF:
+            printf("(sizeof ");
+            dump_nodes(node->unary_expr);
+            break;
         case NT_VARDECL:
             printf("(decl "); // temporary
             dump_nodes(node->unary_expr);

@@ -9,6 +9,7 @@ struct {
     {"while",  TT_WHILE},
     {"for",    TT_FOR},
     {"int",    TT_KW_INT},
+    {"sizeof", TT_SIZEOF},
     {NULL,     -1},
 };
 

@@ -119,6 +119,15 @@ static Type *pointer_to(Type *base) {
     return ptr;
 }
 
+int node_sizeof(Type *type) {
+    switch (type->tag) {
+        case TYP_INT: return 4;
+        case TYP_PTR: return 8;
+        default: panic("node_sizeof: error");
+    }
+    return 0;
+}
+
 // Parser
 
 Parser *parser_new(Token *tokens) {
@@ -156,12 +165,13 @@ static Node *fncall_new(Token *token, Node *name, NodeList *args) {
 static Node *unary_new(Token *token, Node *expr) {
     NodeTag tag;
     switch (token->tag) {
-        case TT_PLUS:  return expr;
-        case TT_MINUS: tag = NT_NEG; break;
+        case TT_PLUS:   return expr;
+        case TT_MINUS:  tag = NT_NEG; break;
         case TT_AMPERSAND:
-                       tag = NT_ADDR; break;
-        case TT_STAR:  tag = NT_DEREF; break;
-        case TT_BANG:  tag = NT_BOOL_NOT; break;
+                        tag = NT_ADDR; break;
+        case TT_STAR:   tag = NT_DEREF; break;
+        case TT_BANG:   tag = NT_BOOL_NOT; break;
+        case TT_SIZEOF: tag = NT_SIZEOF; break;
         default: panic("unary_new: invalid token TokenTag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
