@@ -88,13 +88,13 @@ assert 'int main(){int a;a=2; if(a==2) { a = a + 2; return a;} else { return 1; 
 assert 'int main(){int a;a=0;while(a<=10)a=a+1;return a;}' 11
 assert 'int main(){int a;int i;a=0;for(i=0;i<=10;i=i+1)a=a+i;return a;}' 55
 assert 'int main(){int a;int b;int i;a=0;for(i=0;i<=10;i=i+1)a=a+i;b=0;for(i=0;i<=2;i=i+1)b=i;return a+b;}' 57
-assert 'int div(int x, int y){return x/y;}int main(){div(10,5);}' 2
+assert 'int div(int x, int y){return x/y;}int main(){return div(10,5);}' 2
 assert 'int fib(int n) {
             if(n<=1) return n;
             else return fib(n-1) + fib(n-2);
         }
         int main(){return fib(10);}' 55
-assert 'int sub(int a,int b,int c,int d,int e,int f){return a-b-c-d-e-f;}int main(){sub(100,0,1,2,3,4);}' 90
+assert 'int sub(int a,int b,int c,int d,int e,int f){return a-b-c-d-e-f;}int main(){return sub(100,0,1,2,3,4);}' 90
 assert 'int main(){int x;x=1;x+=5;return x;}' 6
 assert 'int main(){int x;int y;x=1;y=x+=5;return y;}' 6
 assert 'int main(){int x;x=5;x-=3;return x;}' 2

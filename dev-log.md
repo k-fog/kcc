@@ -143,3 +143,13 @@ main(){ fib(10); } // => 55
   - ついでに型の整合性をチェックする
 - TODO: `+=`,`-=`のポインタ演算対応
 - TODO: 関数の返り値の型チェック
+```
+  321 codegen.c
+  160 kcc.h
+  181 lexer.c
+  178 main.c
+  453 parser.c
+  134 type.c
+ 1427 total
+```
+- codegenから不要なコードの出力を削った

@@ -218,6 +218,7 @@ static void gen_stmt(Node *node, Var *env) {
     if (node->tag == NT_RETURN) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
+        // epilogue
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");
@@ -304,11 +305,6 @@ static void gen_func(Node *node) {
 
     if (body->tag != NT_BLOCK) panic("codegen: expected block");
     gen_stmt(body, env);
-
-    // epilogue
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
 }
 
 void gen(NodeList *nlist) {
