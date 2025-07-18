@@ -37,6 +37,8 @@ typedef enum {
     TT_INT,
     TT_IDENT,
     TT_BRACE_L, TT_BRACE_R, // { }
+    TT_BRACKET_L,           // [
+    TT_BRACKET_R,           // ]
     TT_SEMICOLON,           // ;
     TT_RETURN,              // return
     TT_IF,                  // if
@@ -145,14 +147,16 @@ NodeList *parse(Parser *parser);
 
 // type
 struct Type {
-    enum { TYP_INT, TYP_PTR } tag;
+    enum { TYP_INT, TYP_PTR, TYP_ARRAY } tag;
     Type *base; // pointer to
+    int array_size;
 };
 
 extern Type *type_int;
 
 int sizeof_type(Type *type);
 Type *pointer_to(Type *base);
+Type *array_of(Type *base, int size);
 Node *typed(Node *node, Var *env);
 
 // codegen

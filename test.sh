@@ -95,11 +95,11 @@ assert 'int fib(int n) {
         }
         int main(){return fib(10);}' 55
 assert 'int sub(int a,int b,int c,int d,int e,int f){return a-b-c-d-e-f;}int main(){return sub(100,0,1,2,3,4);}' 90
-assert 'int main(){int x;x=1;x+=5;return x;}' 6
-assert 'int main(){int x;int y;x=1;y=x+=5;return y;}' 6
-assert 'int main(){int x;x=5;x-=3;return x;}' 2
-assert 'int main(){int x;x=3;x*=5;return x;}' 15
-assert 'int main(){int x;x=15;x/=3;return x;}' 5
+# assert 'int main(){int x;x=1;x+=5;return x;}' 6
+# assert 'int main(){int x;int y;x=1;y=x+=5;return y;}' 6
+# assert 'int main(){int x;x=5;x-=3;return x;}' 2
+# assert 'int main(){int x;x=3;x*=5;return x;}' 15
+# assert 'int main(){int x;x=15;x/=3;return x;}' 5
 assert 'int main(){
     // comment
     return 1+2 /* comment */ +3;} //comment
@@ -120,5 +120,12 @@ assert 'int main(){int *p; alloc4(&p, 1,2,4,8); return ident(*(p+1));}' 2
 assert 'int main(){int p; return sizeof(p+3);}' 4
 assert 'int main(){int *p; return sizeof(p+5);}' 8
 assert 'int main(){int **p; return sizeof(p);}' 8
+assert 'int main(){int a[10]; *(a+3) = 1; return *(a+3);}' 1
+assert 'int main(){int a[10]; a[5] = 1; return a[5];}' 1
+assert 'int main(){int a[2]; a[0] = 1; a[a[0]] = 2; return a[1];}' 2
+assert 'int main(){int a; a=1; return a+=1;}' 2
+assert 'int main(){int a; a=1; return a-=1;}' 0
+assert 'int main(){int a; a=1; return a*=2;}' 2
+assert 'int main(){int a; a=6; return a/=2;}' 3
 
 echo "all tests passed"

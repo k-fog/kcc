@@ -9,6 +9,8 @@ void print_token(Token *token) {
     printf("%.*s", len, start);
 }
 
+static void gen_load(Type *type);
+static void gen_store(Type *type);
 static void gen_addr(Node *node, Var *env);
 static void gen_fncall(Node *node, Var *env);
 static void gen_expr(Node *node, Var *env);
@@ -18,6 +20,22 @@ static void gen_func(Node *node);
 static int align_16(int n) {
     // return ((n + 15) / 16) * 16;
     return (n + 15) & ~0xF;
+}
+
+// load [rax] to rax
+static void gen_load(Type *type) {
+    if (type->tag == TYP_ARRAY) return;
+    int size = sizeof_type(type);
+    if (size == 4) printf("  movsxd rax, [rax]\n");
+    else printf("  mov rax, [rax]\n");
+}
+
+// store rax to [stack top]
+static void gen_store(Type *type) {
+    printf("  pop rdi\n");
+    int size = sizeof_type(type);
+    if (size == 4) printf("  mov [rdi], eax\n");
+    else printf("  mov [rdi], rax\n");
 }
 
 static void gen_addr(Node *node, Var *env) {
@@ -82,7 +100,7 @@ static void gen_expr(Node *node, Var *env) {
     } else if (node->tag == NT_DEREF) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
+        gen_load(node->type);
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_BOOL_NOT) {
@@ -100,33 +118,38 @@ static void gen_expr(Node *node, Var *env) {
     } else if (node->tag == NT_IDENT) {
         gen_addr(node, env);
         printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
+        gen_load(node->type);
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN) {
         gen_addr(node->expr.lhs, env);
         gen_expr(node->expr.rhs, env);
-        printf("  pop rdi\n");
         printf("  pop rax\n");
-        printf("  mov [rax], rdi\n");
-        printf("  push rdi\n");
+        gen_store(node->type);
+        printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN_ADD) {
         gen_addr(node->expr.lhs, env);
         gen_expr(node->expr.rhs, env);
         printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  add [rax], rdi\n");
-        printf("  mov rax, [rax]\n");
+        printf("  pop rsi\n");
+        printf("  mov rax, rsi\n");
+        gen_load(node->type);
+        printf("  add rax, rdi\n");
+        printf("  push rsi\n");
+        gen_store(node->type);
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN_SUB) {
         gen_addr(node->expr.lhs, env);
         gen_expr(node->expr.rhs, env);
         printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  sub [rax], rdi\n");
-        printf("  mov rax, [rax]\n");
+        printf("  pop rsi\n");
+        printf("  mov rax, rsi\n");
+        gen_load(node->type);
+        printf("  sub rax, rdi\n");
+        printf("  push rsi\n");
+        gen_store(node->type);
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN_MUL) {
@@ -134,9 +157,11 @@ static void gen_expr(Node *node, Var *env) {
         gen_expr(node->expr.rhs, env);
         printf("  pop rdi\n");
         printf("  pop rsi\n");
-        printf("  mov rax, [rsi]\n");
+        printf("  mov rax, rsi\n");
+        gen_load(node->type);
         printf("  imul rax, rdi\n");
-        printf("  mov [rsi], rax\n");
+        printf("  push rsi\n");
+        gen_store(node->type);
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_ASSIGN_DIV) {
@@ -144,10 +169,12 @@ static void gen_expr(Node *node, Var *env) {
         gen_expr(node->expr.rhs, env);
         printf("  pop rdi\n");
         printf("  pop rsi\n");
-        printf("  mov rax, [rsi]\n");
+        printf("  mov rax, rsi\n");
+        gen_load(node->type);
         printf("  cqo\n");
-        printf("  idiv rax, rdi\n");
-        printf("  mov [rsi], rax\n");
+        printf("  idiv rdi\n");
+        printf("  push rsi\n");
+        gen_store(node->type);
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_FNCALL) {
@@ -185,7 +212,7 @@ static void gen_expr(Node *node, Var *env) {
             break;
         case NT_DIV:
             printf("  cqo\n");
-            printf("  idiv rax, rdi\n");
+            printf("  idiv rdi\n");
             break;
         case NT_EQ:
             printf("  cmp rax, rdi\n");

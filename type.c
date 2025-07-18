@@ -9,10 +9,19 @@ Type *pointer_to(Type *base) {
     return ptr;
 }
 
+Type *array_of(Type *base, int size) {
+    Type *arr = calloc(1, sizeof(Type));
+    arr->tag = TYP_ARRAY;
+    arr->base = base;
+    arr->array_size = size;
+    return arr;
+}
+
 int sizeof_type(Type *type) {
     switch (type->tag) {
         case TYP_INT: return 4;
         case TYP_PTR: return 8;
+        case TYP_ARRAY: return sizeof_type(type->base) * type->array_size;
         default: panic("node_sizeof: error");
     }
     return 0;
@@ -40,6 +49,8 @@ Node *typed(Node *node, Var *env) {
             if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
             else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_PTR) node->type = rhs_typ;
+            else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
+            else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_ARRAY) node->type = pointer_to(rhs_typ->base);
             else panic("undefined: ptr + ptr / unimplemented: ptr - ptr");
             break;
         }
@@ -65,7 +76,8 @@ Node *typed(Node *node, Var *env) {
         }
         case NT_DEREF: {
             Type *unary_typ = typed(node->unary_expr, env)->type;
-            if (unary_typ->tag != TYP_PTR) panic("type check error: expected pointer");
+            if (unary_typ->tag != TYP_PTR && unary_typ->tag != TYP_ARRAY)
+                panic("type check error: expected pointer");
             node->type = unary_typ->base;
             break;
         }

@@ -113,7 +113,19 @@ void dump_nodes(Node *node) {
             dump_nodes(node->expr.rhs);
             break;
     }
-    printf("\b) ");
+    char *int_str = "int";
+    char *ptr_str = "ptr";
+    char *arr_str = "arr";
+    char *typ_str;
+    if (!node->type) typ_str = "NULL";
+    else {
+        switch (node->type->tag) {
+            case TYP_INT: typ_str = int_str; break;
+            case TYP_PTR: typ_str = ptr_str; break;
+            case TYP_ARRAY: typ_str = arr_str; break;
+        }
+    }
+    printf("\b)->%s ", typ_str);
 }
 
 void dump_tokens(Token *tokens) {
