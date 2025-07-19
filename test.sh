@@ -129,5 +129,6 @@ assert 'int main(){int a; a=1; return a-=1;}' 0
 assert 'int main(){int a; a=1; return a*=2;}' 2
 assert 'int main(){int a; a=6; return a/=2;}' 3
 assert 'int main(){int a; int b; a=b=3; return a+b;}' 6
+assert 'int inc(int *x) {return *x=*x+1;} int main() {int p; p=0; inc(&p); return p;}' 1
 
 echo "all tests passed"

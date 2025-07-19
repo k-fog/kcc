@@ -1,7 +1,8 @@
 #include "kcc.h"
 
 
-static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 void print_token(Token *token) {
     const char *start = token->start;
@@ -59,12 +60,12 @@ static void gen_fncall(Node *node, Var *env) {
     int local_id = id++;
     Node **nodes = node->fncall.args->nodes;
     int narg = node->fncall.args->len;
-    if (sizeof(argreg) / sizeof(char*) < narg) panic("too many args");
+    if (sizeof(argreg64) / sizeof(char*) < narg) panic("too many args");
 
     for (int i = 0; i < narg; i++) gen_expr(nodes[i], env);
     for (int i = narg - 1; 0 <= i; i--) {
         printf("  pop rax\n");
-        printf("  mov %s, rax\n", argreg[i]);
+        printf("  mov %s, rax\n", argreg64[i]);
     }
     printf("  mov rax, rsp\n");
     printf("  and rax, 0xF\n");
@@ -326,7 +327,8 @@ static void gen_func(Node *node) {
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", offset);
         printf("  push rax\n");
-        printf("  mov [rax], %s\n", argreg[i]);
+        if (sizeof_type(var->type) == 4) printf("  mov [rax], %s\n", argreg32[i]);
+        else printf("  mov [rax], %s\n", argreg64[i]);
         // printf("  mov [rbp-%d], %s\n", offset, argreg[i]);
     }
 

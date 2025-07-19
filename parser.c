@@ -433,7 +433,6 @@ static NodeList *params(Parser *parser) {
     do {
         Node *node = param_decl(parser);
         nodelist_append(params, node);
-        append_local_var(parser, node->main_token, type_int, sizeof_type(type_int)); // TODO:fix
     } while (peek(parser)->tag == TT_COMMA && consume(parser));
     if (peek(parser)->tag != TT_PAREN_R) panic("expected \')\'");
     return params;
