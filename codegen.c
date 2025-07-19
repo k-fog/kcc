@@ -30,7 +30,7 @@ static void gen_load(Type *type) {
     else printf("  mov rax, [rax]\n");
 }
 
-// store rax to [stack top]
+// store *ax to [stack top]
 static void gen_store(Type *type) {
     printf("  pop rdi\n");
     int size = sizeof_type(type);

@@ -31,8 +31,6 @@ int precedences[META_TT_NUM] = {
     [TT_MINUS]      = PREC_ADD,
     [TT_STAR]       = PREC_MUL,
     [TT_SLASH]      = PREC_MUL,
-    [TT_PAREN_L]    = PREC_CALL,
-    [TT_BRACKET_L]  = PREC_CALL,
     // otherwise PREC_NONE (== 0)
 };
 
@@ -57,8 +55,8 @@ OpAssoc assocs[] = {
     [TT_MINUS]      = ASSOC_LEFT,
     [TT_STAR]       = ASSOC_LEFT,
     [TT_SLASH]      = ASSOC_LEFT,
-    [TT_PAREN_L]    = ASSOC_LEFT,
-    [TT_BRACKET_L]  = ASSOC_LEFT,
+    // [TT_PAREN_L]    = ASSOC_LEFT,
+    // [TT_BRACKET_L]  = ASSOC_LEFT,
 };
 
 static bool is_infix(TokenTag tag) {
@@ -201,10 +199,10 @@ static Token *consume(Parser *parser) {
 }
 
 static Node *integer(Parser *parser);
-static Node *identifier(Parser *parser);
 static NodeList *args(Parser *parser);
 static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
+static Node *expr_postfix(Parser *parser, Node *lhs);
 static Node *expr_bp(Parser *parser, int min_bp);
 static Node *expr(Parser *parser);
 static Node *block(Parser *parser);
@@ -239,26 +237,6 @@ static NodeList *args(Parser *parser) {
     return args;
 }
 
-static Node *identifier(Parser *parser) {
-    Token *token = consume(parser);
-    NodeList *arg_nodes;
-    if (token->tag != TT_IDENT) panic("expected an identifier");
-    // parse postfix
-    switch (peek(parser)->tag) {
-        case TT_PAREN_L:
-            consume(parser); // (
-            arg_nodes = args(parser);
-            consume(parser); // )
-            return fncall_new(token, ident_new(token), arg_nodes);
-        case TT_PLUS_PLUS: panic("not implemented"); break;
-        case TT_MINUS_MINUS: panic("not implemented"); break;
-        default: break;
-    }
-    if (find_local_var(parser->current_func->func.locals, token) == NULL)
-        panic("undefined %.*s", token->len, token->start);
-    return ident_new(token);
-}
-
 static Node *unary(Parser *parser) {
     Token *token = consume(parser);
     return unary_new(token, expr_bp(parser, PREC_PREFIX));
@@ -271,7 +249,7 @@ static Node *expr_prefix(Parser *parser) {
             node = integer(parser);
             break;
         case TT_IDENT:
-            node = identifier(parser);
+            node = ident_new(consume(parser));
             break;
         case TT_PAREN_L:
             consume(parser);
@@ -282,7 +260,33 @@ static Node *expr_prefix(Parser *parser) {
             node = unary(parser);
             break;
     }
-    return node;
+    return expr_postfix(parser, node);
+}
+
+static Node *expr_postfix(Parser *parser, Node *lhs) {
+    switch (peek(parser)->tag) {
+        case TT_PAREN_L: {
+            NodeList *arg_nodes;
+            consume(parser); // (
+            arg_nodes = args(parser);
+            if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'"); // )
+            lhs = fncall_new(lhs->main_token, lhs, arg_nodes);
+            break;
+        }
+        case TT_BRACKET_L: {
+            Token *lbracket = consume(parser); // [
+            Node *index = expr(parser);
+            if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'"); // ]
+            Node *add = expr_new(lbracket, lhs, index);
+            lhs = node_new(NT_DEREF, lbracket);
+            lhs->unary_expr = add;
+            break;
+        }
+        case TT_PLUS_PLUS: panic("not implemented"); break;
+        case TT_MINUS_MINUS: panic("not implemented"); break;
+        default: break;
+    }
+    return lhs;
 }
 
 static Node *expr_bp(Parser *parser, int min_bp) {
@@ -294,23 +298,14 @@ static Node *expr_bp(Parser *parser, int min_bp) {
         else if (assoc == ASSOC_RIGHT && prec < min_bp) break;
 
         Token *token = consume(parser);
+        Node *rhs = expr_bp(parser, prec);
+        lhs = expr_new(token, lhs, rhs);
 
-        if (token->tag == TT_BRACKET_L) {
-            // infix: '['
-            Node *tmp = node_new(NT_DEREF, NULL);
-            tmp->unary_expr = expr_new(token, lhs, expr_bp(parser, PREC_LOWEST));
-            lhs = tmp;
-            if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
-        } else {
-            Node *rhs = expr_bp(parser, prec);
-            lhs = expr_new(token, lhs, rhs);
-
-            // if token is ">" or ">=", swap lhs, rhs
-            if (token->tag == TT_ANGLE_R || token->tag == TT_ANGLE_R_EQ) {
-                Node *tmp = lhs->expr.lhs;
-                lhs->expr.lhs = lhs->expr.rhs;
-                lhs->expr.rhs = tmp;
-            }
+        // if token is ">" or ">=", swap lhs, rhs
+        if (token->tag == TT_ANGLE_R || token->tag == TT_ANGLE_R_EQ) {
+            Node *tmp = lhs->expr.lhs;
+            lhs->expr.lhs = lhs->expr.rhs;
+            lhs->expr.rhs = tmp;
         }
     }
     return lhs;

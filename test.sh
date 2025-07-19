@@ -123,9 +123,11 @@ assert 'int main(){int **p; return sizeof(p);}' 8
 assert 'int main(){int a[10]; *(a+3) = 1; return *(a+3);}' 1
 assert 'int main(){int a[10]; a[5] = 1; return a[5];}' 1
 assert 'int main(){int a[2]; a[0] = 1; a[a[0]] = 2; return a[1];}' 2
+assert 'int main(){int a[2]; *(a+1)=4; return a[1];}' 4
 assert 'int main(){int a; a=1; return a+=1;}' 2
 assert 'int main(){int a; a=1; return a-=1;}' 0
 assert 'int main(){int a; a=1; return a*=2;}' 2
 assert 'int main(){int a; a=6; return a/=2;}' 3
+assert 'int main(){int a; int b; a=b=3; return a+b;}' 6
 
 echo "all tests passed"
