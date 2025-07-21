@@ -10,13 +10,20 @@ void print_token(Token *token) {
     printf("%.*s", len, start);
 }
 
+Env *env_new(Var *locals, Var *globals) {
+    Env *env = calloc(1, sizeof(Env));
+    env->locals = locals;
+    env->globals = globals;
+    return env;
+}
+
 static void gen_load(Type *type);
 static void gen_store(Type *type);
-static void gen_addr(Node *node, Var *env);
-static void gen_fncall(Node *node, Var *env);
-static void gen_expr(Node *node, Var *env);
-static void gen_stmt(Node *node, Var *env);
-static void gen_func(Node *node);
+static void gen_addr(Node *node, Env *env);
+static void gen_fncall(Node *node, Env *env);
+static void gen_expr(Node *node, Env *env);
+static void gen_stmt(Node *node, Env *env);
+static void gen_func(Node *node, Var *globals);
 
 static int align_16(int n) {
     // return ((n + 15) / 16) * 16;
@@ -39,13 +46,19 @@ static void gen_store(Type *type) {
     else printf("  mov [rdi], rax\n");
 }
 
-static void gen_addr(Node *node, Var *env) {
+static void gen_addr(Node *node, Env *env) {
     if (node->tag == NT_IDENT) {
-        Var *var = find_local_var(env, node->main_token);
+        Var *var = find_var(env->locals, node->main_token);
+        if (var != NULL) {
+            int offset = var->offset;
+            printf("  mov rax, rbp\n");
+            printf("  sub rax, %d\n", offset);
+            printf("  push rax\n");
+            return;
+        }
+        var = find_var(env->globals, node->main_token);
         if (var == NULL) panic("undefined variable");
-        int offset = var->offset;
-        printf("  mov rax, rbp\n");
-        printf("  sub rax, %d\n", offset);
+        printf("  lea rax, %.*s[rip]\n", var->len, var->name);
         printf("  push rax\n");
         return;
     } else if (node->tag == NT_DEREF) {
@@ -55,7 +68,7 @@ static void gen_addr(Node *node, Var *env) {
     panic("unexpected node NodeTag=%d", node->tag);
 }
 
-static void gen_fncall(Node *node, Var *env) {
+static void gen_fncall(Node *node, Env *env) {
     static int id = 0;
     int local_id = id++;
     Node **nodes = node->fncall.args->nodes;
@@ -85,7 +98,7 @@ static void gen_fncall(Node *node, Var *env) {
     printf("  push rax\n");
 }
 
-static void gen_expr(Node *node, Var *env) {
+static void gen_expr(Node *node, Env *env) {
     if (node->tag == NT_INT) {
         printf("  push %d\n", node->integer);
         return;
@@ -240,7 +253,7 @@ static void gen_expr(Node *node, Var *env) {
     printf("  push rax\n");
 }
 
-static void gen_stmt(Node *node, Var *env) {
+static void gen_stmt(Node *node, Env *env) {
     static int id = 0;
     int local_id;
     if (node->tag == NT_RETURN) {
@@ -303,14 +316,16 @@ static void gen_stmt(Node *node, Var *env) {
     gen_expr(node, env);
 }
 
-static void gen_func(Node *node) {
-    Var *env = node->func.locals;
-    int offset = env ? env->offset : 0;
+static void gen_func(Node *node, Var *globals) {
+    Env *env = env_new(node->func.locals, globals);
+
+    int offset = env->locals ? env->locals->offset : 0;
     const char *name = node->func.name->main_token->start;
     int name_len = node->func.name->main_token->len;
     Node *body = node->func.body;
 
     printf(".globl %.*s\n", name_len, name);
+    printf(".text\n");
     printf("%.*s:\n", name_len, name);
     // prologue
     printf("  push rbp\n");
@@ -322,7 +337,7 @@ static void gen_func(Node *node) {
     int nparam = params->len;
     for (int i = 0; i < nparam; i++) {
         Node *node = params->nodes[i];
-        Var *var = find_local_var(env, node->main_token);
+        Var *var = find_var(env->locals, node->main_token);
         int offset = var->offset;
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", offset);
@@ -336,11 +351,17 @@ static void gen_func(Node *node) {
     gen_stmt(body, env);
 }
 
-void gen(NodeList *nlist) {
+void gen(NodeList *nlist, Var *globals) {
     printf(".intel_syntax noprefix\n");
+    for (Var *global = globals; global != NULL; global = global->next) {
+        printf(".data\n");
+        printf("%.*s:\n", global->len, global->name);
+        printf("  .zero %d\n\n", sizeof_type(global->type));
+    }
+
     for (int i = 0; i < nlist->len; i++) {
         Node *node = nlist->nodes[i];
-        gen_func(node);
+        gen_func(node, globals);
         printf("\n");
     }
 }

@@ -177,14 +177,14 @@ int main(int argc, char *argv[]) {
     Parser *parser = parser_new(tokens);
     NodeList *funcs = parse(parser);
     dump_funcs(funcs);
-    gen(funcs);
+    gen(funcs, parser->global_var);
     return 0;
 #else
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
     Parser *parser = parser_new(tokens);
     NodeList *nlist = parse(parser);
-    gen(nlist);
+    gen(nlist, parser->global_var);
     return 0;
 #endif
 }

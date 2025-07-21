@@ -66,11 +66,13 @@ typedef struct Node Node;
 typedef struct NodeList NodeList;
 typedef struct Var Var;
 typedef struct Type Type;
+typedef struct Env Env;
 
 typedef struct {
     const Token *tokens;
     Token *current_token;
     Node *current_func;
+    Var *global_var;
 } Parser;
 
 typedef enum {     // token node->???
@@ -101,6 +103,7 @@ typedef enum {     // token node->???
     NT_FOR,        // for forstmt
     NT_FUNC,       // <function> func
     NT_VARDECL,    // <local variable declaration> unary_expr
+    NT_GLOBALDECL, // <global variable declaration> unary_expr
     NT_SIZEOF,     // sizeof unary_expr
 } NodeTag;
 
@@ -140,7 +143,7 @@ struct Var {
 };
 
 Var *var_new(Token *ident, Type *type, int offset, Var *next);
-Var *find_local_var(Var *env, Token *ident);
+Var *find_var(Var *varlist, Token *ident);
 
 Parser *parser_new(Token *tokens);
 NodeList *parse(Parser *parser);
@@ -157,8 +160,14 @@ extern Type *type_int;
 int sizeof_type(Type *type);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
-Node *typed(Node *node, Var *env);
+Node *typed(Node *node, Env *env);
 
 // codegen
+struct Env {
+    Var *globals;
+    Var *locals;
+};
+
+Env *env_new(Var *locals, Var *globals);
 void print_token(Token *token);
-void gen(NodeList *nlist);
+void gen(NodeList *nlist, Var *globals);

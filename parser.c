@@ -94,16 +94,24 @@ Var *var_new(Token *ident, Type *type, int offset, Var *next) {
     return var;
 }
 
-static Var *append_local_var(Parser *parser, Token *ident, Type *type, int size) {
-    Var *locals = parser->current_func->func.locals;
-    int current_offset = locals ? locals->offset : 0;
-    Var *var = var_new(ident, type, current_offset + size, locals);
-    parser->current_func->func.locals = var;
+static Var *append_local_var(Parser *parser, Token *ident, Type *type) {
+    Var **locals = &parser->current_func->func.locals;
+    int current_offset = *locals ? (*locals)->offset : 0;
+    int size = sizeof_type(type);
+    Var *var = var_new(ident, type, current_offset + size, *locals);
+    (*locals) = var;
     return var;
 }
 
-Var *find_local_var(Var *env, Token *ident) {
-    for (Var *var = env; var != NULL; var = var->next) {
+static Var *append_global_var(Parser *parser, Token *ident, Type *type) {
+    Var **globals = &parser->global_var;
+    Var *var = var_new(ident, type, 0, *globals);
+    (*globals) = var;
+    return var;
+}
+
+Var *find_var(Var *varlist, Token *ident) {
+    for (Var *var = varlist; var != NULL; var = var->next) {
         if (ident->len != var->len) continue;
         if (strncmp(var->name, ident->start, var->len) == 0) return var;
     }
@@ -215,7 +223,8 @@ static Type *pointer(Parser *parser, Type *type);
 static Node *decl(Parser *parser);
 static Node *param_decl(Parser *parser);
 static NodeList *params(Parser *parser);
-static Node *func(Parser *parser);
+static Node *func(Parser *parser, Type *return_type, Token *name);
+static Node *toplevel(Parser *parser);
 
 static Node *integer(Parser *parser) {
     int val = 0;
@@ -398,7 +407,7 @@ static Node *param_decl(Parser *parser) {
     }
     Node *node = node_new(NT_VARDECL, ident_token);
     node->unary_expr = ident_new(ident_token);
-    append_local_var(parser, ident_token, type, sizeof_type(type));
+    append_local_var(parser, ident_token, type);
     return node;
 }
 
@@ -438,15 +447,14 @@ static NodeList *params(Parser *parser) {
     return params;
 }
 
-static Node *func(Parser *parser) {
-    Node *node = node_new(NT_FUNC, peek(parser));
+static Node *func(Parser *parser, Type *return_type, Token *name) {
+    Node *node = node_new(NT_FUNC, name); 
+    // node->type = return_type;
 
     parser->current_func = node;
     node->func.locals = NULL;
     
-    if (consume(parser)->tag != TT_KW_INT) panic("expected return type");
-
-    node->func.name = ident_new(consume(parser));
+    node->func.name = ident_new(name);
     if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
     node->func.params = params(parser);
     if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
@@ -454,12 +462,33 @@ static Node *func(Parser *parser) {
     return node;
 }
 
+static Node *toplevel(Parser *parser) {
+    Node *node;
+    Type *base = decl_spec(parser);
+    Type *type = pointer(parser, base);
+    Token *ident_token = consume(parser);
+
+    if (peek(parser)->tag == TT_PAREN_L) node = func(parser, type, ident_token);
+    else {
+        if (peek(parser)->tag == TT_BRACKET_L) {
+            consume(parser); // [
+            int size = integer(parser)->integer;
+            type = array_of(type, size);
+            if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
+        }
+        append_global_var(parser, ident_token, type);
+        node = node_new(NT_GLOBALDECL, ident_token);
+        if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
+    }
+    return node;
+}
+
 NodeList *parse(Parser *parser) {
     NodeList *program = nodelist_new(DEFAULT_NODELIST_CAP);
     while (peek(parser)->tag != TT_EOF) {
-        Node *node = func(parser);
-        node = typed(node, node->func.locals); // add type info to nodes
-        nodelist_append(program, node);
+        Node *node = toplevel(parser);
+        node = typed(node, env_new(node->func.locals, parser->global_var)); // add type info to nodes
+        if (node->tag == NT_FUNC) nodelist_append(program, node);
     }
     return program;
 }

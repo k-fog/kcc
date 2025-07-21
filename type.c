@@ -33,15 +33,21 @@ bool is_compatible(Type *a, Type *b) {
     else return a->tag == b->tag;
 }
 
-Node *typed(Node *node, Var *env) {
+Node *typed(Node *node, Env *env) {
     if (!node || node->type != NULL) return node;
     switch (node->tag) {
         case NT_INT:
             node->type = type_int;
             break;
-        case NT_IDENT:
-            node->type = find_local_var(env, node->main_token)->type;
+        case NT_IDENT: {
+            Var *var = find_var(env->locals, node->main_token);
+            if (var == NULL) var = find_var(env->globals, node->main_token);
+            if (var == NULL) {
+                panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
+            }
+            node->type = var->type;
             break;
+        }
         case NT_ADD:
         case NT_SUB: {
             Type *lhs_typ = typed(node->expr.lhs, env)->type;
@@ -135,6 +141,9 @@ Node *typed(Node *node, Var *env) {
             node->type = type_int; // TODO
             break;
         case NT_VARDECL:
+            node->type = NULL;
+            break;
+        case NT_GLOBALDECL:
             node->type = NULL;
             break;
         case NT_SIZEOF:
