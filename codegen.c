@@ -199,16 +199,42 @@ static void gen_expr(Node *node, Env *env) {
     gen_expr(node->expr.lhs, env);
     gen_expr(node->expr.rhs, env);
 
-    if ((node->tag == NT_ADD || node->tag == NT_SUB) && 
-            node->expr.lhs->type->tag == TYP_PTR && node->expr.rhs->type->tag == TYP_INT) {
-        printf("  pop rdi\n");
-        printf("  imul rdi, 4\n");
-        printf("  pop rax\n");
-    } else if ((node->tag == NT_ADD || node->tag == NT_SUB) && 
-            node->expr.lhs->type->tag == TYP_INT && node->expr.rhs->type->tag == TYP_PTR) {
-        printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  imul rax, 4\n");
+    if (node->tag == NT_ADD) {
+        if ((node->expr.lhs->type->tag == TYP_PTR && node->expr.rhs->type->tag == TYP_INT) || 
+            (node->expr.lhs->type->tag == TYP_ARRAY && node->expr.rhs->type->tag == TYP_INT)) {
+            // ptr + int
+            printf("  pop rdi\n");
+            printf("  imul rdi, 4\n");
+            printf("  pop rax\n");
+        } else if (node->expr.lhs->type->tag == TYP_INT && node->expr.rhs->type->tag == TYP_PTR) {
+            // int + ptr
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+            printf("  imul rax, 4\n");
+        } else {
+            // int + int 
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+        }
+    } else if (node->tag == NT_SUB) {
+        if (node->expr.lhs->type->tag == TYP_PTR && node->expr.rhs->type->tag == TYP_INT) {
+            // ptr - int
+            printf("  pop rdi\n");
+            printf("  imul rdi, 4\n");
+            printf("  pop rax\n");
+        } else if (node->expr.lhs->type->tag == TYP_PTR && node->expr.rhs->type->tag == TYP_PTR) {
+            // ptr - ptr
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+            printf("  sub rax, rdi\n");
+            printf("  sar rax, %d\n", 2);// sizeof_type(node->type));
+            printf("  push rax\n");
+            return;
+        } else {
+            // int - int 
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+        }
     } else {
         printf("  pop rdi\n");
         printf("  pop rax\n");

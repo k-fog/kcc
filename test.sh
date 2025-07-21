@@ -135,5 +135,6 @@ assert 'int a;int main() {a=0;return a;}' 0
 assert 'int a;int add() {return a+=1;}int main() {add(); add(); return a;}' 2
 assert 'int *a;int main() {alloc4(&a,0,1,2,3);return a[0];}' 0
 assert 'int a[4];int main() {a[0]=1;return a[0];}' 1
+assert 'int main() {int foo[8]; return &foo[7] - &foo[2];}' 5
 
 echo "all tests passed"

@@ -48,8 +48,7 @@ Node *typed(Node *node, Env *env) {
             node->type = var->type;
             break;
         }
-        case NT_ADD:
-        case NT_SUB: {
+        case NT_ADD: {
             Type *lhs_typ = typed(node->expr.lhs, env)->type;
             Type *rhs_typ = typed(node->expr.rhs, env)->type;
             if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
@@ -57,7 +56,17 @@ Node *typed(Node *node, Env *env) {
             else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_PTR) node->type = rhs_typ;
             else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
             else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_ARRAY) node->type = pointer_to(rhs_typ->base);
-            else panic("undefined: ptr + ptr / unimplemented: ptr - ptr");
+            else panic("undefined: ptr + ptr");
+            break;
+        }
+        case NT_SUB: {
+            Type *lhs_typ = typed(node->expr.lhs, env)->type;
+            Type *rhs_typ = typed(node->expr.rhs, env)->type;
+            if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
+            else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
+            else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
+            else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_PTR) node->type = type_int;
+            else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_PTR) node->type = type_int;
             break;
         }
         case NT_MUL:
