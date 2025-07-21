@@ -3,13 +3,14 @@
 struct {
     char *str; TokenTag tag;
 } keywords[] = {
-    {"return", TT_RETURN},
-    {"if",     TT_IF},
-    {"else",   TT_ELSE},
-    {"while",  TT_WHILE},
-    {"for",    TT_FOR},
+    {"return", TT_KW_RETURN},
+    {"if",     TT_KW_IF},
+    {"else",   TT_KW_ELSE},
+    {"while",  TT_KW_WHILE},
+    {"for",    TT_KW_FOR},
     {"int",    TT_KW_INT},
-    {"sizeof", TT_SIZEOF},
+    {"char",   TT_KW_CHAR},
+    {"sizeof", TT_KW_SIZEOF},
     {NULL,     -1},
 };
 
@@ -167,6 +168,13 @@ Token *tokenize(Lexer *lexer) {
             case '&':
                 token->next = token_new(TT_AMPERSAND, start, 1);
                 break;
+            case '"': {
+                while (peek(lexer) != '"') end = consume(lexer);
+                consume(lexer); // end "
+                int len = end - start + 2; // string literal's token contains double quotes
+                token->next = token_new(TT_STRING, start, len);
+                break;
+            }
             default:
                 if (isdigit(*start)) {
                     while (isdigit(peek(lexer))) end = consume(lexer);

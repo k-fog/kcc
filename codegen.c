@@ -1,6 +1,7 @@
 #include "kcc.h"
 
 
+static char *argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
@@ -32,18 +33,35 @@ static int align_16(int n) {
 
 // load [rax] to rax
 static void gen_load(Type *type) {
-    if (type->tag == TYP_ARRAY) return;
-    int size = sizeof_type(type);
-    if (size == 4) printf("  movsxd rax, [rax]\n");
-    else printf("  mov rax, [rax]\n");
+    switch (type->tag) {
+        case TYP_CHAR:
+            printf("  movsx rax, [rax]\n");
+            break;
+        case TYP_INT:
+            printf("  movsxd rax, [rax]\n");
+            break;
+        case TYP_PTR:
+            printf("  mov rax, [rax]\n");
+            break;
+        case TYP_ARRAY: return;
+    }
 }
 
 // store *ax to [stack top]
 static void gen_store(Type *type) {
     printf("  pop rdi\n");
-    int size = sizeof_type(type);
-    if (size == 4) printf("  mov [rdi], eax\n");
-    else printf("  mov [rdi], rax\n");
+    switch (type->tag) {
+        case TYP_CHAR:
+            printf("  mov [rdi], al\n");
+            break;
+        case TYP_INT:
+            printf("  mov [rdi], eax\n");
+            break;
+        case TYP_PTR:
+            printf("  mov [rdi], rax\n");
+            break;
+        case TYP_ARRAY: panic("invalid store target: array");
+    }
 }
 
 static void gen_addr(Node *node, Env *env) {
@@ -368,7 +386,8 @@ static void gen_func(Node *node, Var *globals) {
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", offset);
         printf("  push rax\n");
-        if (sizeof_type(var->type) == 4) printf("  mov [rax], %s\n", argreg32[i]);
+        if (var->type->tag == TYP_CHAR) printf("  mov [rax], %s\n", argreg8[i]);
+        else if (var->type->tag == TYP_INT) printf("  mov [rax], %s\n", argreg32[i]);
         else printf("  mov [rax], %s\n", argreg64[i]);
         // printf("  mov [rbp-%d], %s\n", offset, argreg[i]);
     }

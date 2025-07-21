@@ -1,6 +1,7 @@
 #include "kcc.h"
 
 Type *type_int = &(Type){TYP_INT, NULL};
+Type *type_char = &(Type){TYP_CHAR, NULL};
 
 Type *pointer_to(Type *base) {
     Type *ptr = calloc(1, sizeof(Type));
@@ -19,18 +20,30 @@ Type *array_of(Type *base, int size) {
 
 int sizeof_type(Type *type) {
     switch (type->tag) {
+        case TYP_CHAR: return 1;
         case TYP_INT: return 4;
         case TYP_PTR: return 8;
         case TYP_ARRAY: return sizeof_type(type->base) * type->array_size;
-        default: panic("node_sizeof: error");
+        default: panic("error at sizeof_type");
     }
     return 0;
 }
 
-bool is_compatible(Type *a, Type *b) {
+static bool is_integer(Type *type) {
+    if (type->tag == TYP_CHAR) return true;
+    else if (type->tag == TYP_INT) return true;
+    else return false;
+}
+
+static Type *promote_if_integer(Type *type) {
+    if (is_integer(type)) return type_int;
+    else return type;
+}
+
+static bool is_compatible(Type *a, Type *b) {
     if (a->tag == TYP_PTR && a->tag == TYP_PTR)
         return is_compatible(a->base, b->base);
-    else return a->tag == b->tag;
+    else return is_integer(a) && is_integer(b);
 }
 
 Node *typed(Node *node, Env *env) {
@@ -45,7 +58,7 @@ Node *typed(Node *node, Env *env) {
             if (var == NULL) {
                 panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
             }
-            node->type = var->type;
+            node->type = promote_if_integer(var->type);
             break;
         }
         case NT_ADD: {
@@ -94,7 +107,7 @@ Node *typed(Node *node, Env *env) {
             Type *unary_typ = typed(node->unary_expr, env)->type;
             if (unary_typ->tag != TYP_PTR && unary_typ->tag != TYP_ARRAY)
                 panic("type check error: expected pointer");
-            node->type = unary_typ->base;
+            node->type = promote_if_integer(unary_typ->base);
             break;
         }
         case NT_ASSIGN: {
@@ -148,7 +161,6 @@ Node *typed(Node *node, Env *env) {
             for (int i = 0; i < node->func.params->len; i++)
                 typed(node->func.params->nodes[i], env);
             typed(node->func.body, env);
-            node->type = type_int; // TODO
             break;
         case NT_VARDECL:
             node->type = NULL;

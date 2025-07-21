@@ -29,23 +29,25 @@ typedef enum {
     TT_STAR, TT_SLASH,      // * /
     TT_AMPERSAND,           // &
     TT_BANG,                // !
-    TT_SIZEOF,              // sizeof
+    TT_KW_SIZEOF,           // sizeof
     TT_PAREN_L, TT_PAREN_R, // ( )
     TT_COMMA,               // ,
     TT_PLUS_PLUS,           // ++
     TT_MINUS_MINUS,         // --
     TT_INT,
     TT_IDENT,
+    TT_STRING,
     TT_BRACE_L, TT_BRACE_R, // { }
     TT_BRACKET_L,           // [
     TT_BRACKET_R,           // ]
     TT_SEMICOLON,           // ;
-    TT_RETURN,              // return
-    TT_IF,                  // if
-    TT_ELSE,                // else
-    TT_WHILE,               // while
-    TT_FOR,                 // for
+    TT_KW_RETURN,           // return
+    TT_KW_IF,               // if
+    TT_KW_ELSE,             // else
+    TT_KW_WHILE,            // while
+    TT_KW_FOR,              // for
     TT_KW_INT,              // int
+    TT_KW_CHAR,             // char
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -150,12 +152,13 @@ NodeList *parse(Parser *parser);
 
 // type
 struct Type {
-    enum { TYP_INT, TYP_PTR, TYP_ARRAY } tag;
+    enum { TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY } tag;
     Type *base; // pointer to
     int array_size;
 };
 
 extern Type *type_int;
+extern Type *type_char;
 
 int sizeof_type(Type *type);
 Type *pointer_to(Type *base);

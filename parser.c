@@ -161,7 +161,8 @@ static Node *unary_new(Token *token, Node *expr) {
                         tag = NT_ADDR; break;
         case TT_STAR:   tag = NT_DEREF; break;
         case TT_BANG:   tag = NT_BOOL_NOT; break;
-        case TT_SIZEOF: tag = NT_SIZEOF; break;
+        case TT_KW_SIZEOF:
+                        tag = NT_SIZEOF; break;
         default: panic("unary_new: invalid token TokenTag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
@@ -340,7 +341,7 @@ static Node *if_stmt(Parser *parser) {
     node->ifstmt.cond = expr(parser);
     if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
     node->ifstmt.then = stmt(parser);
-    if (peek(parser)->tag == TT_ELSE) {
+    if (peek(parser)->tag == TT_KW_ELSE) {
         consume(parser);
         node->ifstmt.els = stmt(parser);
     } else {
@@ -377,7 +378,10 @@ static Node *for_stmt(Parser *parser) {
 }
 
 static Type *decl_spec(Parser *parser) {
-    if (consume(parser)->tag != TT_KW_INT) panic("expected \"int\"");
+    Token *token = consume(parser);
+    if (token->tag == TT_KW_CHAR) return type_char;
+    else if (token->tag == TT_KW_INT) return type_int;
+    else panic("expected type");
     return type_int;
 }
 
@@ -416,15 +420,16 @@ static Node *stmt(Parser *parser) {
     switch (peek(parser)->tag) {
         case TT_BRACE_L:
             return block(parser);
-        case TT_IF:
+        case TT_KW_IF:
             return if_stmt(parser);
-        case TT_WHILE:
+        case TT_KW_WHILE:
             return while_stmt(parser);
-        case TT_FOR:
+        case TT_KW_FOR:
             return for_stmt(parser);
+        case TT_KW_CHAR:
         case TT_KW_INT:
             return decl(parser); 
-        case TT_RETURN:
+        case TT_KW_RETURN:
             node = node_new(NT_RETURN, consume(parser));
             node->unary_expr = expr(parser);
             break;

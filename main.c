@@ -113,16 +113,14 @@ void dump_nodes(Node *node) {
             dump_nodes(node->expr.rhs);
             break;
     }
-    char *int_str = "int";
-    char *ptr_str = "ptr";
-    char *arr_str = "arr";
     char *typ_str;
     if (!node->type) typ_str = "NULL";
     else {
         switch (node->type->tag) {
-            case TYP_INT: typ_str = int_str; break;
-            case TYP_PTR: typ_str = ptr_str; break;
-            case TYP_ARRAY: typ_str = arr_str; break;
+            case TYP_CHAR: typ_str = "char"; break;
+            case TYP_INT: typ_str = "int"; break;
+            case TYP_PTR: typ_str = "ptr"; break;
+            case TYP_ARRAY: typ_str = "arr"; break;
         }
     }
     printf("\b)->%s ", typ_str);
@@ -146,11 +144,11 @@ void dump_locals(Node *node_fn) {
     for (Var *var = node_fn->func.locals; var != NULL; var = var->next) {
         const char *start = var->name;
         int len = var->len;
-        printf("name:%.*s\toffset:%d\ttype:", len, start, var->offset);
-        for (Type *type = var->type; type != type_int; type = type->base) {
+        printf("name:%.*s\toffset:%d\ttype:integer", len, start, var->offset);
+        for (Type *type = var->type; (type != type_int && type != type_char); type = type->base) {
             printf("*");
         }
-        printf("int\n");
+        printf("\n");
     }
 }
 
