@@ -67,6 +67,7 @@ Node *typed(Node *node, Env *env) {
             else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_PTR) node->type = type_int;
             else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_PTR) node->type = type_int;
+            else panic("undefined: int - ptr");
             break;
         }
         case NT_MUL:
