@@ -22,6 +22,9 @@ static void gen_load(Type *type);
 static void gen_store(Type *type);
 static void gen_addr(Node *node, Env *env);
 static void gen_fncall(Node *node, Env *env);
+static void gen_expr_unary(Node *node, Env *env);
+static void gen_expr_assign(Node *node, Env *env);
+static void gen_expr_binary(Node *node, Env *env);
 static void gen_expr(Node *node, Env *env);
 static void gen_stmt(Node *node, Env *env);
 static void gen_func(Node *node, Var *globals);
@@ -116,25 +119,19 @@ static void gen_fncall(Node *node, Env *env) {
     printf("  push rax\n");
 }
 
-static void gen_expr(Node *node, Env *env) {
-    if (node->tag == NT_INT) {
-        printf("  push %d\n", node->integer);
-        return;
-    } else if (node->tag == NT_NEG) {
+static void gen_expr_unary(Node *node, Env *env) {
+    if (node->tag == NT_NEG) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
         printf("  neg rax\n");
         printf("  push rax\n");
-        return;
     } else if (node->tag == NT_ADDR) {
         gen_addr(node->unary_expr, env);
-        return;
     } else if (node->tag == NT_DEREF) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
         gen_load(node->type);
         printf("  push rax\n");
-        return;
     } else if (node->tag == NT_BOOL_NOT) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
@@ -142,89 +139,65 @@ static void gen_expr(Node *node, Env *env) {
         printf("  sete al\n");
         printf("  movzx rax, al\n");
         printf("  push rax\n");
-        return;
     } else if (node->tag == NT_SIZEOF) {
         int size = sizeof_type(node->unary_expr->type);
         printf("  push %d\n", size);
-        return;
-    } else if (node->tag == NT_IDENT) {
-        gen_addr(node, env);
-        printf("  pop rax\n");
-        gen_load(node->type);
-        printf("  push rax\n");
-        return;
-    } else if (node->tag == NT_ASSIGN) {
-        gen_addr(node->expr.lhs, env);
-        gen_expr(node->expr.rhs, env);
-        printf("  pop rax\n");
-        gen_store(node->type);
-        printf("  push rax\n");
-        return;
-    } else if (node->tag == NT_ASSIGN_ADD) {
-        gen_addr(node->expr.lhs, env);
-        gen_expr(node->expr.rhs, env);
-        printf("  pop rdi\n");
-        printf("  pop rsi\n");
-        printf("  mov rax, rsi\n");
-        gen_load(node->type);
-        printf("  add rax, rdi\n");
-        printf("  push rsi\n");
-        gen_store(node->type);
-        printf("  push rax\n");
-        return;
-    } else if (node->tag == NT_ASSIGN_SUB) {
-        gen_addr(node->expr.lhs, env);
-        gen_expr(node->expr.rhs, env);
-        printf("  pop rdi\n");
-        printf("  pop rsi\n");
-        printf("  mov rax, rsi\n");
-        gen_load(node->type);
-        printf("  sub rax, rdi\n");
-        printf("  push rsi\n");
-        gen_store(node->type);
-        printf("  push rax\n");
-        return;
-    } else if (node->tag == NT_ASSIGN_MUL) {
-        gen_addr(node->expr.lhs, env);
-        gen_expr(node->expr.rhs, env);
-        printf("  pop rdi\n");
-        printf("  pop rsi\n");
-        printf("  mov rax, rsi\n");
-        gen_load(node->type);
-        printf("  imul rax, rdi\n");
-        printf("  push rsi\n");
-        gen_store(node->type);
-        printf("  push rax\n");
-        return;
-    } else if (node->tag == NT_ASSIGN_DIV) {
-        gen_addr(node->expr.lhs, env);
-        gen_expr(node->expr.rhs, env);
-        printf("  pop rdi\n");
-        printf("  pop rsi\n");
-        printf("  mov rax, rsi\n");
-        gen_load(node->type);
-        printf("  cqo\n");
-        printf("  idiv rdi\n");
-        printf("  push rsi\n");
-        gen_store(node->type);
-        printf("  push rax\n");
-        return;
-    } else if (node->tag == NT_FNCALL) {
-        gen_fncall(node, env);
-        return;
+    } else {
+        panic("codegen: error at gen_expr_unary");
     }
+    return;
+}
 
+static void gen_expr_assign(Node *node, Env *env) {
+    gen_addr(node->expr.lhs, env);
+    gen_expr(node->expr.rhs, env);
+    if (node->tag == NT_ASSIGN) {
+        printf("  pop rax\n");
+    } else {
+        printf("  pop rdi\n");
+        printf("  pop rsi\n");
+        printf("  mov rax, rsi\n");
+        if (node->tag == NT_ASSIGN_ADD) {
+            gen_load(node->type);
+            printf("  add rax, rdi\n");
+            printf("  push rsi\n");
+        } else if (node->tag == NT_ASSIGN_SUB) {
+            gen_load(node->type);
+            printf("  sub rax, rdi\n");
+            printf("  push rsi\n");
+        } else if (node->tag == NT_ASSIGN_MUL) {
+            gen_load(node->type);
+            printf("  imul rax, rdi\n");
+            printf("  push rsi\n");
+        } else if (node->tag == NT_ASSIGN_DIV) {
+            gen_load(node->type);
+            printf("  cqo\n");
+            printf("  idiv rdi\n");
+            printf("  push rsi\n");
+        } else {
+            panic("codegen: error at gen_expr_assign");
+        }
+    }
+    gen_store(node->type);
+    printf("  push rax\n");
+    return;
+}
+
+static void gen_expr_binary(Node *node, Env *env) {
     gen_expr(node->expr.lhs, env);
     gen_expr(node->expr.rhs, env);
 
+    Type *lt = node->expr.lhs->type;
+    Type *rt = node->expr.rhs->type;
+
     if (node->tag == NT_ADD) {
-        if ((node->expr.lhs->type->tag == TYP_PTR && node->expr.rhs->type->tag == TYP_INT) || 
-            (node->expr.lhs->type->tag == TYP_ARRAY && node->expr.rhs->type->tag == TYP_INT)) {
+        if ((lt->tag == TYP_PTR && rt->tag == TYP_INT) || 
+            (lt->tag == TYP_ARRAY && rt->tag == TYP_INT)) {
             // ptr + int
             printf("  pop rdi\n");
             printf("  imul rdi, 4\n");
             printf("  pop rax\n");
-        } else if (node->expr.lhs->type->tag == TYP_INT && node->expr.rhs->type->tag == TYP_PTR) {
+        } else if (lt->tag == TYP_INT && rt->tag == TYP_PTR) {
             // int + ptr
             printf("  pop rdi\n");
             printf("  pop rax\n");
@@ -235,12 +208,12 @@ static void gen_expr(Node *node, Env *env) {
             printf("  pop rax\n");
         }
     } else if (node->tag == NT_SUB) {
-        if (node->expr.lhs->type->tag == TYP_PTR && node->expr.rhs->type->tag == TYP_INT) {
+        if (lt->tag == TYP_PTR && rt->tag == TYP_INT) {
             // ptr - int
             printf("  pop rdi\n");
             printf("  imul rdi, 4\n");
             printf("  pop rax\n");
-        } else if (node->expr.lhs->type->tag == TYP_PTR && node->expr.rhs->type->tag == TYP_PTR) {
+        } else if (lt->tag == TYP_PTR && rt->tag == TYP_PTR) {
             // ptr - ptr
             printf("  pop rdi\n");
             printf("  pop rax\n");
@@ -295,6 +268,40 @@ static void gen_expr(Node *node, Env *env) {
         default: panic("codegen: invalid node NodeTag=%d", node->tag);
     }
     printf("  push rax\n");
+}
+
+static void gen_expr(Node *node, Env *env) {
+    switch (node->tag) {
+        case NT_INT:
+            printf("  push %d\n", node->integer);
+            return;
+        case NT_IDENT:
+            gen_addr(node, env);
+            printf("  pop rax\n");
+            gen_load(node->type);
+            printf("  push rax\n");
+            return;
+        case NT_NEG:
+        case NT_ADDR:
+        case NT_DEREF:
+        case NT_BOOL_NOT:
+        case NT_SIZEOF: return gen_expr_unary(node, env);
+        case NT_ASSIGN:
+        case NT_ASSIGN_ADD:
+        case NT_ASSIGN_SUB:
+        case NT_ASSIGN_MUL:
+        case NT_ASSIGN_DIV: return gen_expr_assign(node, env);
+        case NT_FNCALL: return gen_fncall(node, env);
+        case NT_ADD:
+        case NT_SUB:
+        case NT_MUL:
+        case NT_DIV:
+        case NT_EQ:
+        case NT_NE:
+        case NT_LT:
+        case NT_LE: return gen_expr_binary(node, env);
+        default: panic("codegen: error at gen_expr");
+    }
 }
 
 static void gen_stmt(Node *node, Env *env) {
