@@ -58,12 +58,15 @@ Node *typed(Node *node, Env *env) {
             if (var == NULL) {
                 panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
             }
-            node->type = promote_if_integer(var->type);
+            node->type = var->type;
             break;
         }
+        case NT_STRING:
+            node->type = array_of(type_char, node->main_token->len - 2);
+            break;
         case NT_ADD: {
-            Type *lhs_typ = typed(node->expr.lhs, env)->type;
-            Type *rhs_typ = typed(node->expr.rhs, env)->type;
+            Type *lhs_typ = promote_if_integer(typed(node->expr.lhs, env)->type);
+            Type *rhs_typ = promote_if_integer(typed(node->expr.rhs, env)->type);
             if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
             else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_PTR) node->type = rhs_typ;
@@ -73,8 +76,8 @@ Node *typed(Node *node, Env *env) {
             break;
         }
         case NT_SUB: {
-            Type *lhs_typ = typed(node->expr.lhs, env)->type;
-            Type *rhs_typ = typed(node->expr.rhs, env)->type;
+            Type *lhs_typ = promote_if_integer(typed(node->expr.lhs, env)->type);
+            Type *rhs_typ = promote_if_integer(typed(node->expr.rhs, env)->type);
             if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
             else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
@@ -96,7 +99,7 @@ Node *typed(Node *node, Env *env) {
         }
         case NT_NEG:
         case NT_BOOL_NOT:
-            node->type = typed(node->unary_expr, env)->type;
+            node->type = promote_if_integer(typed(node->unary_expr, env)->type);
             break;
         case NT_ADDR: {
             Type *base = typed(node->unary_expr, env)->type;
@@ -107,22 +110,19 @@ Node *typed(Node *node, Env *env) {
             Type *unary_typ = typed(node->unary_expr, env)->type;
             if (unary_typ->tag != TYP_PTR && unary_typ->tag != TYP_ARRAY)
                 panic("type check error: expected pointer");
-            node->type = promote_if_integer(unary_typ->base);
+            node->type = unary_typ->base;
             break;
         }
-        case NT_ASSIGN: {
-            Type *lhs_typ = typed(node->expr.lhs, env)->type;
-            Type *rhs_typ = typed(node->expr.rhs, env)->type;
-            if (!is_compatible(lhs_typ, rhs_typ)) panic("type check error: incompatible type");
-            node->type = rhs_typ;
-            break;
-        }
+        case NT_ASSIGN:
         case NT_ASSIGN_ADD:
         case NT_ASSIGN_SUB:
         case NT_ASSIGN_MUL:
         case NT_ASSIGN_DIV: {
-            typed(node->expr.lhs, env);
-            node->type = typed(node->expr.rhs, env)->type;
+            Type *lhs_typ = typed(node->expr.lhs, env)->type;
+            Type *rhs_typ = typed(node->expr.rhs, env)->type;
+            if (rhs_typ->tag == TYP_ARRAY) rhs_typ = pointer_to(rhs_typ->base);
+            if (!is_compatible(lhs_typ, rhs_typ)) panic("type check error: incompatible type");
+            node->type = rhs_typ;
             break;
         }
         case NT_FNCALL:

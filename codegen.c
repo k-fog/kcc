@@ -38,7 +38,7 @@ static int align_16(int n) {
 static void gen_load(Type *type) {
     switch (type->tag) {
         case TYP_CHAR:
-            printf("  movsx rax, [rax]\n");
+            printf("  movsx rax, byte ptr [rax]\n");
             break;
         case TYP_INT:
             printf("  movsxd rax, [rax]\n");
@@ -81,12 +81,14 @@ static void gen_addr(Node *node, Env *env) {
         if (var == NULL) panic("undefined variable");
         printf("  lea rax, %.*s[rip]\n", var->len, var->name);
         printf("  push rax\n");
-        return;
     } else if (node->tag == NT_DEREF) {
         gen_expr(node->unary_expr, env);
-        return;
+    } else if (node->tag == NT_STRING) {
+        printf("  lea rax, .L.STR.%d[rip]\n", node->index);
+        printf("  push rax\n");
+    } else {
+        panic("unexpected node NodeTag=%d", node->tag);
     }
-    panic("unexpected node NodeTag=%d", node->tag);
 }
 
 static void gen_fncall(Node *node, Env *env) {
@@ -195,13 +197,13 @@ static void gen_expr_binary(Node *node, Env *env) {
             (lt->tag == TYP_ARRAY && rt->tag == TYP_INT)) {
             // ptr + int
             printf("  pop rdi\n");
-            printf("  imul rdi, 4\n");
+            printf("  imul rdi, %d\n", sizeof_type(lt->base));
             printf("  pop rax\n");
         } else if (lt->tag == TYP_INT && rt->tag == TYP_PTR) {
             // int + ptr
             printf("  pop rdi\n");
             printf("  pop rax\n");
-            printf("  imul rax, 4\n");
+            printf("  imul rax, %d\n", sizeof_type(rt->base));
         } else {
             // int + int 
             printf("  pop rdi\n");
@@ -211,7 +213,7 @@ static void gen_expr_binary(Node *node, Env *env) {
         if (lt->tag == TYP_PTR && rt->tag == TYP_INT) {
             // ptr - int
             printf("  pop rdi\n");
-            printf("  imul rdi, 4\n");
+            printf("  imul rdi, %d\n", sizeof_type(lt->base));
             printf("  pop rax\n");
         } else if (lt->tag == TYP_PTR && rt->tag == TYP_PTR) {
             // ptr - ptr
@@ -281,6 +283,7 @@ static void gen_expr(Node *node, Env *env) {
             gen_load(node->type);
             printf("  push rax\n");
             return;
+        case NT_STRING: return gen_addr(node, env);
         case NT_NEG:
         case NT_ADDR:
         case NT_DEREF:
@@ -403,12 +406,18 @@ static void gen_func(Node *node, Var *globals) {
     gen_stmt(body, env);
 }
 
-void gen(NodeList *nlist, Var *globals) {
-    printf(".intel_syntax noprefix\n");
+void gen(NodeList *nlist, Var *globals, TokenList *string_tokens) {
+    printf(".intel_syntax noprefix\n\n");
     for (Var *global = globals; global != NULL; global = global->next) {
         printf(".data\n");
         printf("%.*s:\n", global->len, global->name);
         printf("  .zero %d\n\n", sizeof_type(global->type));
+    }
+
+    for (int i = 0; i < string_tokens->len; i++) {
+        Token *token = string_tokens->tokens[i];
+        printf(".L.STR.%d:\n", i);
+        printf("  .string %.*s\n\n", token->len, token->start);
     }
 
     for (int i = 0; i < nlist->len; i++) {

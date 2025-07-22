@@ -14,6 +14,7 @@ void dump_nodes(Node *node) {
             printf("%d ", node->integer);
             return;
         case NT_IDENT:
+        case NT_STRING:
             print_token(node->main_token);
             printf(" ");
             return;
@@ -175,14 +176,14 @@ int main(int argc, char *argv[]) {
     Parser *parser = parser_new(tokens);
     NodeList *funcs = parse(parser);
     dump_funcs(funcs);
-    gen(funcs, parser->global_var);
+    gen(funcs, parser->global_var, parser->string_tokens);
     return 0;
 #else
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
     Parser *parser = parser_new(tokens);
     NodeList *nlist = parse(parser);
-    gen(nlist, parser->global_var);
+    gen(nlist, parser->global_var, parser->string_tokens);
     return 0;
 #endif
 }

@@ -66,6 +66,7 @@ Token *tokenize(Lexer *lexer);
 // parser
 typedef struct Node Node;
 typedef struct NodeList NodeList;
+typedef struct TokenList TokenList;
 typedef struct Var Var;
 typedef struct Type Type;
 typedef struct Env Env;
@@ -75,11 +76,13 @@ typedef struct {
     Token *current_token;
     Node *current_func;
     Var *global_var;
+    TokenList *string_tokens;
 } Parser;
 
 typedef enum {     // token node->???
     NT_INT,        // <integer> integer
     NT_IDENT,      // <identifier> main_token
+    NT_STRING,     // <string> main_token, index: index of string_literals
     NT_ADD,        // + expr
     NT_SUB,        // - expr
     NT_MUL,        // * expr
@@ -115,6 +118,7 @@ struct Node {
     Type *type;
     union {
         int integer;
+        int index;
         Node *unary_expr;
         struct { Node *lhs, *rhs; } expr;
         struct { Node *name; NodeList *args; } fncall;
@@ -135,6 +139,16 @@ struct NodeList {
 #define DEFAULT_NODELIST_CAP 16
 NodeList *nodelist_new(int capacity);
 void nodelist_append(NodeList *nlist, Node *node);
+
+struct TokenList {
+    Token **tokens;
+    int len;
+    int capacity;
+};
+
+#define DEFAULT_TOKENLIST_CAP 16
+TokenList *tokenlist_new(int capacity);
+void tokenlist_append(TokenList *tlist, Token *token);
 
 struct Var {
     const char *name;
@@ -173,4 +187,4 @@ struct Env {
 
 Env *env_new(Var *locals, Var *globals);
 void print_token(Token *token);
-void gen(NodeList *nlist, Var *globals);
+void gen(NodeList *nlist, Var *globals, TokenList *string_tokens);

@@ -81,6 +81,23 @@ void nodelist_append(NodeList *nlist, Node *node) {
     nlist->nodes[nlist->len++] = node;
 }
 
+// TokenList
+
+TokenList *tokenlist_new(int capacity) {
+    TokenList *tlist = calloc(1, sizeof(TokenList));
+    tlist->tokens = calloc(capacity, sizeof(Token*));
+    tlist->len = 0;
+    tlist->capacity = capacity;
+    return tlist;
+}
+
+void tokenlist_append(TokenList *tlist, Token *token) {
+    if (tlist->capacity <= tlist->len) {
+        tlist->capacity = tlist->capacity * 2 + 1;
+        tlist->tokens = realloc(tlist->tokens, tlist->capacity * sizeof(Token*));
+    }
+    tlist->tokens[tlist->len++] = token;
+}
 
 // Var
 
@@ -125,6 +142,8 @@ Parser *parser_new(Token *tokens) {
     parser->tokens = tokens;
     parser->current_token = tokens;
     parser->current_func = NULL;
+    parser->global_var = NULL;
+    parser->string_tokens = tokenlist_new(DEFAULT_TOKENLIST_CAP);
     return parser;
 }
 
@@ -143,6 +162,13 @@ static Node *int_new(Token *token, int val) {
 
 static Node *ident_new(Token *token) {
     return node_new(NT_IDENT, token);
+}
+
+static Node *string_new(TokenList *tlist, Token *token) {
+    Node *node = node_new(NT_STRING, token);
+    node->index = tlist->len;
+    tokenlist_append(tlist, token);
+    return node;
 }
 
 static Node *fncall_new(Token *token, Node *name, NodeList *args) {
@@ -260,6 +286,9 @@ static Node *expr_prefix(Parser *parser) {
             break;
         case TT_IDENT:
             node = ident_new(consume(parser));
+            break;
+        case TT_STRING:
+            node = string_new(parser->string_tokens, consume(parser));
             break;
         case TT_PAREN_L:
             consume(parser);
