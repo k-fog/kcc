@@ -1,4 +1,5 @@
 #include "kcc.h"
+#include <string.h>
 
 enum OpPrecedence {
     PREC_NONE = 0, // for syntax error check
@@ -203,6 +204,12 @@ static Node *unary_new(Token *token, Node *expr) {
     return node;
 }
 
+static Node *typename_new(Token *token, Type *type) {
+    Node *node = node_new(NT_TYPENAME, token);
+    node->type = type;
+    return node;
+}
+
 static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
     NodeTag tag;
     switch (token->tag) {
@@ -280,8 +287,30 @@ static NodeList *args(Parser *parser) {
     return args;
 }
 
+static Type *try_parse_typename(Parser *parser) {
+    Token *token = peek(parser);
+    if (token->tag == TT_KW_CHAR) {
+        consume(parser);
+        return type_char;
+    } else if (token->tag == TT_KW_INT) {
+        consume(parser);
+        return type_int;
+    }
+    return NULL;
+}
+
 static Node *unary(Parser *parser) {
     Token *token = consume(parser);
+    if (token->tag == TT_KW_SIZEOF) {
+        if (peek(parser)->tag == TT_PAREN_L)  {
+            consume(parser); // (
+            Token *type_token = peek(parser);
+            Type *type = try_parse_typename(parser);
+            Node *expr = type ? typename_new(type_token, type) : expr_bp(parser, PREC_LOWEST);
+            if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+            return unary_new(token, expr);
+        }
+    }
     return unary_new(token, expr_bp(parser, PREC_PREFIX));
 }
 

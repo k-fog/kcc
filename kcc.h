@@ -111,6 +111,7 @@ typedef enum {     // token node->???
     NT_VARDECL,    // <local variable declaration> unary_expr
     NT_GLOBALDECL, // <global variable declaration> unary_expr
     NT_SIZEOF,     // sizeof unary_expr
+    NT_TYPENAME,   // <type> type (for sizeof)
 } NodeTag;
 
 struct Node {

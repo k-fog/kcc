@@ -62,7 +62,7 @@ Node *typed(Node *node, Env *env) {
             break;
         }
         case NT_STRING:
-            node->type = array_of(type_char, node->main_token->len - 2);
+            node->type = array_of(type_char, node->main_token->len - 2 + 1); // -2: '"' * 2, +1: '\0'
             break;
         case NT_ADD: {
             Type *lhs_typ = promote_if_integer(typed(node->expr.lhs, env)->type);
@@ -174,6 +174,9 @@ Node *typed(Node *node, Env *env) {
         case NT_SIZEOF:
             typed(node->unary_expr, env);
             node->type = type_int;
+            break;
+        case NT_TYPENAME:
+            panic("typed: unreachable");
             break;
     }
     return node;
