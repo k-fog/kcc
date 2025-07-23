@@ -4,6 +4,7 @@
 static char *argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static char *str_label = ".L.STR";
 
 void print_token(Token *token) {
     const char *start = token->start;
@@ -16,6 +17,11 @@ Env *env_new(Symbol *locals, Symbol *globals) {
     env->locals = locals;
     env->globals = globals;
     return env;
+}
+
+static int count() {
+    static int i = 0;
+    return i++;
 }
 
 static void gen_load(Type *type);
@@ -84,7 +90,7 @@ static void gen_addr(Node *node, Env *env) {
     } else if (node->tag == NT_DEREF) {
         gen_expr(node->unary_expr, env);
     } else if (node->tag == NT_STRING) {
-        printf("  lea rax, .L.STR.%d[rip]\n", node->index);
+        printf("  lea rax, %s%d[rip]\n", str_label, node->index);
         printf("  push rax\n");
     } else {
         panic("unexpected node NodeTag=%d", node->tag);
@@ -92,8 +98,7 @@ static void gen_addr(Node *node, Env *env) {
 }
 
 static void gen_fncall(Node *node, Env *env) {
-    static int id = 0;
-    int local_id = id++;
+    int id = count();
     Node **nodes = node->fncall.args->nodes;
     int narg = node->fncall.args->len;
     if (sizeof(argreg64) / sizeof(char*) < narg) panic("too many args");
@@ -106,18 +111,18 @@ static void gen_fncall(Node *node, Env *env) {
     printf("  mov rax, rsp\n");
     printf("  and rax, 0xF\n");
     printf("  cmp rax, 0\n");
-    printf("  je  .L.FNCALL%d.ALIGNED\n", local_id);
+    printf("  je  .L.FNCALL%d.ALIGNED\n", id);
     printf("  sub rsp, 8\n");
     printf("  call ");
     print_token(node->main_token);
     printf("\n");
     printf("  add rsp, 8\n");
-    printf("  jmp .L.FNCALL%d.END\n", local_id);
-    printf(".L.FNCALL%d.ALIGNED:\n", local_id);
+    printf("  jmp .L.FNCALL%d.END\n", id);
+    printf(".L.FNCALL%d.ALIGNED:\n", id);
     printf("  call ");
     print_token(node->main_token);
     printf("\n");
-    printf(".L.FNCALL%d.END:\n", local_id);
+    printf(".L.FNCALL%d.END:\n", id);
     printf("  push rax\n");
 }
 
@@ -308,8 +313,7 @@ static void gen_expr(Node *node, Env *env) {
 }
 
 static void gen_stmt(Node *node, Env *env) {
-    static int id = 0;
-    int local_id;
+    int id = count();
     if (node->tag == NT_RETURN) {
         gen_expr(node->unary_expr, env);
         printf("  pop rax\n");
@@ -327,42 +331,39 @@ static void gen_stmt(Node *node, Env *env) {
         }
         return;
     } else if (node->tag == NT_IF) {
-        local_id = id++;
         gen_expr(node->ifstmt.cond, env);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L%d.ELSE\n", local_id);
+        printf("  je  .L%d.ELSE\n", id);
         gen_stmt(node->ifstmt.then, env);
-        printf("  jmp .L%d.END\n", local_id);
-        printf(".L%d.ELSE:\n", local_id);
+        printf("  jmp .L%d.END\n", id);
+        printf(".L%d.ELSE:\n", id);
         if (node->ifstmt.els != NULL) {
             gen_stmt(node->ifstmt.els, env);
         }
-        printf(".L%d.END:\n", local_id);
+        printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_WHILE) {
-        local_id = id++;
-        printf(".L%d.WHILE:\n", local_id);
+        printf(".L%d.WHILE:\n", id);
         gen_expr(node->whilestmt.cond, env);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L%d.END\n", local_id);
+        printf("  je  .L%d.END\n", id);
         gen_stmt(node->whilestmt.body, env);
-        printf("  jmp .L%d.WHILE\n", local_id);
-        printf(".L%d.END:\n", local_id);
+        printf("  jmp .L%d.WHILE\n", id);
+        printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_FOR) {
-        local_id = id++;
         gen_expr(node->forstmt.def, env);
-        printf(".L%d.FOR:\n", local_id);
+        printf(".L%d.FOR:\n", id);
         gen_expr(node->forstmt.cond, env);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L%d.END\n", local_id);
+        printf("  je  .L%d.END\n", id);
         gen_stmt(node->forstmt.body, env);
         gen_expr(node->forstmt.next, env);
-        printf("  jmp .L%d.FOR\n", local_id);
-        printf(".L%d.END:\n", local_id);
+        printf("  jmp .L%d.FOR\n", id);
+        printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_VARDECL) {
         panic("unreachable");
@@ -417,7 +418,7 @@ void gen(NodeList *nlist, Symbol *globals, TokenList *string_tokens) {
 
     for (int i = 0; i < string_tokens->len; i++) {
         Token *token = string_tokens->tokens[i];
-        printf(".L.STR.%d:\n", i);
+        printf("%s%d:\n", str_label, i);
         printf("  .string %.*s\n\n", token->len, token->start);
     }
 
