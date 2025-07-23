@@ -11,10 +11,11 @@ void print_token(Token *token) {
     printf("%.*s", len, start);
 }
 
-Env *env_new(Var *locals, Var *globals) {
+Env *env_new(Var *locals, Var *globals, Var *funcs) {
     Env *env = calloc(1, sizeof(Env));
     env->locals = locals;
     env->globals = globals;
+    env->funcs = funcs;
     return env;
 }
 
@@ -371,7 +372,7 @@ static void gen_stmt(Node *node, Env *env) {
 }
 
 static void gen_func(Node *node, Var *globals) {
-    Env *env = env_new(node->func.locals, globals);
+    Env *env = env_new(node->func.locals, globals, NULL);
 
     int offset = env->locals ? env->locals->offset : 0;
     const char *name = node->func.name->main_token->start;

@@ -127,6 +127,13 @@ static Var *append_global_var(Parser *parser, Token *ident, Type *type) {
     return var;
 }
 
+static Var *append_func(Parser *parser, Token *ident, Type *type) {
+    Var **funcs = &parser->funcs;
+    Var *var = var_new(ident, type, 0, *funcs);
+    (*funcs) = var;
+    return var;
+}
+
 Var *find_var(Var *varlist, Token *ident) {
     for (Var *var = varlist; var != NULL; var = var->next) {
         if (ident->len != var->len) continue;
@@ -483,7 +490,7 @@ static NodeList *params(Parser *parser) {
 
 static Node *func(Parser *parser, Type *return_type, Token *name) {
     Node *node = node_new(NT_FUNC, name); 
-    // node->type = return_type;
+    append_func(parser, name, return_type);
 
     parser->current_func = node;
     node->func.locals = NULL;
@@ -521,7 +528,7 @@ NodeList *parse(Parser *parser) {
     NodeList *program = nodelist_new(DEFAULT_NODELIST_CAP);
     while (peek(parser)->tag != TT_EOF) {
         Node *node = toplevel(parser);
-        node = typed(node, env_new(node->func.locals, parser->global_var)); // add type info to nodes
+        node = typed(node, env_new(node->func.locals, parser->global_var, parser->funcs)); // add type info to nodes
         if (node->tag == NT_FUNC) nodelist_append(program, node);
     }
     return program;

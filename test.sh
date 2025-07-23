@@ -137,8 +137,9 @@ assert 'int *a;int main() {alloc4(&a,0,1,2,3);return a[0];}' 0
 assert 'int a[4];int main() {a[0]=1;return a[0];}' 1
 assert 'int main() {int foo[8]; return &foo[7] - &foo[2];}' 5
 assert 'int main() {char x[3];x[0] = -1;x[1] = 2;int y;y = 4;return x[0] + y;}' 3
-assert 'int c2i(char c){return c;}int main() {int a; a = c2i(256); return a;}' 0
+assert 'int c2i(char c){return c;}int main() {int a; a = c2i(256)/16; return a;}' 0
 assert 'int main() { char *x; x = "abc"; return x[0]; }' 97
 assert 'int main() { char *x; char *y; x = "abc"; y = "def"; return y[2]; }' 102
+assert 'char chr() { return 0; } int main() { return sizeof(chr()); }' 1
 
 echo "all tests passed"

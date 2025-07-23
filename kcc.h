@@ -76,6 +76,7 @@ typedef struct {
     Token *current_token;
     Node *current_func;
     Var *global_var;
+    Var *funcs;
     TokenList *string_tokens;
 } Parser;
 
@@ -181,10 +182,11 @@ Node *typed(Node *node, Env *env);
 
 // codegen
 struct Env {
+    Var *funcs;
     Var *globals;
     Var *locals;
 };
 
-Env *env_new(Var *locals, Var *globals);
+Env *env_new(Var *locals, Var *globals, Var *funcs);
 void print_token(Token *token);
 void gen(NodeList *nlist, Var *globals, TokenList *string_tokens);

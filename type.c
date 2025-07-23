@@ -125,11 +125,14 @@ Node *typed(Node *node, Env *env) {
             node->type = rhs_typ;
             break;
         }
-        case NT_FNCALL:
+        case NT_FNCALL: {
             for (int i = 0; i < node->fncall.args->len; i++)
                 typed(node->fncall.args->nodes[i], env);
-            node->type = type_int; // todo: determining by function return type
+            Var *func = find_var(env->funcs, node->main_token);
+            if (!func) node->type = type_int;
+            else node->type = func->type;
             break;
+        }
         case NT_BLOCK:
             for (int i = 0; i < node->block->len; i++)
                 typed(node->block->nodes[i], env);
