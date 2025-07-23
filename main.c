@@ -142,9 +142,9 @@ void dump_nodelist(NodeList *nlist) {
 }
 
 void dump_locals(Node *node_fn) {
-    for (Var *var = node_fn->func.locals; var != NULL; var = var->next) {
-        const char *start = var->name;
-        int len = var->len;
+    for (Symbol *var = node_fn->func.locals; var != NULL; var = var->next) {
+        const char *start = var->token->start;
+        int len = var->token->len;
         printf("name:%.*s\toffset:%d\ttype:integer", len, start, var->offset);
         for (Type *type = var->type; (type != type_int && type != type_char); type = type->base) {
             printf("*");
@@ -176,14 +176,14 @@ int main(int argc, char *argv[]) {
     Parser *parser = parser_new(tokens);
     NodeList *funcs = parse(parser);
     dump_funcs(funcs);
-    gen(funcs, parser->global_var, parser->string_tokens);
+    gen(funcs, parser->global_symbols, parser->string_tokens);
     return 0;
 #else
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
     Parser *parser = parser_new(tokens);
     NodeList *nlist = parse(parser);
-    gen(nlist, parser->global_var, parser->string_tokens);
+    gen(nlist, parser->global_symbols, parser->string_tokens);
     return 0;
 #endif
 }

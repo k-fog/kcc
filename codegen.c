@@ -11,11 +11,10 @@ void print_token(Token *token) {
     printf("%.*s", len, start);
 }
 
-Env *env_new(Var *locals, Var *globals, Var *funcs) {
+Env *env_new(Symbol *locals, Symbol *globals) {
     Env *env = calloc(1, sizeof(Env));
     env->locals = locals;
     env->globals = globals;
-    env->funcs = funcs;
     return env;
 }
 
@@ -28,7 +27,7 @@ static void gen_expr_assign(Node *node, Env *env);
 static void gen_expr_binary(Node *node, Env *env);
 static void gen_expr(Node *node, Env *env);
 static void gen_stmt(Node *node, Env *env);
-static void gen_func(Node *node, Var *globals);
+static void gen_func(Node *node, Symbol *globals);
 
 static int align_16(int n) {
     // return ((n + 15) / 16) * 16;
@@ -42,10 +41,10 @@ static void gen_load(Type *type) {
             printf("  movsx rax, byte ptr [rax]\n");
             break;
         case TYP_INT:
-            printf("  movsxd rax, [rax]\n");
+            printf("  movsxd rax, dword ptr [rax]\n");
             break;
         case TYP_PTR:
-            printf("  mov rax, [rax]\n");
+            printf("  mov rax, qword ptr [rax]\n");
             break;
         case TYP_ARRAY: return;
     }
@@ -70,7 +69,7 @@ static void gen_store(Type *type) {
 
 static void gen_addr(Node *node, Env *env) {
     if (node->tag == NT_IDENT) {
-        Var *var = find_var(env->locals, node->main_token);
+        Symbol *var = find_symbol(ST_LVAR, env->locals, node->main_token);
         if (var != NULL) {
             int offset = var->offset;
             printf("  mov rax, rbp\n");
@@ -78,9 +77,9 @@ static void gen_addr(Node *node, Env *env) {
             printf("  push rax\n");
             return;
         }
-        var = find_var(env->globals, node->main_token);
+        var = find_symbol(ST_GVAR, env->globals, node->main_token);
         if (var == NULL) panic("undefined variable");
-        printf("  lea rax, %.*s[rip]\n", var->len, var->name);
+        printf("  lea rax, %.*s[rip]\n", var->token->len, var->token->start);
         printf("  push rax\n");
     } else if (node->tag == NT_DEREF) {
         gen_expr(node->unary_expr, env);
@@ -371,8 +370,8 @@ static void gen_stmt(Node *node, Env *env) {
     gen_expr(node, env);
 }
 
-static void gen_func(Node *node, Var *globals) {
-    Env *env = env_new(node->func.locals, globals, NULL);
+static void gen_func(Node *node, Symbol *globals) {
+    Env *env = env_new(node->func.locals, globals);
 
     int offset = env->locals ? env->locals->offset : 0;
     const char *name = node->func.name->main_token->start;
@@ -392,7 +391,7 @@ static void gen_func(Node *node, Var *globals) {
     int nparam = params->len;
     for (int i = 0; i < nparam; i++) {
         Node *node = params->nodes[i];
-        Var *var = find_var(env->locals, node->main_token);
+        Symbol *var = find_symbol(ST_LVAR, env->locals, node->main_token);
         int offset = var->offset;
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", offset);
@@ -407,11 +406,12 @@ static void gen_func(Node *node, Var *globals) {
     gen_stmt(body, env);
 }
 
-void gen(NodeList *nlist, Var *globals, TokenList *string_tokens) {
+void gen(NodeList *nlist, Symbol *globals, TokenList *string_tokens) {
     printf(".intel_syntax noprefix\n\n");
-    for (Var *global = globals; global != NULL; global = global->next) {
+    for (Symbol *global = globals; global != NULL; global = global->next) {
+        if (global->tag != ST_GVAR) continue;
         printf(".data\n");
-        printf("%.*s:\n", global->len, global->name);
+        printf("%.*s:\n", global->token->len, global->token->start);
         printf("  .zero %d\n\n", sizeof_type(global->type));
     }
 

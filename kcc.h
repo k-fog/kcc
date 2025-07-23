@@ -67,7 +67,7 @@ Token *tokenize(Lexer *lexer);
 typedef struct Node Node;
 typedef struct NodeList NodeList;
 typedef struct TokenList TokenList;
-typedef struct Var Var;
+typedef struct Symbol Symbol;
 typedef struct Type Type;
 typedef struct Env Env;
 
@@ -75,8 +75,7 @@ typedef struct {
     const Token *tokens;
     Token *current_token;
     Node *current_func;
-    Var *global_var;
-    Var *funcs;
+    Symbol *global_symbols;
     TokenList *string_tokens;
 } Parser;
 
@@ -128,7 +127,7 @@ struct Node {
         struct { Node *cond; Node *body; } whilestmt;
         struct { Node *def; Node *cond; Node *next; Node *body; } forstmt;
         NodeList *block;
-        struct { Node *name; NodeList *params; Node *body; Var *locals; } func;
+        struct { Node *name; NodeList *params; Node *body; Symbol *locals; } func;
     };
 };
 
@@ -152,16 +151,20 @@ struct TokenList {
 TokenList *tokenlist_new(int capacity);
 void tokenlist_append(TokenList *tlist, Token *token);
 
-struct Var {
-    const char *name;
-    int len;
-    int offset;
+typedef enum {
+    ST_LVAR, ST_GVAR, ST_FUNC
+} SymbolTag;
+
+struct Symbol {
+    SymbolTag tag;
+    Token *token;
     Type *type;
-    Var *next;
+    Symbol *next;
+
+    int offset; // for local variable
 };
 
-Var *var_new(Token *ident, Type *type, int offset, Var *next);
-Var *find_var(Var *varlist, Token *ident);
+Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident);
 
 Parser *parser_new(Token *tokens);
 NodeList *parse(Parser *parser);
@@ -183,11 +186,10 @@ Node *typed(Node *node, Env *env);
 
 // codegen
 struct Env {
-    Var *funcs;
-    Var *globals;
-    Var *locals;
+    Symbol *globals;
+    Symbol *locals;
 };
 
-Env *env_new(Var *locals, Var *globals, Var *funcs);
+Env *env_new(Symbol *locals, Symbol *globals);
 void print_token(Token *token);
-void gen(NodeList *nlist, Var *globals, TokenList *string_tokens);
+void gen(NodeList *nlist, Symbol *globals, TokenList *string_tokens);

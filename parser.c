@@ -1,5 +1,4 @@
 #include "kcc.h"
-#include <string.h>
 
 enum OpPrecedence {
     PREC_NONE = 0, // for syntax error check
@@ -100,45 +99,38 @@ void tokenlist_append(TokenList *tlist, Token *token) {
     tlist->tokens[tlist->len++] = token;
 }
 
-// Var
+// Symbol
 
-Var *var_new(Token *ident, Type *type, int offset, Var *next) {
-    Var *var = calloc(1, sizeof(Var));
-    var->name = ident->start;
-    var->len = ident->len;
-    var->type = type;
-    var->offset = offset;
-    var->next = next;
-    return var;
+static Symbol *symbol_new(SymbolTag tag, Token *ident, Type *type, Symbol *next) {
+    Symbol *symbol = calloc(1, sizeof(Symbol));
+    symbol->tag = tag;
+    symbol->token = ident;
+    symbol->type = type;
+    symbol->next = next;
+    return symbol;
 }
 
-static Var *append_local_var(Parser *parser, Token *ident, Type *type) {
-    Var **locals = &parser->current_func->func.locals;
+static Symbol *append_local_var(Parser *parser, Token *ident, Type *type) {
+    Symbol **locals = &parser->current_func->func.locals;
     int current_offset = *locals ? (*locals)->offset : 0;
     int size = sizeof_type(type);
-    Var *var = var_new(ident, type, current_offset + size, *locals);
-    (*locals) = var;
-    return var;
+    Symbol *symbol = symbol_new(ST_LVAR, ident, type, *locals);
+    symbol->offset = current_offset + size;
+    (*locals) = symbol;
+    return symbol;
 }
 
-static Var *append_global_var(Parser *parser, Token *ident, Type *type) {
-    Var **globals = &parser->global_var;
-    Var *var = var_new(ident, type, 0, *globals);
-    (*globals) = var;
-    return var;
+static Symbol *append_global_sym(SymbolTag tag, Parser *parser, Token *ident, Type *type) {
+    Symbol **globals = &parser->global_symbols;
+    Symbol *symbol = symbol_new(tag, ident, type, *globals);
+    (*globals) = symbol;
+    return symbol;
 }
 
-static Var *append_func(Parser *parser, Token *ident, Type *type) {
-    Var **funcs = &parser->funcs;
-    Var *var = var_new(ident, type, 0, *funcs);
-    (*funcs) = var;
-    return var;
-}
-
-Var *find_var(Var *varlist, Token *ident) {
-    for (Var *var = varlist; var != NULL; var = var->next) {
-        if (ident->len != var->len) continue;
-        if (strncmp(var->name, ident->start, var->len) == 0) return var;
+Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident) {
+    for (Symbol *sym = symlist; sym != NULL; sym = sym->next) {
+        if (ident->len != sym->token->len) continue;
+        if (sym->tag == tag && strncmp(sym->token->start, ident->start, sym->token->len) == 0) return sym;
     }
     return NULL;
 }
@@ -150,7 +142,7 @@ Parser *parser_new(Token *tokens) {
     parser->tokens = tokens;
     parser->current_token = tokens;
     parser->current_func = NULL;
-    parser->global_var = NULL;
+    parser->global_symbols = NULL;
     parser->string_tokens = tokenlist_new(DEFAULT_TOKENLIST_CAP);
     return parser;
 }
@@ -519,7 +511,7 @@ static NodeList *params(Parser *parser) {
 
 static Node *func(Parser *parser, Type *return_type, Token *name) {
     Node *node = node_new(NT_FUNC, name); 
-    append_func(parser, name, return_type);
+    append_global_sym(ST_FUNC, parser, name, return_type);
 
     parser->current_func = node;
     node->func.locals = NULL;
@@ -546,7 +538,7 @@ static Node *toplevel(Parser *parser) {
             type = array_of(type, size);
             if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
         }
-        append_global_var(parser, ident_token, type);
+        append_global_sym(ST_GVAR, parser, ident_token, type);
         node = node_new(NT_GLOBALDECL, ident_token);
         if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     }
@@ -557,7 +549,7 @@ NodeList *parse(Parser *parser) {
     NodeList *program = nodelist_new(DEFAULT_NODELIST_CAP);
     while (peek(parser)->tag != TT_EOF) {
         Node *node = toplevel(parser);
-        node = typed(node, env_new(node->func.locals, parser->global_var, parser->funcs)); // add type info to nodes
+        node = typed(node, env_new(node->func.locals, parser->global_symbols)); // add type info to nodes
         if (node->tag == NT_FUNC) nodelist_append(program, node);
     }
     return program;

@@ -53,8 +53,8 @@ Node *typed(Node *node, Env *env) {
             node->type = type_int;
             break;
         case NT_IDENT: {
-            Var *var = find_var(env->locals, node->main_token);
-            if (var == NULL) var = find_var(env->globals, node->main_token);
+            Symbol *var = find_symbol(ST_LVAR, env->locals, node->main_token);
+            if (var == NULL) var = find_symbol(ST_GVAR, env->globals, node->main_token);
             if (var == NULL) {
                 panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
             }
@@ -128,7 +128,7 @@ Node *typed(Node *node, Env *env) {
         case NT_FNCALL: {
             for (int i = 0; i < node->fncall.args->len; i++)
                 typed(node->fncall.args->nodes[i], env);
-            Var *func = find_var(env->funcs, node->main_token);
+            Symbol *func = find_symbol(ST_FUNC, env->globals, node->main_token);
             if (!func) node->type = type_int;
             else node->type = func->type;
             break;
