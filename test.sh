@@ -141,6 +141,8 @@ assert 'int c2i(char c){return c;}int main() {int a; a = c2i(256)/16; return a;}
 assert 'int main() { char *x; x = "abc"; return x[0]; }' 97
 assert 'int main() { char *x; char *y; x = "abc"; y = "def"; return y[2]; }' 102
 assert 'char chr() { return 0; } int main() { return sizeof(chr()); }' 1
+# assert 'int *ptr() {int *p; alloc4(&p,1,2,4,8); return p;} int main() {return ptr()[3];}' 8
+assert 'int *ptr() {int *p; alloc4(&p,1,2,4,8); return p;} int main() {return (ptr())[3];}' 8
 assert 'int main() { return sizeof(char); }' 1
 assert 'int main() { return sizeof(int); }' 4
 assert 'int main() { return "abc"[1]; }' 98
