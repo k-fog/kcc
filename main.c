@@ -162,6 +162,34 @@ void dump_funcs(NodeList *funcs) {
     }
 }
 
+char *read_file(char *path) {
+    FILE *fp = stdin;
+    if (strcmp(path, "-") != 0) {
+        fp = fopen(path, "r");
+        if (!fp) panic("cannot open %s: %s", path, strerror(errno));
+    }
+
+    int capacity = 2048;
+    int len = 0;
+    char *buf = malloc(capacity);
+    if (!buf) panic("cannot allocate memory: %s", strerror(errno));
+
+    int c;
+    while ((c = fgetc(fp)) != EOF) {
+        if (capacity <= len + 2) { // +2: \n\0
+            capacity *= 2;
+            char *tmp = realloc(buf, capacity);
+            if (!tmp) panic("cannot reallocate memory: %s", strerror(errno));
+            buf = tmp;
+        }
+        buf[len++] = (char)c;
+    }
+    buf[len++] = '\n';
+    buf[len] = '\0';
+
+    if (fp != stdin) fclose(fp);
+    return buf;
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -170,7 +198,8 @@ int main(int argc, char *argv[]) {
     }
 
 #ifdef DEBUG
-    Lexer *lexer = lexer_new(argv[1]);
+    char *src = read_file(argv[1]);
+    Lexer *lexer = lexer_new(src);
     Token *tokens = tokenize(lexer);
     dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
@@ -180,7 +209,8 @@ int main(int argc, char *argv[]) {
     gen(prog);
     return 0;
 #else
-    Lexer *lexer = lexer_new(argv[1]);
+    char *src = read_file(argv[1]);
+    Lexer *lexer = lexer_new(src);
     Token *tokens = tokenize(lexer);
     Parser *parser = parser_new(tokens);
     Program *prog = parse(parser);

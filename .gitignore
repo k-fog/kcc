@@ -2,5 +2,6 @@ kcc
 *.o
 *.s
 tmp
+tmp.c
 *.out
 test_fncall
