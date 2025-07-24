@@ -1,5 +1,13 @@
 #include "kcc.h"
 
+Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types) {
+    Env *env = calloc(1, sizeof(Env));
+    env->local_vars = local_vars;
+    env->global_vars = global_vars;
+    env->func_types = func_types;
+    return env;
+}
+
 Type *type_int = &(Type){TYP_INT, NULL};
 Type *type_char = &(Type){TYP_CHAR, NULL};
 
@@ -46,15 +54,15 @@ static bool is_compatible(Type *a, Type *b) {
     else return is_integer(a) && is_integer(b);
 }
 
-Node *typed(Node *node, Env *env) {
+static Node *typed(Node *node, Env *env) {
     if (!node || node->type != NULL) return node;
     switch (node->tag) {
         case NT_INT:
             node->type = type_int;
             break;
         case NT_IDENT: {
-            Symbol *var = find_symbol(ST_LVAR, env->locals, node->main_token);
-            if (var == NULL) var = find_symbol(ST_GVAR, env->globals, node->main_token);
+            Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
+            if (var == NULL) var = find_symbol(ST_GVAR, env->global_vars, node->main_token);
             if (var == NULL) {
                 panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
             }
@@ -128,7 +136,7 @@ Node *typed(Node *node, Env *env) {
         case NT_FNCALL: {
             for (int i = 0; i < node->fncall.args->len; i++)
                 typed(node->fncall.args->nodes[i], env);
-            Symbol *func = find_symbol(ST_FUNC, env->globals, node->main_token);
+            Symbol *func = find_symbol(ST_FUNC, env->func_types, node->main_token);
             if (!func) node->type = type_int;
             else node->type = func->type;
             break;
@@ -180,4 +188,16 @@ Node *typed(Node *node, Env *env) {
             break;
     }
     return node;
+}
+
+void type_funcs(Program *prog) {
+    NodeList *funcs = prog->funcs;
+    Env *env = env_new(NULL, prog->global_vars, prog->func_types);
+    for (int i = 0; i < funcs->len; i++) {
+        Node *fnode = funcs->nodes[i];
+        env->local_vars = fnode->func.locals; // set local variables
+        typed(fnode, env);
+    }
+    free(env);
+    return;
 }

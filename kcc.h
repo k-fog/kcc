@@ -75,7 +75,8 @@ typedef struct {
     const Token *tokens;
     Token *current_token;
     Node *current_func;
-    Symbol *global_symbols;
+    Symbol *func_types;
+    Symbol *global_vars;
     TokenList *string_tokens;
 } Parser;
 
@@ -164,10 +165,17 @@ struct Symbol {
     int offset; // for local variable
 };
 
+typedef struct {
+    NodeList *funcs;
+    Symbol *func_types;
+    Symbol *global_vars;
+    TokenList *string_tokens;
+} Program;
+
 Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident);
 
 Parser *parser_new(Token *tokens);
-NodeList *parse(Parser *parser);
+Program *parse(Parser *parser);
 
 // type
 struct Type {
@@ -179,17 +187,19 @@ struct Type {
 extern Type *type_int;
 extern Type *type_char;
 
+struct Env {
+    Symbol *local_vars;
+    Symbol *global_vars;
+    Symbol *func_types;
+};
+
+Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types);
+
 int sizeof_type(Type *type);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
-Node *typed(Node *node, Env *env);
+void type_funcs(Program *prog);
 
 // codegen
-struct Env {
-    Symbol *globals;
-    Symbol *locals;
-};
-
-Env *env_new(Symbol *locals, Symbol *globals);
 void print_token(Token *token);
-void gen(NodeList *nlist, Symbol *globals, TokenList *string_tokens);
+void gen(Program *prog);

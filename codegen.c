@@ -12,13 +12,6 @@ void print_token(Token *token) {
     printf("%.*s", len, start);
 }
 
-Env *env_new(Symbol *locals, Symbol *globals) {
-    Env *env = calloc(1, sizeof(Env));
-    env->locals = locals;
-    env->globals = globals;
-    return env;
-}
-
 static int count() {
     static int i = 0;
     return i++;
@@ -33,7 +26,7 @@ static void gen_expr_assign(Node *node, Env *env);
 static void gen_expr_binary(Node *node, Env *env);
 static void gen_expr(Node *node, Env *env);
 static void gen_stmt(Node *node, Env *env);
-static void gen_func(Node *node, Symbol *globals);
+static void gen_func(Node *node, Env *env);
 
 static int align_16(int n) {
     // return ((n + 15) / 16) * 16;
@@ -75,7 +68,7 @@ static void gen_store(Type *type) {
 
 static void gen_addr(Node *node, Env *env) {
     if (node->tag == NT_IDENT) {
-        Symbol *var = find_symbol(ST_LVAR, env->locals, node->main_token);
+        Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
         if (var != NULL) {
             int offset = var->offset;
             printf("  mov rax, rbp\n");
@@ -83,7 +76,7 @@ static void gen_addr(Node *node, Env *env) {
             printf("  push rax\n");
             return;
         }
-        var = find_symbol(ST_GVAR, env->globals, node->main_token);
+        var = find_symbol(ST_GVAR, env->global_vars, node->main_token);
         if (var == NULL) panic("undefined variable");
         printf("  lea rax, %.*s[rip]\n", var->token->len, var->token->start);
         printf("  push rax\n");
@@ -371,10 +364,8 @@ static void gen_stmt(Node *node, Env *env) {
     gen_expr(node, env);
 }
 
-static void gen_func(Node *node, Symbol *globals) {
-    Env *env = env_new(node->func.locals, globals);
-
-    int offset = env->locals ? env->locals->offset : 0;
+static void gen_func(Node *node, Env *env) {
+    int offset = env->local_vars ? env->local_vars->offset : 0;
     const char *name = node->func.name->main_token->start;
     int name_len = node->func.name->main_token->len;
     Node *body = node->func.body;
@@ -392,7 +383,7 @@ static void gen_func(Node *node, Symbol *globals) {
     int nparam = params->len;
     for (int i = 0; i < nparam; i++) {
         Node *node = params->nodes[i];
-        Symbol *var = find_symbol(ST_LVAR, env->locals, node->main_token);
+        Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
         int offset = var->offset;
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", offset);
@@ -407,24 +398,31 @@ static void gen_func(Node *node, Symbol *globals) {
     gen_stmt(body, env);
 }
 
-void gen(NodeList *nlist, Symbol *globals, TokenList *string_tokens) {
+void gen(Program *prog) {
     printf(".intel_syntax noprefix\n\n");
-    for (Symbol *global = globals; global != NULL; global = global->next) {
+
+    // generate strings
+    for (int i = 0; i < prog->string_tokens->len; i++) {
+        Token *token = prog->string_tokens->tokens[i];
+        printf("%s%d:\n", str_label, i);
+        printf("  .string %.*s\n\n", token->len, token->start);
+    }
+
+    // generate global variables
+    for (Symbol *global = prog->global_vars; global != NULL; global = global->next) {
         if (global->tag != ST_GVAR) continue;
         printf(".data\n");
         printf("%.*s:\n", global->token->len, global->token->start);
         printf("  .zero %d\n\n", sizeof_type(global->type));
     }
 
-    for (int i = 0; i < string_tokens->len; i++) {
-        Token *token = string_tokens->tokens[i];
-        printf("%s%d:\n", str_label, i);
-        printf("  .string %.*s\n\n", token->len, token->start);
-    }
-
-    for (int i = 0; i < nlist->len; i++) {
-        Node *node = nlist->nodes[i];
-        gen_func(node, globals);
+    // generate functions
+    Env *env = env_new(NULL, prog->global_vars, prog->func_types);
+    for (int i = 0; i < prog->funcs->len; i++) {
+        Node *fnode = prog->funcs->nodes[i];
+        env->local_vars = fnode->func.locals; // set local variables
+        gen_func(fnode, env);
         printf("\n");
     }
+    free(env);
 }

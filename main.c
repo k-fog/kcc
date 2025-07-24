@@ -174,16 +174,18 @@ int main(int argc, char *argv[]) {
     Token *tokens = tokenize(lexer);
     dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
-    NodeList *funcs = parse(parser);
-    dump_funcs(funcs);
-    gen(funcs, parser->global_symbols, parser->string_tokens);
+    Program *prog = parse(parser);
+    dump_funcs(prog->funcs);
+    type_funcs(prog);
+    gen(prog);
     return 0;
 #else
     Lexer *lexer = lexer_new(argv[1]);
     Token *tokens = tokenize(lexer);
     Parser *parser = parser_new(tokens);
-    NodeList *nlist = parse(parser);
-    gen(nlist, parser->global_symbols, parser->string_tokens);
+    Program *prog = parse(parser);
+    type_funcs(prog);
+    gen(prog);
     return 0;
 #endif
 }

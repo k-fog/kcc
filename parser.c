@@ -120,10 +120,17 @@ static Symbol *append_local_var(Parser *parser, Token *ident, Type *type) {
     return symbol;
 }
 
-static Symbol *append_global_sym(SymbolTag tag, Parser *parser, Token *ident, Type *type) {
-    Symbol **globals = &parser->global_symbols;
-    Symbol *symbol = symbol_new(tag, ident, type, *globals);
+static Symbol *append_global_var(Parser *parser, Token *ident, Type *type) {
+    Symbol **globals = &parser->global_vars;
+    Symbol *symbol = symbol_new(ST_GVAR, ident, type, *globals);
     (*globals) = symbol;
+    return symbol;
+}
+
+static Symbol *append_func_type(Parser *parser, Token *ident, Type *type) {
+    Symbol **fntypes = &parser->func_types;
+    Symbol *symbol = symbol_new(ST_FUNC, ident, type, *fntypes);
+    (*fntypes) = symbol;
     return symbol;
 }
 
@@ -142,7 +149,8 @@ Parser *parser_new(Token *tokens) {
     parser->tokens = tokens;
     parser->current_token = tokens;
     parser->current_func = NULL;
-    parser->global_symbols = NULL;
+    parser->global_vars = NULL;
+    parser->func_types = NULL;
     parser->string_tokens = tokenlist_new(DEFAULT_TOKENLIST_CAP);
     return parser;
 }
@@ -511,7 +519,7 @@ static NodeList *params(Parser *parser) {
 
 static Node *func(Parser *parser, Type *return_type, Token *name) {
     Node *node = node_new(NT_FUNC, name); 
-    append_global_sym(ST_FUNC, parser, name, return_type);
+    append_func_type(parser, name, return_type);
 
     parser->current_func = node;
     node->func.locals = NULL;
@@ -538,19 +546,22 @@ static Node *toplevel(Parser *parser) {
             type = array_of(type, size);
             if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
         }
-        append_global_sym(ST_GVAR, parser, ident_token, type);
+        append_global_var(parser, ident_token, type);
         node = node_new(NT_GLOBALDECL, ident_token);
         if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     }
     return node;
 }
 
-NodeList *parse(Parser *parser) {
-    NodeList *program = nodelist_new(DEFAULT_NODELIST_CAP);
+Program *parse(Parser *parser) {
+    Program *prog = calloc(1, sizeof(Program));
+    prog->funcs = nodelist_new(DEFAULT_NODELIST_CAP);
     while (peek(parser)->tag != TT_EOF) {
         Node *node = toplevel(parser);
-        node = typed(node, env_new(node->func.locals, parser->global_symbols)); // add type info to nodes
-        if (node->tag == NT_FUNC) nodelist_append(program, node);
+        if (node->tag == NT_FUNC) nodelist_append(prog->funcs, node);
     }
-    return program;
+    prog->func_types = parser->func_types;
+    prog->global_vars = parser->global_vars;
+    prog->string_tokens = parser->string_tokens;
+    return prog;
 }
