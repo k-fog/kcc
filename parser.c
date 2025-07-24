@@ -63,6 +63,10 @@ static bool is_infix(TokenTag tag) {
     return precedences[tag] != PREC_NONE;
 }
 
+static bool is_typename(Token *token) {
+    return token->tag == TT_KW_INT || token->tag == TT_KW_CHAR;
+}
+
 // NodeList
 
 NodeList *nodelist_new(int capacity) {
@@ -204,8 +208,8 @@ static Node *unary_new(Token *token, Node *expr) {
     return node;
 }
 
-static Node *typename_new(Token *token, Type *type) {
-    Node *node = node_new(NT_TYPENAME, token);
+static Node *typenode_new(Token *token, Type *type) {
+    Node *node = node_new(NT_TYPE, token);
     node->type = type;
     return node;
 }
@@ -247,6 +251,10 @@ static Token *consume(Parser *parser) {
     return token;
 }
 
+static Type *decl_spec(Parser *parser);
+static Type *pointer(Parser *parser, Type *type);
+static Type *try_parse_typename(Parser *parser);
+
 static Node *integer(Parser *parser);
 static NodeList *args(Parser *parser);
 static Node *unary(Parser *parser);
@@ -259,13 +267,35 @@ static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
-static Type *decl_spec(Parser *parser);
-static Type *pointer(Parser *parser, Type *type);
 static Node *decl(Parser *parser);
 static Node *param_decl(Parser *parser);
 static NodeList *params(Parser *parser);
 static Node *func(Parser *parser, Type *return_type, Token *name);
 static Node *toplevel(Parser *parser);
+
+static Type *decl_spec(Parser *parser) {
+    Token *token = consume(parser);
+    if (token->tag == TT_KW_CHAR) return type_char;
+    else if (token->tag == TT_KW_INT) return type_int;
+    else panic("expected type");
+    return type_int;
+}
+
+static Type *pointer(Parser *parser, Type *type) {
+    while (peek(parser)->tag == TT_STAR) {
+        consume(parser);
+        type = pointer_to(type);
+    }
+    return type;
+}
+
+static Type *try_parse_typename(Parser *parser) {
+    Token *token = peek(parser);
+    if (!is_typename(token)) return NULL;
+    Type *base = decl_spec(parser);
+    Type *type = pointer(parser, base);
+    return type;
+}
 
 static Node *integer(Parser *parser) {
     int val = 0;
@@ -287,18 +317,6 @@ static NodeList *args(Parser *parser) {
     return args;
 }
 
-static Type *try_parse_typename(Parser *parser) {
-    Token *token = peek(parser);
-    if (token->tag == TT_KW_CHAR) {
-        consume(parser);
-        return type_char;
-    } else if (token->tag == TT_KW_INT) {
-        consume(parser);
-        return type_int;
-    }
-    return NULL;
-}
-
 static Node *unary(Parser *parser) {
     Token *token = consume(parser);
     if (token->tag == TT_KW_SIZEOF) {
@@ -306,7 +324,7 @@ static Node *unary(Parser *parser) {
             consume(parser); // (
             Token *type_token = peek(parser);
             Type *type = try_parse_typename(parser);
-            Node *expr = type ? typename_new(type_token, type) : expr_bp(parser, PREC_LOWEST);
+            Node *expr = type ? typenode_new(type_token, type) : expr_bp(parser, PREC_LOWEST);
             if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
             return unary_new(token, expr);
         }
@@ -442,22 +460,6 @@ static Node *for_stmt(Parser *parser) {
     return node;
 }
 
-static Type *decl_spec(Parser *parser) {
-    Token *token = consume(parser);
-    if (token->tag == TT_KW_CHAR) return type_char;
-    else if (token->tag == TT_KW_INT) return type_int;
-    else panic("expected type");
-    return type_int;
-}
-
-static Type *pointer(Parser *parser, Type *type) {
-    while (peek(parser)->tag == TT_STAR) {
-        consume(parser);
-        type = pointer_to(type);
-    }
-    return type;
-}
-
 static Node *decl(Parser *parser) {
     Node *node = param_decl(parser);
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
@@ -465,8 +467,8 @@ static Node *decl(Parser *parser) {
 }
 
 static Node *param_decl(Parser *parser) {
-    Type *base = decl_spec(parser);
-    Type *type = pointer(parser, base);
+    Type *type = try_parse_typename(parser);
+    if (!type) panic("expected variable declaration");
     Token *ident_token = consume(parser);
     if (peek(parser)->tag == TT_BRACKET_L) {
         consume(parser); // [
@@ -534,8 +536,8 @@ static Node *func(Parser *parser, Type *return_type, Token *name) {
 
 static Node *toplevel(Parser *parser) {
     Node *node;
-    Type *base = decl_spec(parser);
-    Type *type = pointer(parser, base);
+    Type *type = try_parse_typename(parser);
+    if (!type) panic("expected variable declaration");
     Token *ident_token = consume(parser);
 
     if (peek(parser)->tag == TT_PAREN_L) node = func(parser, type, ident_token);

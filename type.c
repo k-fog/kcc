@@ -183,7 +183,7 @@ static Node *typed(Node *node, Env *env) {
             typed(node->unary_expr, env);
             node->type = type_int;
             break;
-        case NT_TYPENAME:
+        case NT_TYPE:
             panic("typed: unreachable");
             break;
     }

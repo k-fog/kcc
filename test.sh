@@ -147,6 +147,7 @@ assert 'int *ptr() {int *p; alloc4(&p,1,2,4,8); return p;} int main() {return (p
 assert 'int main() { return sizeof(char); }' 1
 assert 'int main() { return sizeof(int); }' 4
 assert 'int main() { return sizeof("123456789")/sizeof(char); }' 10
-# assert 'int main() { return sizeof(int*); }' 8
+assert 'int main() { return sizeof(int*); }' 8
+assert 'int main() { return sizeof(char***); }' 8
 
 echo "all tests passed"
