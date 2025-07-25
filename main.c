@@ -38,9 +38,15 @@ void dump_nodes(Node *node) {
             printf("(sizeof ");
             dump_nodes(node->unary_expr);
             break;
-        case NT_VARDECL:
-            printf("(decl "); // temporary
+        case NT_PARAMDECL:
+            printf("(declare "); // temporary
             dump_nodes(node->unary_expr);
+            break;
+        case NT_LVARDECL:
+            printf("(declare "); // temporary
+            for (int i = 0; i < node->declarators->len; i++) {
+                dump_nodes(node->declarators->nodes[i]);
+            }
             break;
         case NT_RETURN:
             printf("(return ");
@@ -49,6 +55,7 @@ void dump_nodes(Node *node) {
         case NT_BLOCK:
             printf("(block \n");
             for (int i = 0; i < node->block->len; i++) {
+                printf("  ");
                 dump_nodes(node->block->nodes[i]);
                 printf("\n");
             }

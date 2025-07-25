@@ -173,7 +173,12 @@ static Node *typed(Node *node, Env *env) {
                 typed(node->func.params->nodes[i], env);
             typed(node->func.body, env);
             break;
-        case NT_VARDECL:
+        case NT_PARAMDECL:
+            node->type = NULL;
+            break;
+        case NT_LVARDECL:
+            for (int i = 0; i < node->declarators->len; i++)
+                typed(node->declarators->nodes[i], env);
             node->type = NULL;
             break;
         case NT_GLOBALDECL:

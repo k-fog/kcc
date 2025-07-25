@@ -318,8 +318,8 @@ static void gen_stmt(Node *node, Env *env) {
     } else if (node->tag == NT_BLOCK) {
         for (int i = 0; i < node->block->len; i++) {
             Node *child = node->block->nodes[i];
-            if (child->tag == NT_VARDECL) continue; // skip if node is a variable declaration
             gen_stmt(child, env);
+            if (child->tag == NT_LVARDECL || child->tag == NT_PARAMDECL) continue;
             printf("  pop rax\n");
         }
         return;
@@ -358,9 +358,14 @@ static void gen_stmt(Node *node, Env *env) {
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
         return;
-    } else if (node->tag == NT_VARDECL) {
-        panic("unreachable");
-    }
+    } else if (node->tag == NT_LVARDECL) {
+        NodeList *declarators = node->declarators;
+        for (int i = 0; i < declarators->len; i++) {
+            Node *child = declarators->nodes[i];
+            if (child->tag == NT_ASSIGN) gen_expr(child, env);
+        }
+        return;
+    } else if (node->tag == NT_PARAMDECL) return;
     gen_expr(node, env);
 }
 

@@ -273,6 +273,8 @@ static NodeList *params(Parser *parser);
 static Node *func(Parser *parser, Type *return_type, Token *name);
 static Node *toplevel(Parser *parser);
 
+// parse type
+
 static Type *decl_spec(Parser *parser) {
     Token *token = consume(parser);
     if (token->tag == TT_KW_CHAR) return type_char;
@@ -460,8 +462,34 @@ static Node *for_stmt(Parser *parser) {
     return node;
 }
 
+// identifier or assign expr
+static Node *declarator(Parser *parser, Type *type) {
+    type = pointer(parser, type);
+    Token *ident_token = consume(parser);
+    Node *node = node_new(NT_IDENT, ident_token);
+    if (peek(parser)->tag == TT_BRACKET_L) {
+        consume(parser); // [
+        int size = integer(parser)->integer;
+        type = array_of(type, size);
+        if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
+    }
+    if (peek(parser)->tag == TT_EQ) {
+        Token *token_eq = consume(parser);
+        node = expr_new(token_eq, node, expr(parser));
+    }
+    append_local_var(parser, ident_token, type);
+    return node;
+}
+
 static Node *decl(Parser *parser) {
-    Node *node = param_decl(parser);
+    Node *node = node_new(NT_LVARDECL, peek(parser));
+    node->declarators = nodelist_new(DEFAULT_NODELIST_CAP);
+    Type *type_spec = decl_spec(parser);
+    if (!type_spec) panic("expected variable declaration");
+    do {
+        Node *dnode = declarator(parser, type_spec);
+        nodelist_append(node->declarators, dnode);
+    } while (peek(parser)->tag == TT_COMMA && consume(parser));
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     return node;
 }
@@ -476,7 +504,7 @@ static Node *param_decl(Parser *parser) {
         type = array_of(type, size);
         if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
     }
-    Node *node = node_new(NT_VARDECL, ident_token);
+    Node *node = node_new(NT_PARAMDECL, ident_token);
     node->unary_expr = ident_new(ident_token);
     append_local_var(parser, ident_token, type);
     return node;

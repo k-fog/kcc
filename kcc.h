@@ -109,7 +109,8 @@ typedef enum {     // token node->???
     NT_WHILE,      // while whilestmt
     NT_FOR,        // for forstmt
     NT_FUNC,       // <function> func
-    NT_VARDECL,    // <local variable declaration> unary_expr
+    NT_PARAMDECL,  // <parameter declaration> unary_expr
+    NT_LVARDECL,   // <local variable declaration> declarators
     NT_GLOBALDECL, // <global variable declaration> unary_expr
     NT_SIZEOF,     // sizeof unary_expr
     NT_TYPE,       // <type> type (for sizeof)
@@ -130,6 +131,7 @@ struct Node {
         struct { Node *def; Node *cond; Node *next; Node *body; } forstmt;
         NodeList *block;
         struct { Node *name; NodeList *params; Node *body; Symbol *locals; } func;
+        NodeList *declarators;
     };
 };
 

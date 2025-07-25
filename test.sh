@@ -149,5 +149,10 @@ assert 'int main() { return sizeof(int); }' 4
 assert 'int main() { return sizeof("123456789")/sizeof(char); }' 10
 assert 'int main() { return sizeof(int*); }' 8
 assert 'int main() { return sizeof(char***); }' 8
+assert 'int main() {int a=1,b;b=2;return a+b;}' 3
+assert 'int main() {int a=1,b=2; return a+b;}' 3
+assert 'int main() {int a=1,b=2;int *x=&a,y=3; return b+*x+y;}' 6
+# assert 'int main() {int a[3][4]; return sizeof(a);}' 48
+# assert 'int main() {int a[3][4]; return sizeof(a[1]);}' 16
 
 echo "all tests passed"
