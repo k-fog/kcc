@@ -267,6 +267,8 @@ static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
+static Node *direct_declarator(Parser *parser, Type **type);
+static Node *declarator(Parser *parser, Type **type);
 static Node *decl(Parser *parser);
 static Node *param_decl(Parser *parser);
 static NodeList *params(Parser *parser);
@@ -462,22 +464,39 @@ static Node *for_stmt(Parser *parser) {
     return node;
 }
 
-// identifier or assign expr
-static Node *declarator(Parser *parser, Type *type) {
-    type = pointer(parser, type);
-    Token *ident_token = consume(parser);
-    Node *node = node_new(NT_IDENT, ident_token);
-    if (peek(parser)->tag == TT_BRACKET_L) {
+static Node *direct_declarator(Parser *parser, Type **type) {
+    Node *node;
+    Token *token = peek(parser);
+    if (token->tag == TT_IDENT) {
+        node = ident_new(consume(parser));
+    } else if (token->tag == TT_PAREN_L) {
+        consume(parser);
+        node = declarator(parser, type);
+        if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    }
+    Type *size_stack = NULL;
+    while (peek(parser)->tag == TT_BRACKET_L) {
         consume(parser); // [
         int size = integer(parser)->integer;
-        type = array_of(type, size);
+        size_stack = array_of(size_stack, size);
         if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
     }
-    if (peek(parser)->tag == TT_EQ) {
-        Token *token_eq = consume(parser);
-        node = expr_new(token_eq, node, expr(parser));
+    for (Type *t = size_stack; t != NULL; t = t->base) {
+        *type = array_of(*type, t->array_size);
     }
-    append_local_var(parser, ident_token, type);
+    return node;
+}
+
+static Node *declarator(Parser *parser, Type **type) {
+    *type = pointer(parser, *type);
+    if (peek(parser)->tag == TT_STAR) {
+        consume(parser); // *
+        Node *node = declarator(parser, type);
+        *type = pointer_to(*type);
+        return node;
+    }
+    Node *node = direct_declarator(parser, type);
+    if (node->tag != NT_IDENT) panic("internal error at declarator");
     return node;
 }
 
@@ -487,7 +506,14 @@ static Node *decl(Parser *parser) {
     Type *type_spec = decl_spec(parser);
     if (!type_spec) panic("expected variable declaration");
     do {
-        Node *dnode = declarator(parser, type_spec);
+        // Type *type = type_copy(type_spec);
+        Type *type = type_spec;
+        Node *dnode = declarator(parser, &type);
+        append_local_var(parser, dnode->main_token, type);
+        if (peek(parser)->tag == TT_EQ) {
+            Token *token_eq = consume(parser);
+            dnode = expr_new(token_eq, dnode, expr(parser));
+        }
         nodelist_append(node->declarators, dnode);
     } while (peek(parser)->tag == TT_COMMA && consume(parser));
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");

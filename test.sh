@@ -152,7 +152,10 @@ assert 'int main() { return sizeof(char***); }' 8
 assert 'int main() {int a=1,b;b=2;return a+b;}' 3
 assert 'int main() {int a=1,b=2; return a+b;}' 3
 assert 'int main() {int a=1,b=2;int *x=&a,y=3; return b+*x+y;}' 6
-# assert 'int main() {int a[3][4]; return sizeof(a);}' 48
-# assert 'int main() {int a[3][4]; return sizeof(a[1]);}' 16
+assert 'int main() {int ((a))=3; return a;}' 3
+assert 'int main() {int a[3][4]; return sizeof(a);}' 48
+assert 'int main() {int a[3][4]; return sizeof(a[1]);}' 16
+assert 'int main() {int *hoge[10]; return sizeof(hoge);}' 80
+assert 'int main() {int (*hoge)[10]; return sizeof(hoge);}' 8
 
 echo "all tests passed"

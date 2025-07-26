@@ -199,6 +199,7 @@ struct Env {
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types);
 
 int sizeof_type(Type *type);
+Type *type_copy(Type *type);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
 void type_funcs(Program *prog);

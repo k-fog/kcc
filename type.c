@@ -11,6 +11,16 @@ Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types) {
 Type *type_int = &(Type){TYP_INT, NULL};
 Type *type_char = &(Type){TYP_CHAR, NULL};
 
+Type *type_copy(Type *type) {
+    if (type == type_int) return type;
+    else if (type == type_char) return type;
+    Type *base = type_copy(type->base);
+    if (type->tag == TYP_PTR) return pointer_to(base);
+    else if (type->tag == TYP_ARRAY) return array_of(base, type->array_size);
+    panic("internal error at type_copy");
+    return NULL;
+}
+
 Type *pointer_to(Type *base) {
     Type *ptr = calloc(1, sizeof(Type));
     ptr->tag = TYP_PTR;
