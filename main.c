@@ -8,6 +8,29 @@ void panic(char *fmt, ...) {
     exit(1);
 }
 
+void dump_type(Type *type) {
+    if (!type) {
+        printf("NULL");
+        return;
+    }
+    switch(type->tag) {
+        case TYP_CHAR:
+            printf("char");
+            break;
+        case TYP_INT:
+            printf("int");
+            break;
+        case TYP_PTR:
+            printf("pointer to ");
+            dump_type(type->base);
+            break;
+        case TYP_ARRAY: 
+            printf("array (size:%d) of ", type->array_size);
+            dump_type(type->base);
+            break;
+    }
+}
+
 void dump_nodes(Node *node) {
     switch (node->tag) {
         case NT_INT:
@@ -121,17 +144,9 @@ void dump_nodes(Node *node) {
             dump_nodes(node->expr.rhs);
             break;
     }
-    char *typ_str;
-    if (!node->type) typ_str = "NULL";
-    else {
-        switch (node->type->tag) {
-            case TYP_CHAR: typ_str = "char"; break;
-            case TYP_INT: typ_str = "int"; break;
-            case TYP_PTR: typ_str = "ptr"; break;
-            case TYP_ARRAY: typ_str = "arr"; break;
-        }
-    }
-    printf("\b)->%s ", typ_str);
+    printf("\b)->");
+    dump_type(node->type);
+    printf(" ");
 }
 
 void dump_tokens(Token *tokens) {
@@ -152,10 +167,8 @@ void dump_locals(Node *node_fn) {
     for (Symbol *var = node_fn->func.locals; var != NULL; var = var->next) {
         const char *start = var->token->start;
         int len = var->token->len;
-        printf("name:%.*s\toffset:%d\ttype:integer", len, start, var->offset);
-        for (Type *type = var->type; (type != type_int && type != type_char); type = type->base) {
-            printf("*");
-        }
+        printf("name:%.*s\toffset:%d\ttype:", len, start, var->offset);
+        dump_type(var->type);
         printf("\n");
     }
 }

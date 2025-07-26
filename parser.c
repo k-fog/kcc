@@ -253,6 +253,7 @@ static Token *consume(Parser *parser) {
 
 static Type *decl_spec(Parser *parser);
 static Type *pointer(Parser *parser, Type *type);
+static Type *array(Parser *parser, Type *type);
 static Type *try_parse_typename(Parser *parser);
 
 static Node *integer(Parser *parser);
@@ -267,8 +268,8 @@ static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
-static Node *direct_declarator(Parser *parser, Type **type);
-static Node *declarator(Parser *parser, Type **type);
+static Node *direct_declarator(Parser *parser, Type *type);
+static Node *declarator(Parser *parser, Type *type);
 static Node *decl(Parser *parser);
 static Node *param_decl(Parser *parser);
 static NodeList *params(Parser *parser);
@@ -464,40 +465,46 @@ static Node *for_stmt(Parser *parser) {
     return node;
 }
 
-static Node *direct_declarator(Parser *parser, Type **type) {
-    Node *node;
-    Token *token = peek(parser);
-    if (token->tag == TT_IDENT) {
-        node = ident_new(consume(parser));
-    } else if (token->tag == TT_PAREN_L) {
-        consume(parser);
-        node = declarator(parser, type);
-        if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
-    }
-    Type *size_stack = NULL;
+static Type *array(Parser *parser, Type *type) {
+    int len = 0;
+    int capacity = 4;
+    int *stack = calloc(capacity, sizeof(int));
     while (peek(parser)->tag == TT_BRACKET_L) {
         consume(parser); // [
         int size = integer(parser)->integer;
-        size_stack = array_of(size_stack, size);
+        if (capacity <= len) {
+            capacity *= 2;
+            stack = realloc(stack, capacity * sizeof(int));
+        }
+        stack[len++] = size;
         if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
     }
-    for (Type *t = size_stack; t != NULL; t = t->base) {
-        *type = array_of(*type, t->array_size);
+    for (int i = len - 1; 0 <= i; i--) {
+        type = array_of(type, stack[i]);
     }
+    return type;
+}
+
+static Node *direct_declarator(Parser *parser, Type *type) {
+    Node *node;
+    Token *token = peek(parser);
+    Type *placeholder = calloc(1, sizeof(Type));
+    *placeholder = *type;
+    if (token->tag == TT_IDENT) {
+        node = ident_new(consume(parser));
+        node->type = placeholder;
+    } else if (token->tag == TT_PAREN_L) {
+        consume(parser); // (
+        node = declarator(parser, placeholder);
+        if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    }
+    *placeholder = *array(parser, type);
     return node;
 }
 
-static Node *declarator(Parser *parser, Type **type) {
-    *type = pointer(parser, *type);
-    if (peek(parser)->tag == TT_STAR) {
-        consume(parser); // *
-        Node *node = declarator(parser, type);
-        *type = pointer_to(*type);
-        return node;
-    }
-    Node *node = direct_declarator(parser, type);
-    if (node->tag != NT_IDENT) panic("internal error at declarator");
-    return node;
+static Node *declarator(Parser *parser, Type *type) {
+    type = pointer(parser, type);
+    return direct_declarator(parser, type);
 }
 
 static Node *decl(Parser *parser) {
@@ -506,10 +513,8 @@ static Node *decl(Parser *parser) {
     Type *type_spec = decl_spec(parser);
     if (!type_spec) panic("expected variable declaration");
     do {
-        // Type *type = type_copy(type_spec);
-        Type *type = type_spec;
-        Node *dnode = declarator(parser, &type);
-        append_local_var(parser, dnode->main_token, type);
+        Node *dnode = declarator(parser, type_spec);
+        append_local_var(parser, dnode->main_token, dnode->type);
         if (peek(parser)->tag == TT_EQ) {
             Token *token_eq = consume(parser);
             dnode = expr_new(token_eq, dnode, expr(parser));
