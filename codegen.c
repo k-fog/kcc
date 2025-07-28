@@ -211,43 +211,29 @@ static void gen_expr_binary(Node *node, Env *env) {
     Type *lt = node->expr.lhs->type;
     Type *rt = node->expr.rhs->type;
 
-    if (node->tag == NT_ADD) {
-        if ((lt->tag == TYP_PTR && rt->tag == TYP_INT) || 
-            (lt->tag == TYP_ARRAY && rt->tag == TYP_INT)) {
-            // ptr + int
-            printf("  pop rdi\n");
-            printf("  imul rdi, %d\n", sizeof_type(lt->base));
-            printf("  pop rax\n");
-        } else if (lt->tag == TYP_INT && rt->tag == TYP_PTR) {
-            // int + ptr
-            printf("  pop rdi\n");
-            printf("  pop rax\n");
-            printf("  imul rax, %d\n", sizeof_type(rt->base));
-        } else {
-            // int + int 
-            printf("  pop rdi\n");
-            printf("  pop rax\n");
-        }
-    } else if (node->tag == NT_SUB) {
-        if (lt->tag == TYP_PTR && rt->tag == TYP_INT) {
-            // ptr - int
-            printf("  pop rdi\n");
-            printf("  imul rdi, %d\n", sizeof_type(lt->base));
-            printf("  pop rax\n");
-        } else if (lt->tag == TYP_PTR && rt->tag == TYP_PTR) {
-            // ptr - ptr
-            printf("  pop rdi\n");
-            printf("  pop rax\n");
-            printf("  sub rax, rdi\n");
-            printf("  sar rax, %d\n", 2);// sizeof_type(node->type));
-            printf("  push rax\n");
-            return;
-        } else {
-            // int - int 
-            printf("  pop rdi\n");
-            printf("  pop rax\n");
-        }
+    if (is_ptr_or_arr(lt) && is_integer(rt)) {
+        // ptr +/- int
+        if (node->tag != NT_ADD && node->tag != NT_SUB) panic("codegen: invalid operands");
+        printf("  pop rdi\n");
+        printf("  imul rdi, %d\n", sizeof_type(lt->base));
+        printf("  pop rax\n");
+    } else if (is_integer(lt) && is_ptr_or_arr(rt)) {
+        // int + ptr
+        if (node->tag != NT_ADD) panic("codegen: invalid operands");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  imul rax, %d\n", sizeof_type(rt->base));
+    } else if (is_ptr_or_arr(lt) && is_ptr_or_arr(rt)) {
+        // ptr - ptr
+        if (node->tag != NT_SUB) panic("codegen: invalid operands");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  sub rax, rdi\n");
+        printf("  sar rax, %d\n", 2);// sizeof_type(node->type));
+        printf("  push rax\n");
+        return;
     } else {
+        // int op int 
         printf("  pop rdi\n");
         printf("  pop rax\n");
     }
