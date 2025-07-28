@@ -120,30 +120,51 @@ static void gen_fncall(Node *node, Env *env) {
 }
 
 static void gen_expr_unary(Node *node, Env *env) {
-    if (node->tag == NT_NEG) {
-        gen_expr(node->unary_expr, env);
-        printf("  pop rax\n");
-        printf("  neg rax\n");
-        printf("  push rax\n");
-    } else if (node->tag == NT_ADDR) {
-        gen_addr(node->unary_expr, env);
-    } else if (node->tag == NT_DEREF) {
-        gen_expr(node->unary_expr, env);
-        printf("  pop rax\n");
-        gen_load(node->type);
-        printf("  push rax\n");
-    } else if (node->tag == NT_BOOL_NOT) {
-        gen_expr(node->unary_expr, env);
-        printf("  pop rax\n");
-        printf("  cmp rax, 0\n");
-        printf("  sete al\n");
-        printf("  movzx rax, al\n");
-        printf("  push rax\n");
-    } else if (node->tag == NT_SIZEOF) {
-        int size = sizeof_type(node->unary_expr->type);
-        printf("  push %d\n", size);
-    } else {
-        panic("codegen: error at gen_expr_unary");
+    switch (node->tag) {
+        case NT_NEG:
+            gen_expr(node->unary_expr, env);
+            printf("  pop rax\n");
+            printf("  neg rax\n");
+            printf("  push rax\n");
+            break;
+        case NT_ADDR:
+            return gen_addr(node->unary_expr, env);
+        case NT_DEREF:
+            gen_expr(node->unary_expr, env);
+            printf("  pop rax\n");
+            gen_load(node->type);
+            printf("  push rax\n");
+            break;
+        case NT_BOOL_NOT:
+            gen_expr(node->unary_expr, env);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  sete al\n");
+            printf("  movzx rax, al\n");
+            printf("  push rax\n");
+            break;
+        case NT_SIZEOF: {
+            int size = sizeof_type(node->unary_expr->type);
+            printf("  push %d\n", size);
+            break;
+        }
+        case NT_PREINC:
+            gen_addr(node->unary_expr, env); // push addr, rax=address
+            gen_load(node->type);
+            if (is_integer(node->type)) printf("  inc rax\n");
+            else if (is_ptr_or_arr(node->type)) printf("  add rax, %d\n", sizeof_type(node->type->base));
+            gen_store(node->type); // pop addr
+            printf("  push rax\n");
+            break;
+        case NT_PREDEC:
+            gen_addr(node->unary_expr, env); // push addr, rax=address
+            gen_load(node->type);
+            if (is_integer(node->type)) printf("  dec rax\n");
+            else if (is_ptr_or_arr(node->type)) printf("  sub rax, %d\n", sizeof_type(node->type->base));
+            gen_store(node->type); // pop addr
+            printf("  push rax\n");
+            break;
+        default: panic("codegen: error at gen_expr_unary");
     }
     return;
 }
@@ -286,6 +307,8 @@ static void gen_expr(Node *node, Env *env) {
         case NT_ADDR:
         case NT_DEREF:
         case NT_BOOL_NOT:
+        case NT_PREINC:
+        case NT_PREDEC:
         case NT_SIZEOF: return gen_expr_unary(node, env);
         case NT_ASSIGN:
         case NT_ASSIGN_ADD:

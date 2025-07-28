@@ -97,6 +97,10 @@ typedef enum {     // token node->???
     NT_BOOL_NOT,   // ! unary_expr
     NT_ADDR,       // & unary_expr
     NT_DEREF,      // * unary_expr
+    NT_PREINC,     // ++ unary_expr
+    NT_PREDEC,     // -- unary_expr
+    NT_POSTINC,    // ++ postfix_expr 
+    NT_POSTDEC,    // -- postfix_expr
     NT_ASSIGN,     // = expr
     NT_ASSIGN_ADD, // += expr
     NT_ASSIGN_SUB, // -= expr
@@ -124,6 +128,7 @@ struct Node {
         int integer;
         int index;
         Node *unary_expr;
+        Node *postfix_expr;
         struct { Node *lhs, *rhs; } expr;
         struct { Node *name; NodeList *args; } fncall;
         struct { Node *cond; Node *then; Node *els; } ifstmt;
@@ -196,6 +201,8 @@ struct Env {
     Symbol *func_types;
 };
 
+bool is_integer(Type *type);
+bool is_ptr_or_arr(Type *type);
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types);
 
 int sizeof_type(Type *type);

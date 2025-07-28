@@ -37,10 +37,14 @@ int sizeof_type(Type *type) {
     return 0;
 }
 
-static bool is_integer(Type *type) {
+bool is_integer(Type *type) {
     if (type->tag == TYP_CHAR) return true;
     else if (type->tag == TYP_INT) return true;
     else return false;
+}
+
+bool is_ptr_or_arr(Type *type) {
+    return type->tag == TYP_PTR || type->tag == TYP_ARRAY;
 }
 
 static Type *promote_if_integer(Type *type) {
@@ -107,6 +111,8 @@ static Node *typed(Node *node, Env *env) {
         }
         case NT_NEG:
         case NT_BOOL_NOT:
+        case NT_PREINC:
+        case NT_PREDEC:
             node->type = promote_if_integer(typed(node->unary_expr, env)->type);
             break;
         case NT_ADDR: {

@@ -193,14 +193,14 @@ static Node *fncall_new(Token *token, Node *name, NodeList *args) {
 static Node *unary_new(Token *token, Node *expr) {
     NodeTag tag;
     switch (token->tag) {
-        case TT_PLUS:   return expr;
-        case TT_MINUS:  tag = NT_NEG; break;
-        case TT_AMPERSAND:
-                        tag = NT_ADDR; break;
-        case TT_STAR:   tag = NT_DEREF; break;
-        case TT_BANG:   tag = NT_BOOL_NOT; break;
-        case TT_KW_SIZEOF:
-                        tag = NT_SIZEOF; break;
+        case TT_PLUS:       return expr;
+        case TT_MINUS:      tag = NT_NEG; break;
+        case TT_AMPERSAND:  tag = NT_ADDR; break;
+        case TT_STAR:       tag = NT_DEREF; break;
+        case TT_BANG:       tag = NT_BOOL_NOT; break;
+        case TT_KW_SIZEOF:  tag = NT_SIZEOF; break;
+        case TT_PLUS_PLUS:  tag = NT_PREINC; break;
+        case TT_MINUS_MINUS:tag = NT_PREDEC; break;
         default: panic("unary_new: invalid token TokenTag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
@@ -329,9 +329,9 @@ static Node *unary(Parser *parser) {
             consume(parser); // (
             Token *type_token = peek(parser);
             Type *type = try_parse_typename(parser);
-            Node *expr = type ? typenode_new(type_token, type) : expr_bp(parser, PREC_LOWEST);
+            Node *node_expr = type ? typenode_new(type_token, type) : expr(parser);
             if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
-            return unary_new(token, expr);
+            return unary_new(token, node_expr);
         }
     }
     return unary_new(token, expr_bp(parser, PREC_PREFIX));
