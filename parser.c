@@ -241,6 +241,18 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
     return node;
 }
 
+static Node *postfix_new(Token *token, Node *expr) {
+    NodeTag tag;
+    switch (token->tag) {
+        case TT_PLUS_PLUS: tag = NT_POSTINC; break;
+        case TT_MINUS_MINUS: tag = NT_POSTDEC; break;
+        default: panic("postfix_new: invalid token tag=%d", token->tag);
+    }
+    Node *node = node_new(tag, token);
+    node->pre_expr = expr;
+    return node;
+}
+
 static Token *peek(Parser *parser) {
     return parser->current_token;
 }
@@ -380,8 +392,10 @@ static Node *expr_postfix(Parser *parser, Node *lhs) {
             lhs->unary_expr = add;
             break;
         }
-        case TT_PLUS_PLUS: panic("not implemented"); break;
-        case TT_MINUS_MINUS: panic("not implemented"); break;
+        case TT_PLUS_PLUS:
+        case TT_MINUS_MINUS:
+            lhs = postfix_new(consume(parser), lhs);
+            break;
         default: break;
     }
     return lhs;

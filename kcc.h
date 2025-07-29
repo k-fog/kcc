@@ -99,8 +99,8 @@ typedef enum {     // token node->???
     NT_DEREF,      // * unary_expr
     NT_PREINC,     // ++ unary_expr
     NT_PREDEC,     // -- unary_expr
-    NT_POSTINC,    // ++ postfix_expr 
-    NT_POSTDEC,    // -- postfix_expr
+    NT_POSTINC,    // ++ pre_expr 
+    NT_POSTDEC,    // -- pre_expr
     NT_ASSIGN,     // = expr
     NT_ASSIGN_ADD, // += expr
     NT_ASSIGN_SUB, // -= expr
@@ -128,7 +128,7 @@ struct Node {
         int integer;
         int index;
         Node *unary_expr;
-        Node *postfix_expr;
+        Node *pre_expr;
         struct { Node *lhs, *rhs; } expr;
         struct { Node *name; NodeList *args; } fncall;
         struct { Node *cond; Node *then; Node *els; } ifstmt;

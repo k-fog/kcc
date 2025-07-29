@@ -197,6 +197,10 @@ static Node *typed(Node *node, Env *env) {
         case NT_TYPE:
             panic("typed: unreachable");
             break;
+        case NT_POSTINC:
+        case NT_POSTDEC:
+            node->type = promote_if_integer(typed(node->pre_expr, env)->type);
+            break;
     }
     return node;
 }

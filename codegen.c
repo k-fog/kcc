@@ -22,6 +22,7 @@ static void gen_store(Type *type);
 static void gen_addr(Node *node, Env *env);
 static void gen_fncall(Node *node, Env *env);
 static void gen_expr_unary(Node *node, Env *env);
+static void gen_expr_postfix(Node *node, Env *env);
 static void gen_expr_assign(Node *node, Env *env);
 static void gen_expr_binary(Node *node, Env *env);
 static void gen_expr(Node *node, Env *env);
@@ -169,6 +170,28 @@ static void gen_expr_unary(Node *node, Env *env) {
     return;
 }
 
+static void gen_expr_postfix(Node *node, Env *env) {
+    if (node->tag == NT_POSTINC) {
+        gen_addr(node->pre_expr, env); // push addr
+        gen_load(node->type);
+        printf(" mov rdx, rax\n");
+        if (is_integer(node->type)) printf("  inc rax\n");
+        else if (is_ptr_or_arr(node->type)) printf("  add rax, %d\n", sizeof_type(node->type->base));
+        gen_store(node->type); // pop addr
+        printf(" push rdx\n");
+    } else if (node->tag == NT_POSTDEC) {
+        gen_addr(node->pre_expr, env); // push addr
+        gen_load(node->type);
+        printf(" mov rdx, rax\n");
+        if (is_integer(node->type)) printf("  dec rax\n");
+        else if (is_ptr_or_arr(node->type)) printf("  sub rax, %d\n", sizeof_type(node->type->base));
+        gen_store(node->type); // pop addr
+        printf(" push rdx\n");
+    } else {
+        panic("codegen: error at gen_expr_postfix");
+    }
+}
+
 static void gen_expr_assign(Node *node, Env *env) {
     gen_addr(node->expr.lhs, env);
     gen_expr(node->expr.rhs, env);
@@ -296,6 +319,8 @@ static void gen_expr(Node *node, Env *env) {
         case NT_PREINC:
         case NT_PREDEC:
         case NT_SIZEOF: return gen_expr_unary(node, env);
+        case NT_POSTINC:
+        case NT_POSTDEC: return gen_expr_postfix(node, env);
         case NT_ASSIGN:
         case NT_ASSIGN_ADD:
         case NT_ASSIGN_SUB:

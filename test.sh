@@ -168,5 +168,11 @@ assert 'int main() {int a=10; --a; return a;}' 9
 assert 'int main() {int a=10; --a; return --a;}' 8
 assert 'int main() {int a[3]; a[1]=2; int *p = a; return *(++p);}' 2
 assert 'int main() {int a[3]; a[1]=2; int *p = a + 2; return *(--p);}' 2
+assert 'int main() {int a=0; a++; return a;}' 1
+assert 'int main() {int a=0; a++; return a++;}' 1
+assert 'int main() {int a=10; a--; return a;}' 9
+assert 'int main() {int a=10; a--; return a--;}' 9
+assert 'int main() {int a[3]; a[1]=2; int *p = a; p++; return *p;}' 2
+assert 'int main() {int a[3]; a[1]=2; int *p = a + 2; p--; return *p;}' 2
 
 echo "all tests passed"
