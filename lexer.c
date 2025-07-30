@@ -127,6 +127,9 @@ Token *tokenize(Lexer *lexer) {
             case ']':
                 token->next = token_new(TT_BRACKET_R, start, 1);
                 break;
+            case '%':
+                token->next = token_new(TT_PERCENT, start, 1);
+                break;
             case '=':
                 if (peek(lexer) != '=') {
                     token->next = token_new(TT_EQ, start, 1);

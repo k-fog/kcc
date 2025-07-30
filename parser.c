@@ -31,6 +31,7 @@ int precedences[META_TT_NUM] = {
     [TT_MINUS]      = PREC_ADD,
     [TT_STAR]       = PREC_MUL,
     [TT_SLASH]      = PREC_MUL,
+    [TT_PERCENT]    = PREC_MUL,
     // otherwise PREC_NONE (== 0)
 };
 
@@ -55,6 +56,7 @@ OpAssoc assocs[] = {
     [TT_MINUS]      = ASSOC_LEFT,
     [TT_STAR]       = ASSOC_LEFT,
     [TT_SLASH]      = ASSOC_LEFT,
+    [TT_PERCENT]    = ASSOC_LEFT,
     // [TT_PAREN_L]    = ASSOC_LEFT,
     // [TT_BRACKET_L]  = ASSOC_LEFT,
 };
@@ -226,6 +228,7 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
         case TT_MINUS:      tag = NT_SUB; break;
         case TT_STAR:       tag = NT_MUL; break;
         case TT_SLASH:      tag = NT_DIV; break;
+        case TT_PERCENT:    tag = NT_MOD; break;
         case TT_EQ_EQ:      tag = NT_EQ; break;
         case TT_BANG_EQ:    tag = NT_NE; break;
         case TT_ANGLE_L:

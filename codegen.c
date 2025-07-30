@@ -272,9 +272,12 @@ static void gen_expr_binary(Node *node, Env *env) {
             printf("  imul rax, rdi\n");
             break;
         case NT_DIV:
+        case NT_MOD:
             printf("  cqo\n");
             printf("  idiv rdi\n");
-            break;
+            if (node->tag == NT_DIV) break;
+            printf("  push rdx\n");
+            return;
         case NT_EQ:
             printf("  cmp rax, rdi\n");
             printf("  sete al\n");
@@ -331,6 +334,7 @@ static void gen_expr(Node *node, Env *env) {
         case NT_SUB:
         case NT_MUL:
         case NT_DIV:
+        case NT_MOD:
         case NT_EQ:
         case NT_NE:
         case NT_LT:

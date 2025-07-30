@@ -100,6 +100,7 @@ static Node *typed(Node *node, Env *env) {
         }
         case NT_MUL:
         case NT_DIV:
+        case NT_MOD:
         case NT_EQ:
         case NT_NE:
         case NT_LT:

@@ -28,6 +28,7 @@ typedef enum {
     TT_ANGLE_R_EQ,          // >=
     TT_PLUS, TT_MINUS,      // + -
     TT_STAR, TT_SLASH,      // * /
+    TT_PERCENT,             // %
     TT_AMPERSAND,           // &
     TT_BANG,                // !
     TT_KW_SIZEOF,           // sizeof
@@ -89,6 +90,7 @@ typedef enum {     // token node->???
     NT_SUB,        // - expr
     NT_MUL,        // * expr
     NT_DIV,        // / expr
+    NT_MOD,        // % expr
     NT_EQ,         // == expr
     NT_NE,         // != expr
     NT_LT,         // < expr

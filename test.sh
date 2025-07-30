@@ -174,5 +174,7 @@ assert 'int main() {int a=10; a--; return a;}' 9
 assert 'int main() {int a=10; a--; return a--;}' 9
 assert 'int main() {int a[3]; a[1]=2; int *p = a; p++; return *p;}' 2
 assert 'int main() {int a[3]; a[1]=2; int *p = a + 2; p--; return *p;}' 2
+assert 'int main() { return 10%3; }' 1
+assert 'int main() { return 7%10; }' 7
 
 echo "all tests passed"
