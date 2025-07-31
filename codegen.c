@@ -275,9 +275,8 @@ static void gen_expr_binary(Node *node, Env *env) {
         case NT_MOD:
             printf("  cqo\n");
             printf("  idiv rdi\n");
-            if (node->tag == NT_DIV) break;
-            printf("  push rdx\n");
-            return;
+            if (node->tag == NT_MOD) printf("  mov rax, rdx\n");
+            break;
         case NT_EQ:
             printf("  cmp rax, rdi\n");
             printf("  sete al\n");
@@ -399,8 +398,12 @@ static void gen_stmt(Node *node, Env *env) {
     } else if (node->tag == NT_LVARDECL) {
         NodeList *declarators = node->declarators;
         for (int i = 0; i < declarators->len; i++) {
-            Node *child = declarators->nodes[i];
-            if (child->tag == NT_ASSIGN) gen_expr(child, env);
+            Node *child = declarators->nodes[i]; // declarator
+            if (!child->declarator.init) continue;
+            gen_addr(child->declarator.name, env);
+            gen_expr(child->declarator.init, env);
+            printf("  pop rax\n");
+            gen_store(child->declarator.name->type);
         }
         return;
     } else if (node->tag == NT_PARAMDECL) return;

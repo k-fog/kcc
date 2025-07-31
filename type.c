@@ -183,6 +183,11 @@ static Node *typed(Node *node, Env *env) {
         case NT_PARAMDECL:
             node->type = NULL;
             break;
+        case NT_DECLARATOR:
+            typed(node->declarator.name, env);
+            typed(node->declarator.init, env);
+            node->type = NULL;
+            break;
         case NT_LVARDECL:
             for (int i = 0; i < node->declarators->len; i++)
                 typed(node->declarators->nodes[i], env);

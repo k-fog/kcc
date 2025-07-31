@@ -285,6 +285,8 @@ static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
 static Node *direct_declarator(Parser *parser, Type *type);
 static Node *declarator(Parser *parser, Type *type);
+static Node *initializer(Parser *parser);
+static Node *init_declarator(Parser *parser, Type *type);
 static Node *decl(Parser *parser);
 static Node *param_decl(Parser *parser);
 static NodeList *params(Parser *parser);
@@ -524,18 +526,29 @@ static Node *declarator(Parser *parser, Type *type) {
     return direct_declarator(parser, type);
 }
 
+static Node *initializer(Parser *parser) {
+    return expr(parser);
+}
+
+static Node *init_declarator(Parser *parser, Type *type) {
+    Node *node = node_new(NT_DECLARATOR, peek(parser));
+    node->declarator.name = declarator(parser, type);
+    if (peek(parser)->tag == TT_EQ) {
+        consume(parser); // =
+        node->declarator.init = initializer(parser);
+    }
+    return node;
+}
+
 static Node *decl(Parser *parser) {
     Node *node = node_new(NT_LVARDECL, peek(parser));
     node->declarators = nodelist_new(DEFAULT_NODELIST_CAP);
     Type *type_spec = decl_spec(parser);
     if (!type_spec) panic("expected variable declaration");
     do {
-        Node *dnode = declarator(parser, type_spec);
-        append_local_var(parser, dnode->main_token, dnode->type);
-        if (peek(parser)->tag == TT_EQ) {
-            Token *token_eq = consume(parser);
-            dnode = expr_new(token_eq, dnode, expr(parser));
-        }
+        Node *dnode = init_declarator(parser, type_spec);
+        Node *name = dnode->declarator.name;
+        append_local_var(parser, name->main_token, name->type);
         nodelist_append(node->declarators, dnode);
     } while (peek(parser)->tag == TT_COMMA && consume(parser));
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
