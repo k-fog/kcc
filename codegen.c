@@ -26,6 +26,7 @@ static void gen_expr_postfix(Node *node, Env *env);
 static void gen_expr_assign(Node *node, Env *env);
 static void gen_expr_binary(Node *node, Env *env);
 static void gen_expr(Node *node, Env *env);
+static void gen_lvardecl(Node *node, Env *env);
 static void gen_stmt(Node *node, Env *env);
 static void gen_func(Node *node, Env *env);
 
@@ -342,6 +343,34 @@ static void gen_expr(Node *node, Env *env) {
     }
 }
 
+static void gen_lvardecl(Node *node, Env *env) {
+    NodeList *declarators = node->declarators;
+    for (int i = 0; i < declarators->len; i++) {
+        Node *child = declarators->nodes[i]; // declarator
+        Node *name = child->declarator.name;
+        Node *init = child->declarator.init;
+        if (!init) continue;
+
+        gen_addr(name, env);
+        if (init->tag == NT_INITS) {
+            NodeList *inits = init->initializers;
+            printf("  mov rdx, rax\n");
+            for (int i = 0; i < inits->len; i++) {
+                Node *elem = inits->nodes[i]; // initializer
+                gen_expr(elem, env);
+                printf("  pop rax\n");
+                gen_store(name->type->base);
+                printf("  add rdx, %d\n", sizeof_type(name->type->base));
+                printf("  push rdx\n");
+            }
+        } else {
+            gen_expr(init, env);
+            printf("  pop rax\n");
+            gen_store(name->type);
+        }
+    }
+}
+
 static void gen_stmt(Node *node, Env *env) {
     int id = count();
     if (node->tag == NT_RETURN) {
@@ -395,18 +424,8 @@ static void gen_stmt(Node *node, Env *env) {
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
         return;
-    } else if (node->tag == NT_LVARDECL) {
-        NodeList *declarators = node->declarators;
-        for (int i = 0; i < declarators->len; i++) {
-            Node *child = declarators->nodes[i]; // declarator
-            if (!child->declarator.init) continue;
-            gen_addr(child->declarator.name, env);
-            gen_expr(child->declarator.init, env);
-            printf("  pop rax\n");
-            gen_store(child->declarator.name->type);
-        }
-        return;
-    } else if (node->tag == NT_PARAMDECL) return;
+    } else if (node->tag == NT_LVARDECL) return gen_lvardecl(node, env);
+    else if (node->tag == NT_PARAMDECL) return;
     gen_expr(node, env);
 }
 

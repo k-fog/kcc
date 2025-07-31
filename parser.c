@@ -527,6 +527,18 @@ static Node *declarator(Parser *parser, Type *type) {
 }
 
 static Node *initializer(Parser *parser) {
+    if (peek(parser)->tag == TT_BRACE_L) {
+        Node *node = node_new(NT_INITS, consume(parser));
+        node->initializers = nodelist_new(DEFAULT_NODELIST_CAP);
+        NodeList *inits = node->initializers;
+        do {
+            if (peek(parser)->tag == TT_BRACE_R) break;
+            Node *init = expr(parser);
+            nodelist_append(inits, init);
+        } while (peek(parser)->tag == TT_COMMA && consume(parser));
+        if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
+        return node;
+    }
     return expr(parser);
 }
 

@@ -183,9 +183,22 @@ static Node *typed(Node *node, Env *env) {
         case NT_PARAMDECL:
             node->type = NULL;
             break;
-        case NT_DECLARATOR:
-            typed(node->declarator.name, env);
-            typed(node->declarator.init, env);
+        case NT_DECLARATOR: {
+            Node *name = node->declarator.name;
+            Node *init = node->declarator.init;
+            typed(name, env);
+            typed(init, env);
+            if (init && init->tag == NT_INITS) {
+                if (name->type->tag != TYP_ARRAY) panic("expected array");
+                if (name->type->array_size < init->initializers->len)
+                    panic("excess elements in array initializer");
+            }
+            node->type = NULL;
+            break;
+        }
+        case NT_INITS:
+            for (int i = 0; i < node->initializers->len; i++)
+                typed(node->initializers->nodes[i], env);
             node->type = NULL;
             break;
         case NT_LVARDECL:

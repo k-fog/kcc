@@ -117,6 +117,7 @@ typedef enum {     // token node->???
     NT_FUNC,       // <function> func
     NT_PARAMDECL,  // <parameter declaration> unary_expr
     NT_DECLARATOR, // <identifier> | <identifier> = <initializer> declarator 
+    NT_INITS,      // <initializer list> initializers
     NT_LVARDECL,   // <local variable declaration> declarators
     NT_GLOBALDECL, // <global variable declaration> unary_expr
     NT_SIZEOF,     // sizeof unary_expr
@@ -141,6 +142,7 @@ struct Node {
         struct { Node *name; NodeList *params; Node *body; Symbol *locals; } func;
         struct { Node *name; Node *init; } declarator;
         NodeList *declarators;
+        NodeList *initializers;
     };
 };
 
