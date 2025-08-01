@@ -201,7 +201,7 @@ static Node *typed(Node *node, Env *env) {
                 typed(node->initializers->nodes[i], env);
             node->type = NULL;
             break;
-        case NT_LVARDECL:
+        case NT_LOCALDECL:
             for (int i = 0; i < node->declarators->len; i++)
                 typed(node->declarators->nodes[i], env);
             node->type = NULL;

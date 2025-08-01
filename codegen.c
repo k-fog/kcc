@@ -385,7 +385,7 @@ static void gen_stmt(Node *node, Env *env) {
         for (int i = 0; i < node->block->len; i++) {
             Node *child = node->block->nodes[i];
             gen_stmt(child, env);
-            if (child->tag == NT_LVARDECL || child->tag == NT_PARAMDECL) continue;
+            if (child->tag == NT_LOCALDECL || child->tag == NT_PARAMDECL) continue;
             printf("  pop rax\n");
         }
         return;
@@ -424,7 +424,7 @@ static void gen_stmt(Node *node, Env *env) {
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
         return;
-    } else if (node->tag == NT_LVARDECL) return gen_lvardecl(node, env);
+    } else if (node->tag == NT_LOCALDECL) return gen_lvardecl(node, env);
     else if (node->tag == NT_PARAMDECL) return;
     gen_expr(node, env);
 }

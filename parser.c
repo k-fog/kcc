@@ -287,7 +287,7 @@ static Node *direct_declarator(Parser *parser, Type *type);
 static Node *declarator(Parser *parser, Type *type);
 static Node *initializer(Parser *parser);
 static Node *init_declarator(Parser *parser, Type *type);
-static Node *decl(Parser *parser);
+static Node *local_decl(Parser *parser);
 static Node *param_decl(Parser *parser);
 static NodeList *params(Parser *parser);
 static Node *func(Parser *parser, Type *return_type, Token *name);
@@ -508,12 +508,12 @@ static Node *direct_declarator(Parser *parser, Type *type) {
     Node *node;
     Token *token = peek(parser);
     Type *placeholder = calloc(1, sizeof(Type));
-    *placeholder = *type;
     if (token->tag == TT_IDENT) {
         node = ident_new(consume(parser));
         node->type = placeholder;
     } else if (token->tag == TT_PAREN_L) {
         consume(parser); // (
+        *placeholder = *type;
         node = declarator(parser, placeholder);
         if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
     }
@@ -552,8 +552,8 @@ static Node *init_declarator(Parser *parser, Type *type) {
     return node;
 }
 
-static Node *decl(Parser *parser) {
-    Node *node = node_new(NT_LVARDECL, peek(parser));
+static Node *local_decl(Parser *parser) {
+    Node *node = node_new(NT_LOCALDECL, peek(parser));
     node->declarators = nodelist_new(DEFAULT_NODELIST_CAP);
     Type *type_spec = decl_spec(parser);
     if (!type_spec) panic("expected variable declaration");
@@ -596,7 +596,7 @@ static Node *stmt(Parser *parser) {
             return for_stmt(parser);
         case TT_KW_CHAR:
         case TT_KW_INT:
-            return decl(parser); 
+            return local_decl(parser); 
         case TT_KW_RETURN:
             node = node_new(NT_RETURN, consume(parser));
             node->unary_expr = expr(parser);

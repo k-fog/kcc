@@ -65,7 +65,7 @@ void dump_nodes(Node *node) {
             printf("(declare "); // temporary
             dump_nodes(node->unary_expr);
             break;
-        case NT_LVARDECL:
+        case NT_LOCALDECL:
             printf("(declare "); // temporary
             for (int i = 0; i < node->declarators->len; i++) {
                 dump_nodes(node->declarators->nodes[i]);

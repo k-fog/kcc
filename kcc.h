@@ -118,7 +118,7 @@ typedef enum {     // token node->???
     NT_PARAMDECL,  // <parameter declaration> unary_expr
     NT_DECLARATOR, // <identifier> | <identifier> = <initializer> declarator 
     NT_INITS,      // <initializer list> initializers
-    NT_LVARDECL,   // <local variable declaration> declarators
+    NT_LOCALDECL,   // <local variable declaration> declarators
     NT_GLOBALDECL, // <global variable declaration> unary_expr
     NT_SIZEOF,     // sizeof unary_expr
     NT_TYPE,       // <type> type (for sizeof)

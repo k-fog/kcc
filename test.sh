@@ -158,7 +158,6 @@ assert 'int main() {int a[3][4]; return sizeof(a[1]);}' 16
 assert 'int main() {int *hoge[10]; return sizeof(hoge);}' 80
 assert 'int main() {char a[1][2][3][4][5]; return sizeof(a);}' 120
 assert 'int main() {int (*hoge)[10]; return sizeof(hoge);}' 8
-assert 'int main() {int (*hoge)[10]; return sizeof(hoge);}' 8
 assert 'int main() {int ((a))=3; return sizeof(a);}' 4
 assert 'int main() {int ((a))=3; return a;}' 3
 assert 'int main() {int *(hoge); return sizeof(hoge);}' 8
