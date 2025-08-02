@@ -4,15 +4,15 @@ enum OpPrecedence {
     PREC_NONE = 0, // for syntax error check
     PREC_LOWEST,
     PREC_ASSIGN,
-    PREC_EQUALS,
+    PREC_COND,
     PREC_LOGICAL,
+    PREC_EQUALS,
     PREC_LESSGREATER,
     PREC_ADD,
     PREC_MUL,
-    PREC_MOD,
     PREC_PREFIX,
-    PREC_CALL,
-    PREC_INDEX,
+    // PREC_CALL,
+    // PREC_INDEX,
 };
 
 int precedences[META_TT_NUM] = {
@@ -32,6 +32,7 @@ int precedences[META_TT_NUM] = {
     [TT_STAR]       = PREC_MUL,
     [TT_SLASH]      = PREC_MUL,
     [TT_PERCENT]    = PREC_MUL,
+    [TT_QUESTION]   = PREC_COND,
     // otherwise PREC_NONE (== 0)
 };
 
@@ -57,6 +58,7 @@ OpAssoc assocs[] = {
     [TT_STAR]       = ASSOC_LEFT,
     [TT_SLASH]      = ASSOC_LEFT,
     [TT_PERCENT]    = ASSOC_LEFT,
+    [TT_QUESTION]   = ASSOC_LEFT,
     // [TT_PAREN_L]    = ASSOC_LEFT,
     // [TT_BRACKET_L]  = ASSOC_LEFT,
 };
@@ -272,6 +274,7 @@ static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_postfix(Parser *parser, Node *lhs);
 static Node *expr_bp(Parser *parser, int min_bp);
+static Node *expr_cond(Parser *parser, Token *token, Node *cond);
 static Node *expr(Parser *parser);
 static Node *block(Parser *parser);
 static Node *if_stmt(Parser *parser);
@@ -402,6 +405,17 @@ static Node *expr_postfix(Parser *parser, Node *lhs) {
     return lhs;
 }
 
+static Node *expr_cond(Parser *parser, Token *token, Node *cond) {
+    Node *then = expr(parser);
+    if (consume(parser)->tag != TT_COLON) panic("expected \':\'");
+    Node *els = expr(parser);
+    Node *expr = node_new(NT_COND, token);
+    expr->cond_expr.cond = cond;
+    expr->cond_expr.then = then;
+    expr->cond_expr.els = els;
+    return expr;
+}
+
 static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = expr_prefix(parser);
     while (is_infix(peek(parser)->tag)) {
@@ -411,6 +425,7 @@ static Node *expr_bp(Parser *parser, int min_bp) {
         else if (assoc == ASSOC_RIGHT && prec < min_bp) break;
 
         Token *token = consume(parser);
+        if (token->tag == TT_QUESTION) return expr_cond(parser, token, lhs);
         Node *rhs = expr_bp(parser, prec);
         lhs = expr_new(token, lhs, rhs);
 

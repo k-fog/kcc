@@ -146,6 +146,9 @@ Token *tokenize(Lexer *lexer) {
                     token->next = token_new(TT_BANG_EQ, start, 2);
                 }
                 break;
+            case '?':
+                token->next = token_new(TT_QUESTION, start, 1);
+                break;
             case '<':
                 if (peek(lexer) != '=') {
                     token->next = token_new(TT_ANGLE_L, start, 1);
@@ -161,6 +164,9 @@ Token *tokenize(Lexer *lexer) {
                     consume(lexer);
                     token->next = token_new(TT_ANGLE_R_EQ, start, 2);
                 }
+                break;
+            case ':':
+                token->next = token_new(TT_COLON, start, 1);
                 break;
             case ';':
                 token->next = token_new(TT_SEMICOLON, start, 1);

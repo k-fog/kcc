@@ -137,6 +137,14 @@ void dump_nodes(Node *node) {
             printf("\b) ");
             dump_nodes(node->func.body);
             break;
+        case NT_COND:
+            printf("(?: ");
+            dump_nodes(node->cond_expr.cond);
+            printf("\b ");
+            dump_nodes(node->cond_expr.then);
+            printf("\b ");
+            dump_nodes(node->cond_expr.els);
+            break;
         default: // expr
             if (node->tag == NT_ADD) printf("(+ ");
             else if (node->tag == NT_SUB) printf("(- ");

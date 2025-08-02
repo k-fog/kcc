@@ -108,6 +108,13 @@ static Node *typed(Node *node, Env *env) {
             node->type = type_int;
             break;
         }
+        case NT_COND: {
+            if (!is_integer(typed(node->cond_expr.cond, env)->type)) panic("invalid operands");
+            if (!is_integer(typed(node->cond_expr.then, env)->type)) panic("invalid operands");
+            if (!is_integer(typed(node->cond_expr.els, env)->type)) panic("invalid operands");
+            node->type = type_int;
+            break;
+        }
         case NT_NEG:
         case NT_BOOL_NOT:
         case NT_PREINC:

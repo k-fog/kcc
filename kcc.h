@@ -31,6 +31,7 @@ typedef enum {
     TT_PERCENT,             // %
     TT_AMPERSAND,           // &
     TT_BANG,                // !
+    TT_QUESTION,            // ?
     TT_KW_SIZEOF,           // sizeof
     TT_PAREN_L, TT_PAREN_R, // ( )
     TT_COMMA,               // ,
@@ -42,6 +43,7 @@ typedef enum {
     TT_BRACE_L, TT_BRACE_R, // { }
     TT_BRACKET_L,           // [
     TT_BRACKET_R,           // ]
+    TT_COLON,               // :
     TT_SEMICOLON,           // ;
     TT_KW_RETURN,           // return
     TT_KW_IF,               // if
@@ -108,6 +110,7 @@ typedef enum {     // token node->???
     NT_ASSIGN_SUB, // -= expr
     NT_ASSIGN_MUL, // *= expr
     NT_ASSIGN_DIV, // /= expr
+    NT_COND,       // ?: conditional
     NT_FNCALL,     // <function call> fncall
     NT_BLOCK,      // {<stmt>*} block
     NT_RETURN,     // return unary_expr
@@ -137,6 +140,7 @@ struct Node {
         struct { Node *lhs, *rhs; } expr;
         struct { Node *name; NodeList *args; } fncall;
         struct { Node *cond; Node *then; Node *els; } ifstmt;
+        struct { Node *cond; Node *then; Node *els; } cond_expr;
         struct { Node *cond; Node *body; } whilestmt;
         struct { Node *def; Node *cond; Node *next; Node *body; } forstmt;
         NodeList *block;
