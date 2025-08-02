@@ -112,6 +112,7 @@ typedef enum {     // token node->???
     NT_ASSIGN_MUL, // *= expr
     NT_ASSIGN_DIV, // /= expr
     NT_COND,       // ?: conditional
+    NT_COMMA,      // , expr
     NT_FNCALL,     // <function call> fncall
     NT_BLOCK,      // {<stmt>*} block
     NT_RETURN,     // return unary_expr

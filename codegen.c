@@ -305,6 +305,9 @@ static void gen_expr_binary(Node *node, Env *env) {
             printf("  setle al\n");
             printf("  movzb rax, al\n");
             break;
+        case NT_COMMA:
+            printf("  mov rax, rdi\n");
+            break;
         default: panic("codegen: invalid node NodeTag=%d", node->tag);
     }
     printf("  push rax\n");
@@ -358,7 +361,8 @@ static void gen_expr(Node *node, Env *env) {
         case NT_EQ:
         case NT_NE:
         case NT_LT:
-        case NT_LE: return gen_expr_binary(node, env);
+        case NT_LE:
+        case NT_COMMA: return gen_expr_binary(node, env);
         case NT_COND: return gen_expr_cond(node, env);
         default: panic("codegen: error at gen_expr");
     }
@@ -435,14 +439,14 @@ static void gen_stmt(Node *node, Env *env) {
         printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_FOR) {
-        gen_expr(node->forstmt.def, env);
+        if (node->forstmt.def) gen_expr(node->forstmt.def, env);
         printf(".L%d.FOR:\n", id);
-        gen_expr(node->forstmt.cond, env);
+        if (node->forstmt.cond) gen_expr(node->forstmt.cond, env);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je  .L%d.END\n", id);
-        gen_stmt(node->forstmt.body, env);
-        gen_expr(node->forstmt.next, env);
+        if (node->forstmt.body) gen_stmt(node->forstmt.body, env);
+        if (node->forstmt.next) gen_expr(node->forstmt.next, env);
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
         return;

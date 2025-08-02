@@ -35,6 +35,7 @@ void dump_type(Type *type) {
 }
 
 void dump_nodes(Node *node) {
+    if (!node) return;
     switch (node->tag) {
         case NT_INT:
             printf("%d ", node->integer);

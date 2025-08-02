@@ -3,6 +3,7 @@
 enum OpPrecedence {
     PREC_NONE = 0, // for syntax error check
     PREC_LOWEST,
+    PREC_COMMA,
     PREC_ASSIGN,
     PREC_COND,
     PREC_LOGICAL,
@@ -33,6 +34,7 @@ int precedences[META_TT_NUM] = {
     [TT_SLASH]      = PREC_MUL,
     [TT_PERCENT]    = PREC_MUL,
     [TT_QUESTION]   = PREC_COND,
+    [TT_COMMA]      = PREC_COMMA,
     // otherwise PREC_NONE (== 0)
 };
 
@@ -59,6 +61,7 @@ OpAssoc assocs[] = {
     [TT_SLASH]      = ASSOC_LEFT,
     [TT_PERCENT]    = ASSOC_LEFT,
     [TT_QUESTION]   = ASSOC_LEFT,
+    [TT_COMMA]      = ASSOC_LEFT,
     // [TT_PAREN_L]    = ASSOC_LEFT,
     // [TT_BRACKET_L]  = ASSOC_LEFT,
 };
@@ -235,6 +238,7 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
         case TT_ANGLE_L_EQ:
         case TT_ANGLE_R_EQ: tag = NT_LE; break;
         case TT_BRACKET_L:  tag = NT_ADD; break; // for array access
+        case TT_COMMA:      tag = NT_COMMA; break;
         default: panic("expr_new: invalid token tag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
@@ -275,9 +279,10 @@ static NodeList *args(Parser *parser);
 static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_postfix(Parser *parser, Node *lhs);
-static Node *expr_bp(Parser *parser, int min_bp);
+static Node *expr_bp(Parser *parser, int min_bp, bool comma_op);
 static Node *expr_cond(Parser *parser, Token *token, Node *cond);
 static Node *expr(Parser *parser);
+static Node *expr_disable_comma(Parser *parser);
 static Node *block(Parser *parser);
 static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
@@ -336,7 +341,7 @@ static NodeList *args(Parser *parser) {
     NodeList *args = nodelist_new(DEFAULT_NODELIST_CAP);
     if (peek(parser)->tag == TT_PAREN_R) return args;
     do {
-        nodelist_append(args, expr(parser));
+        nodelist_append(args, expr_disable_comma(parser));
     } while (peek(parser)->tag == TT_COMMA && consume(parser));
     if (peek(parser)->tag != TT_PAREN_R) panic("expected \')\'");
     return args;
@@ -353,7 +358,7 @@ static Node *unary(Parser *parser) {
             return unary_new(token, node);
         }
     }
-    return unary_new(token, expr_bp(parser, PREC_PREFIX));
+    return unary_new(token, expr_bp(parser, PREC_PREFIX, true));
 }
 
 static Node *expr_prefix(Parser *parser) {
@@ -419,9 +424,10 @@ static Node *expr_cond(Parser *parser, Token *token, Node *cond) {
     return expr;
 }
 
-static Node *expr_bp(Parser *parser, int min_bp) {
+static Node *expr_bp(Parser *parser, int min_bp, bool comma_op) {
     Node *lhs = expr_prefix(parser);
     while (is_infix(peek(parser)->tag)) {
+        if (!comma_op && peek(parser)->tag == TT_COMMA) break;
         int prec = precedences[peek(parser)->tag];
         int assoc = assocs[peek(parser)->tag];
         if (assoc == ASSOC_LEFT && prec <= min_bp) break;
@@ -429,7 +435,7 @@ static Node *expr_bp(Parser *parser, int min_bp) {
 
         Token *token = consume(parser);
         if (token->tag == TT_QUESTION) return expr_cond(parser, token, lhs);
-        Node *rhs = expr_bp(parser, prec);
+        Node *rhs = expr_bp(parser, prec, comma_op);
         lhs = expr_new(token, lhs, rhs);
 
         // if token is ">" or ">=", swap lhs, rhs
@@ -443,7 +449,11 @@ static Node *expr_bp(Parser *parser, int min_bp) {
 }
 
 static Node *expr(Parser *parser) {
-    return expr_bp(parser, PREC_LOWEST);
+    return expr_bp(parser, PREC_LOWEST, true);
+}
+
+static Node *expr_disable_comma(Parser *parser) {
+    return expr_bp(parser, PREC_LOWEST, false);
 }
 
 static Node *block(Parser *parser) {
@@ -570,13 +580,13 @@ static Node *initializer(Parser *parser) {
         NodeList *inits = node->initializers;
         do {
             if (peek(parser)->tag == TT_BRACE_R) break;
-            Node *init = expr(parser);
+            Node *init = expr_disable_comma(parser);
             nodelist_append(inits, init);
         } while (peek(parser)->tag == TT_COMMA && consume(parser));
         if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
         return node;
     }
-    return expr(parser);
+    return expr_disable_comma(parser);
 }
 
 static Node *init_declarator(Parser *parser, Type *type) {
@@ -647,6 +657,9 @@ static Node *stmt(Parser *parser) {
             node = node_new(NT_RETURN, consume(parser));
             if (peek(parser)->tag != TT_SEMICOLON) node->unary_expr = expr(parser);
             break;
+        case TT_SEMICOLON:
+            consume(parser);
+            return NULL;
         default:
             node = expr(parser);
             break;

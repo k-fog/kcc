@@ -189,5 +189,6 @@ assert 'int x[3] = {1,2,3}; int main() { return x[2]; }' 3
 assert 'int main() { int x = 0; return x == 0 ? 3 : 4; }' 3
 assert 'int main() { int x = -1; return (0 < x ? 3 : 4) + 1; }' 5
 assert 'int count = 0; void up() { count++; return; } int main() { up(); up(); return count; }' 2
+assert 'int main() { return 1,2,3; }' 3
 
 echo "all tests passed"
