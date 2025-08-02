@@ -495,7 +495,10 @@ static Node *for_stmt(Parser *parser) {
     if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
 
     // def
-    if (peek(parser)->tag != TT_SEMICOLON) node->forstmt.def = expr(parser);
+    if (peek(parser)->tag != TT_SEMICOLON) {
+        node->forstmt.def = is_typename(peek(parser)) ?
+                            local_decl(parser) : expr(parser);
+    }
     consume(parser);
     // cond
     if (peek(parser)->tag != TT_SEMICOLON) node->forstmt.cond = expr(parser);
@@ -610,7 +613,6 @@ static Node *local_decl(Parser *parser) {
         append_local_var(parser, name->main_token, name->type);
         nodelist_append(node->declarators, dnode);
     } while (peek(parser)->tag == TT_COMMA && consume(parser));
-    if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     return node;
 }
 
@@ -652,7 +654,8 @@ static Node *stmt(Parser *parser) {
             return for_stmt(parser);
         case TT_KW_CHAR:
         case TT_KW_INT:
-            return local_decl(parser); 
+            node = local_decl(parser); 
+            break;
         case TT_KW_RETURN:
             node = node_new(NT_RETURN, consume(parser));
             if (peek(parser)->tag != TT_SEMICOLON) node->unary_expr = expr(parser);

@@ -190,5 +190,8 @@ assert 'int main() { int x = 0; return x == 0 ? 3 : 4; }' 3
 assert 'int main() { int x = -1; return (0 < x ? 3 : 4) + 1; }' 5
 assert 'int count = 0; void up() { count++; return; } int main() { up(); up(); return count; }' 2
 assert 'int main() { return 1,2,3; }' 3
+assert 'int main(){int a=0;for(int i=0;i<=10;i++)a+=i;return a;}' 55
+assert 'int main(){int a=0;for(int i=10;i<0;i++)a+=i;return a;}' 0
+assert 'int main(){int i;for(i=0;i<100;i++);return i;}' 100
 
 echo "all tests passed"

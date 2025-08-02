@@ -439,7 +439,10 @@ static void gen_stmt(Node *node, Env *env) {
         printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_FOR) {
-        if (node->forstmt.def) gen_expr(node->forstmt.def, env);
+        if (node->forstmt.def) {
+            if (node->forstmt.def->tag == NT_LOCALDECL) gen_lvardecl(node->forstmt.def, env);
+            else gen_expr(node->forstmt.def, env);
+        }
         printf(".L%d.FOR:\n", id);
         if (node->forstmt.cond) gen_expr(node->forstmt.cond, env);
         printf("  pop rax\n");
