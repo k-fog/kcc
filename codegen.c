@@ -30,6 +30,8 @@ static void gen_lvardecl(Node *node, Env *env);
 static void gen_stmt(Node *node, Env *env);
 static void gen_func(Node *node, Env *env);
 
+static void gen_globalvar(Symbol *var);
+
 static int align_16(int n) {
     // return ((n + 15) / 16) * 16;
     return (n + 15) & ~0xF;
@@ -429,6 +431,49 @@ static void gen_stmt(Node *node, Env *env) {
     gen_expr(node, env);
 }
 
+static char *type2asm(Type *type) {
+    switch (type->tag) {
+        case TYP_CHAR:  return ".byte";
+        case TYP_INT:   return ".long";
+        case TYP_PTR:   return ".quad";
+        case TYP_ARRAY: return type2asm(type->base);
+    }
+    return NULL;
+}
+
+static void gen_globalvar(Symbol *var) {
+    printf(".data\n");
+    printf("%.*s:\n", var->token->len, var->token->start);
+    switch (var->type->tag) {
+        case TYP_CHAR:
+        case TYP_INT: {
+            if (var->init && var->init->tag != NT_INT) panic("expression is not supported as initializers");
+            int init_val = var->init ? var->init->integer : 0;
+            printf("  %s %d\n", type2asm(var->type), init_val);
+            break;
+        }
+        case TYP_PTR:
+            if (!var->init)
+                printf("  %s %d\n", type2asm(var->type->base), 0);
+            else
+                panic("unimplemented: global pointer initializer");
+            break;
+        case TYP_ARRAY: {
+            if (!var->init) {
+                printf("  .zero %d\n", sizeof_type(var->type));
+                break;
+            }
+            NodeList *inits = var->init->initializers;
+            for (int i = 0; i < inits->len; i++) {
+                Node *init = inits->nodes[i];
+                if (init->tag != NT_INT) panic("expression is not supported as initializers");
+                int init_val = init ? init->integer : 0;
+                printf("  %s %d\n", type2asm(var->type->base), init_val);
+            }
+        }
+    }
+}
+
 static void gen_func(Node *node, Env *env) {
     int offset = env->local_vars ? env->local_vars->offset : 0;
     const char *name = node->func.name->main_token->start;
@@ -475,10 +520,8 @@ void gen(Program *prog) {
 
     // generate global variables
     for (Symbol *global = prog->global_vars; global != NULL; global = global->next) {
-        if (global->tag != ST_GVAR) continue;
-        printf(".data\n");
-        printf("%.*s:\n", global->token->len, global->token->start);
-        printf("  .zero %d\n\n", sizeof_type(global->type));
+        gen_globalvar(global);
+        printf("\n");
     }
 
     // generate functions

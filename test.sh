@@ -183,5 +183,8 @@ assert 'int main() { return sizeof(int*[4]); }' 32
 assert 'int main() { return sizeof(int(*)[4]); }' 8
 assert 'int main() { return sizeof(char(**)[4]); }' 8
 assert 'int main() { return sizeof(int[4][5]); }' 80
+assert 'int x = 1, y = 2; int main() { return x + y; }' 3
+assert 'char x = 9; int main() { return x; }' 9
+assert 'int x[3] = {1,2,3}; int main() { return x[2]; }' 3
 
 echo "all tests passed"

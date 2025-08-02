@@ -177,7 +177,10 @@ struct Symbol {
     Type *type;
     Symbol *next;
 
-    int offset; // for local variable
+    union {
+        int offset; // for local variable
+        Node *init; // for global variable
+    };
 };
 
 typedef struct {
