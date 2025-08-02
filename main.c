@@ -14,6 +14,9 @@ void dump_type(Type *type) {
         return;
     }
     switch(type->tag) {
+        case TYP_VOID:
+            printf("void");
+            break;
         case TYP_CHAR:
             printf("char");
             break;

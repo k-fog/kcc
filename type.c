@@ -8,8 +8,9 @@ Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types) {
     return env;
 }
 
-Type *type_int = &(Type){TYP_INT, NULL};
-Type *type_char = &(Type){TYP_CHAR, NULL};
+Type *type_void = &(Type){TYP_VOID, NULL, 0};
+Type *type_int = &(Type){TYP_INT, NULL, 0};
+Type *type_char = &(Type){TYP_CHAR, NULL, 0};
 
 Type *pointer_to(Type *base) {
     Type *ptr = calloc(1, sizeof(Type));

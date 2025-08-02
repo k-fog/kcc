@@ -68,7 +68,9 @@ static bool is_infix(TokenTag tag) {
 }
 
 static bool is_typename(Token *token) {
-    return token->tag == TT_KW_INT || token->tag == TT_KW_CHAR;
+    return token->tag == TT_KW_VOID
+        || token->tag == TT_KW_INT
+        || token->tag == TT_KW_CHAR;
 }
 
 // NodeList
@@ -297,7 +299,8 @@ static Node *toplevel(Parser *parser);
 
 static Type *decl_spec(Parser *parser) {
     Token *token = consume(parser);
-    if (token->tag == TT_KW_CHAR) return type_char;
+    if (token->tag == TT_KW_VOID) return type_void;
+    else if (token->tag == TT_KW_CHAR) return type_char;
     else if (token->tag == TT_KW_INT) return type_int;
     else panic("expected type");
     return type_int;
@@ -642,7 +645,7 @@ static Node *stmt(Parser *parser) {
             return local_decl(parser); 
         case TT_KW_RETURN:
             node = node_new(NT_RETURN, consume(parser));
-            node->unary_expr = expr(parser);
+            if (peek(parser)->tag != TT_SEMICOLON) node->unary_expr = expr(parser);
             break;
         default:
             node = expr(parser);

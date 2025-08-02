@@ -50,6 +50,7 @@ typedef enum {
     TT_KW_ELSE,             // else
     TT_KW_WHILE,            // while
     TT_KW_FOR,              // for
+    TT_KW_VOID,             // void
     TT_KW_INT,              // int
     TT_KW_CHAR,             // char
     TT_EOF,
@@ -201,11 +202,12 @@ Program *parse(Parser *parser);
 
 // type
 struct Type {
-    enum { TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY } tag;
+    enum { TYP_VOID, TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY } tag;
     Type *base; // pointer to
     int array_size;
 };
 
+extern Type *type_void;
 extern Type *type_int;
 extern Type *type_char;
 

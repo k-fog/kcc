@@ -6,6 +6,8 @@ static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static char *str_label = ".L.STR";
 
+static Node *current_func;
+
 void print_token(Token *token) {
     const char *start = token->start;
     int len = token->len;
@@ -41,6 +43,7 @@ static int align_16(int n) {
 // load [rax] to rax
 static void gen_load(Type *type) {
     switch (type->tag) {
+        case TYP_VOID: panic("invalid load target: void");
         case TYP_CHAR:
             printf("  movsx rax, byte ptr [rax]\n");
             break;
@@ -58,6 +61,7 @@ static void gen_load(Type *type) {
 static void gen_store(Type *type) {
     printf("  pop rdi\n");
     switch (type->tag) {
+        case TYP_VOID: panic("invalid store target: void");
         case TYP_CHAR:
             printf("  mov [rdi], al\n");
             break;
@@ -391,12 +395,13 @@ static void gen_lvardecl(Node *node, Env *env) {
 static void gen_stmt(Node *node, Env *env) {
     int id = count();
     if (node->tag == NT_RETURN) {
-        gen_expr(node->unary_expr, env);
-        printf("  pop rax\n");
-        // epilogue
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
-        printf("  ret\n");
+        const char *name = current_func->func.name->main_token->start;
+        int name_len = current_func->func.name->main_token->len;
+        if (node->unary_expr) {
+            gen_expr(node->unary_expr, env);
+            printf("  pop rax\n");
+        }
+        printf("  jmp .L.RETURN.%.*s\n", name_len, name);
         return;
     } else if (node->tag == NT_BLOCK) {
         for (int i = 0; i < node->block->len; i++) {
@@ -452,6 +457,7 @@ static char *type2asm(Type *type) {
         case TYP_INT:   return ".long";
         case TYP_PTR:   return ".quad";
         case TYP_ARRAY: return type2asm(type->base);
+        default: panic("codegen: error at type2asm");
     }
     return NULL;
 }
@@ -460,6 +466,7 @@ static void gen_globalvar(Symbol *var) {
     printf(".data\n");
     printf("%.*s:\n", var->token->len, var->token->start);
     switch (var->type->tag) {
+        case TYP_VOID: panic("codegen: error at gen_globalvar");
         case TYP_CHAR:
         case TYP_INT: {
             if (var->init && var->init->tag != NT_INT) panic("expression is not supported as initializers");
@@ -490,6 +497,7 @@ static void gen_globalvar(Symbol *var) {
 }
 
 static void gen_func(Node *node, Env *env) {
+    current_func = node;
     int offset = env->local_vars ? env->local_vars->offset : 0;
     const char *name = node->func.name->main_token->start;
     int name_len = node->func.name->main_token->len;
@@ -521,6 +529,12 @@ static void gen_func(Node *node, Env *env) {
 
     if (body->tag != NT_BLOCK) panic("codegen: expected block");
     gen_stmt(body, env);
+
+    // epilogue
+    printf(".L.RETURN.%.*s:\n", name_len, name);
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
 }
 
 void gen(Program *prog) {
