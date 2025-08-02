@@ -115,13 +115,13 @@ typedef enum {     // token node->???
     NT_WHILE,      // while whilestmt
     NT_FOR,        // for forstmt
     NT_FUNC,       // <function> func
-    NT_PARAMDECL,  // <parameter declaration> unary_expr
     NT_DECLARATOR, // <identifier> | <identifier> = <initializer> declarator 
     NT_INITS,      // <initializer list> initializers
-    NT_LOCALDECL,   // <local variable declaration> declarators
+    NT_LOCALDECL,  // <local variable declaration> declarators
+    NT_PARAMDECL,  // <parameter declaration> ident
     NT_GLOBALDECL, // <global variable declaration> unary_expr
     NT_SIZEOF,     // sizeof unary_expr
-    NT_TYPE,       // <type> type (for sizeof)
+    NT_TYPENAME,   // <type> type (for sizeof)
 } NodeTag;
 
 struct Node {
@@ -133,6 +133,7 @@ struct Node {
         int index;
         Node *unary_expr;
         Node *pre_expr;
+        Node *ident;
         struct { Node *lhs, *rhs; } expr;
         struct { Node *name; NodeList *args; } fncall;
         struct { Node *cond; Node *then; Node *els; } ifstmt;

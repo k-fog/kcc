@@ -65,6 +65,17 @@ void dump_nodes(Node *node) {
             printf("(declare "); // temporary
             dump_nodes(node->unary_expr);
             break;
+        case NT_DECLARATOR:
+            printf("(");
+            dump_nodes(node->declarator.name);
+            if (node->declarator.init) dump_nodes(node->declarator.init);
+            break;
+        case NT_INITS:
+            printf("( ");
+            for (int i = 0; i < node->initializers->len; i++) {
+                dump_nodes(node->initializers->nodes[i]);
+            }
+            break;
         case NT_LOCALDECL:
             printf("(declare "); // temporary
             for (int i = 0; i < node->declarators->len; i++) {
@@ -224,8 +235,8 @@ int main(int argc, char *argv[]) {
     dump_tokens(tokens);
     Parser *parser = parser_new(tokens);
     Program *prog = parse(parser);
-    dump_funcs(prog->funcs);
     type_funcs(prog);
+    dump_funcs(prog->funcs);
     gen(prog);
     return 0;
 #else

@@ -448,7 +448,7 @@ static void gen_func(Node *node, Env *env) {
     int nparam = params->len;
     for (int i = 0; i < nparam; i++) {
         Node *node = params->nodes[i];
-        Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
+        Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->ident->main_token);
         int offset = var->offset;
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", offset);

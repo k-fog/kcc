@@ -210,12 +210,6 @@ static Node *unary_new(Token *token, Node *expr) {
     return node;
 }
 
-static Node *typenode_new(Token *token, Type *type) {
-    Node *node = node_new(NT_TYPE, token);
-    node->type = type;
-    return node;
-}
-
 static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
     NodeTag tag;
     switch (token->tag) {
@@ -269,8 +263,8 @@ static Token *consume(Parser *parser) {
 static Type *decl_spec(Parser *parser);
 static Type *pointer(Parser *parser, Type *type);
 static Type *array(Parser *parser, Type *type);
-static Type *try_parse_typename(Parser *parser);
 
+static Node *try_typename(Parser *parser);
 static Node *integer(Parser *parser);
 static NodeList *args(Parser *parser);
 static Node *unary(Parser *parser);
@@ -284,7 +278,9 @@ static Node *while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
 static Node *direct_declarator(Parser *parser, Type *type);
+static Node *direct_abstract_declarator(Parser *parser, Type *type);
 static Node *declarator(Parser *parser, Type *type);
+static Node *abstract_declarator(Parser *parser, Type *type);
 static Node *initializer(Parser *parser);
 static Node *init_declarator(Parser *parser, Type *type);
 static Node *local_decl(Parser *parser);
@@ -311,12 +307,12 @@ static Type *pointer(Parser *parser, Type *type) {
     return type;
 }
 
-static Type *try_parse_typename(Parser *parser) {
+static Node *try_typename(Parser *parser) {
     Token *token = peek(parser);
     if (!is_typename(token)) return NULL;
     Type *base = decl_spec(parser);
-    Type *type = pointer(parser, base);
-    return type;
+    Node *node = abstract_declarator(parser, base);
+    return node;
 }
 
 static Node *integer(Parser *parser) {
@@ -344,11 +340,10 @@ static Node *unary(Parser *parser) {
     if (token->tag == TT_KW_SIZEOF) {
         if (peek(parser)->tag == TT_PAREN_L)  {
             consume(parser); // (
-            Token *type_token = peek(parser);
-            Type *type = try_parse_typename(parser);
-            Node *node_expr = type ? typenode_new(type_token, type) : expr(parser);
+            Node *node = try_typename(parser);
+            if (!node) node = expr(parser);
             if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
-            return unary_new(token, node_expr);
+            return unary_new(token, node);
         }
     }
     return unary_new(token, expr_bp(parser, PREC_PREFIX));
@@ -521,9 +516,31 @@ static Node *direct_declarator(Parser *parser, Type *type) {
     return node;
 }
 
+static Node *direct_abstract_declarator(Parser *parser, Type *type) {
+    Node *node;
+    Token *token = peek(parser);
+    Type *placeholder = calloc(1, sizeof(Type));
+    if (token->tag == TT_PAREN_L) {
+        consume(parser); // (
+        *placeholder = *type;
+        node = abstract_declarator(parser, placeholder);
+        if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    } else {
+        node = node_new(NT_TYPENAME, NULL);
+        node->type = placeholder;
+    }
+    *placeholder = *array(parser, type);
+    return node;
+}
+
 static Node *declarator(Parser *parser, Type *type) {
     type = pointer(parser, type);
     return direct_declarator(parser, type);
+}
+
+static Node *abstract_declarator(Parser *parser, Type *type) {
+    type = pointer(parser, type);
+    return direct_abstract_declarator(parser, type);
 }
 
 static Node *initializer(Parser *parser) {
@@ -568,18 +585,11 @@ static Node *local_decl(Parser *parser) {
 }
 
 static Node *param_decl(Parser *parser) {
-    Type *type = try_parse_typename(parser);
-    if (!type) panic("expected variable declaration");
-    Token *ident_token = consume(parser);
-    if (peek(parser)->tag == TT_BRACKET_L) {
-        consume(parser); // [
-        int size = integer(parser)->integer;
-        type = array_of(type, size);
-        if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
-    }
-    Node *node = node_new(NT_PARAMDECL, ident_token);
-    node->unary_expr = ident_new(ident_token);
-    append_local_var(parser, ident_token, type);
+    Node *node = node_new(NT_PARAMDECL, peek(parser));
+    Type *type_spec = decl_spec(parser);
+    Node *name = declarator(parser, type_spec);
+    append_local_var(parser, name->main_token, name->type);
+    node->ident = name;
     return node;
 }
 
@@ -637,8 +647,8 @@ static Node *func(Parser *parser, Type *return_type, Token *name) {
 
 static Node *toplevel(Parser *parser) {
     Node *node;
-    Type *type = try_parse_typename(parser);
-    if (!type) panic("expected variable declaration");
+    Type *base_type = decl_spec(parser);
+    Type *type = pointer(parser, base_type);
     Token *ident_token = consume(parser);
 
     if (peek(parser)->tag == TT_PAREN_L) node = func(parser, type, ident_token);

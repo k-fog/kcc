@@ -66,10 +66,8 @@ static Node *typed(Node *node, Env *env) {
             break;
         case NT_IDENT: {
             Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
-            if (var == NULL) var = find_symbol(ST_GVAR, env->global_vars, node->main_token);
-            if (var == NULL) {
-                panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
-            }
+            if (!var) var = find_symbol(ST_GVAR, env->global_vars, node->main_token);
+            if (!var) panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
             node->type = var->type;
             break;
         }
@@ -213,7 +211,7 @@ static Node *typed(Node *node, Env *env) {
             typed(node->unary_expr, env);
             node->type = type_int;
             break;
-        case NT_TYPE:
+        case NT_TYPENAME:
             panic("typed: unreachable");
             break;
         case NT_POSTINC:
