@@ -193,5 +193,13 @@ assert 'int main() { return 1,2,3; }' 3
 assert 'int main(){int a=0;for(int i=0;i<=10;i++)a+=i;return a;}' 55
 assert 'int main(){int a=0;for(int i=10;i<0;i++)a+=i;return a;}' 0
 assert 'int main(){int i;for(i=0;i<100;i++);return i;}' 100
+assert 'int main(){if(1==1&&2==2) return 0; else return 1;}' 0
+assert 'int main(){if(1==1&&2==2&&3==3) return 0; else return 1;}' 0
+assert 'int main(){int a=0;1==1&&(a=1);return a;}' 1
+assert 'int main(){int a=0;1==0&&(a=1);return a;}' 0
+assert 'int main(){if(1==1||0==2) return 0; else return 1;}' 0
+assert 'int main(){if(1==0||2==1||3==3) return 0; else return 1;}' 0
+assert 'int main(){int a=0;1==1||(a=1);return a;}' 0
+assert 'int main(){int a=0;1==0||(a=1);return a;}' 1
 
 echo "all tests passed"

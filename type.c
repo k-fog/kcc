@@ -103,7 +103,9 @@ static Node *typed(Node *node, Env *env) {
         case NT_EQ:
         case NT_NE:
         case NT_LT:
-        case NT_LE: {
+        case NT_LE:
+        case NT_AND:
+        case NT_OR: {
             if (!is_integer(typed(node->expr.lhs, env)->type)) panic("invalid operands");
             if (!is_integer(typed(node->expr.rhs, env)->type)) panic("invalid operands");
             node->type = type_int;

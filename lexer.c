@@ -176,7 +176,20 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_COMMA, start, 1);
                 break;
             case '&':
-                token->next = token_new(TT_AMPERSAND, start, 1);
+                if (peek(lexer) != '&') {
+                    token->next = token_new(TT_AMPERSAND, start, 1);
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_AND_AND, start, 1);
+                }
+                break;
+            case '|':
+                if (peek(lexer) != '|') {
+                    panic("unimplemented: |");
+                } else {
+                    consume(lexer);
+                    token->next = token_new(TT_PIPE_PIPE, start, 1);
+                }
                 break;
             case '"': {
                 while (peek(lexer) != '"') end = consume(lexer);

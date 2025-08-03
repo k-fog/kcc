@@ -32,6 +32,8 @@ typedef enum {
     TT_AMPERSAND,           // &
     TT_BANG,                // !
     TT_QUESTION,            // ?
+    TT_AND_AND,             // &&
+    TT_PIPE_PIPE,           // ||
     TT_KW_SIZEOF,           // sizeof
     TT_PAREN_L, TT_PAREN_R, // ( )
     TT_COMMA,               // ,
@@ -113,6 +115,8 @@ typedef enum {     // token node->???
     NT_ASSIGN_DIV, // /= expr
     NT_COND,       // ?: conditional
     NT_COMMA,      // , expr
+    NT_AND,        // && expr
+    NT_OR,         // || expr
     NT_FNCALL,     // <function call> fncall
     NT_BLOCK,      // {<stmt>*} block
     NT_RETURN,     // return unary_expr

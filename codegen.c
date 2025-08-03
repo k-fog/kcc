@@ -28,6 +28,7 @@ static void gen_expr_postfix(Node *node, Env *env);
 static void gen_expr_assign(Node *node, Env *env);
 static void gen_expr_binary(Node *node, Env *env);
 static void gen_expr_cond(Node *node, Env *env);
+static void gen_expr_logical(Node *node, Env *env);
 static void gen_expr(Node *node, Env *env);
 static void gen_lvardecl(Node *node, Env *env);
 static void gen_stmt(Node *node, Env *env);
@@ -115,12 +116,14 @@ static void gen_fncall(Node *node, Env *env) {
     printf("  cmp rax, 0\n");
     printf("  je  .L.FNCALL%d.ALIGNED\n", id);
     printf("  sub rsp, 8\n");
+    printf("  mov al, 0\n");
     printf("  call ");
     print_token(node->main_token);
     printf("\n");
     printf("  add rsp, 8\n");
     printf("  jmp .L.FNCALL%d.END\n", id);
     printf(".L.FNCALL%d.ALIGNED:\n", id);
+    printf("  mov al, 0\n");
     printf("  call ");
     print_token(node->main_token);
     printf("\n");
@@ -326,6 +329,35 @@ static void gen_expr_cond(Node *node, Env *env) {
     printf(".L%d.END:\n", id);
 }
 
+static void gen_expr_logical(Node *node, Env *env) {
+    int id = count();
+    if (node->tag == NT_AND) {
+        gen_expr(node->expr.lhs, env);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .L%d.END\n", id);
+        gen_expr(node->expr.rhs, env);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf(".L%d.END:\n", id);
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
+    } else if (node->tag == NT_OR) {
+        gen_expr(node->expr.lhs, env);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  jne .L%d.END\n", id);
+        gen_expr(node->expr.rhs, env);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf(".L%d.END:\n", id);
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
+    } else panic("codegen: error at gen_expr_logical");
+}
+
 static void gen_expr(Node *node, Env *env) {
     switch (node->tag) {
         case NT_INT:
@@ -364,6 +396,8 @@ static void gen_expr(Node *node, Env *env) {
         case NT_LE:
         case NT_COMMA: return gen_expr_binary(node, env);
         case NT_COND: return gen_expr_cond(node, env);
+        case NT_AND:
+        case NT_OR: return gen_expr_logical(node, env);
         default: panic("codegen: error at gen_expr");
     }
 }

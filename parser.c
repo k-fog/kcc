@@ -35,6 +35,8 @@ int precedences[META_TT_NUM] = {
     [TT_PERCENT]    = PREC_MUL,
     [TT_QUESTION]   = PREC_COND,
     [TT_COMMA]      = PREC_COMMA,
+    [TT_AND_AND]    = PREC_LOGICAL,
+    [TT_PIPE_PIPE]  = PREC_LOGICAL,
     // otherwise PREC_NONE (== 0)
 };
 
@@ -62,6 +64,8 @@ OpAssoc assocs[] = {
     [TT_PERCENT]    = ASSOC_LEFT,
     [TT_QUESTION]   = ASSOC_LEFT,
     [TT_COMMA]      = ASSOC_LEFT,
+    [TT_AND_AND]    = ASSOC_LEFT,
+    [TT_PIPE_PIPE]  = ASSOC_LEFT,
     // [TT_PAREN_L]    = ASSOC_LEFT,
     // [TT_BRACKET_L]  = ASSOC_LEFT,
 };
@@ -239,6 +243,8 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
         case TT_ANGLE_R_EQ: tag = NT_LE; break;
         case TT_BRACKET_L:  tag = NT_ADD; break; // for array access
         case TT_COMMA:      tag = NT_COMMA; break;
+        case TT_AND_AND:    tag = NT_AND; break;
+        case TT_PIPE_PIPE:  tag = NT_OR; break;
         default: panic("expr_new: invalid token tag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
