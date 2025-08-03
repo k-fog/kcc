@@ -91,7 +91,7 @@ static void gen_addr(Node *node, Env *env) {
         printf("  lea rax, %.*s[rip]\n", var->token->len, var->token->start);
         printf("  push rax\n");
     } else if (node->tag == NT_DEREF) {
-        gen_expr(node->unary_expr, env);
+        gen_expr(node->unary_expr, env); // push rax
     } else if (node->tag == NT_STRING) {
         printf("  lea rax, %s%d[rip]\n", str_label, node->index);
         printf("  push rax\n");
@@ -431,6 +431,7 @@ static void gen_lvardecl(Node *node, Env *env) {
 }
 
 static void gen_stmt(Node *node, Env *env) {
+    if (!node) return;
     int id = count();
     if (node->tag == NT_RETURN) {
         const char *name = current_func->func.name->main_token->start;
@@ -445,8 +446,6 @@ static void gen_stmt(Node *node, Env *env) {
         for (int i = 0; i < node->block->len; i++) {
             Node *child = node->block->nodes[i];
             gen_stmt(child, env);
-            if (child->tag == NT_LOCALDECL || child->tag == NT_PARAMDECL) continue;
-            printf("  pop rax\n");
         }
         return;
     } else if (node->tag == NT_IF) {
@@ -457,9 +456,7 @@ static void gen_stmt(Node *node, Env *env) {
         gen_stmt(node->ifstmt.then, env);
         printf("  jmp .L%d.END\n", id);
         printf(".L%d.ELSE:\n", id);
-        if (node->ifstmt.els != NULL) {
-            gen_stmt(node->ifstmt.els, env);
-        }
+        gen_stmt(node->ifstmt.els, env);
         printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_WHILE) {
@@ -475,21 +472,32 @@ static void gen_stmt(Node *node, Env *env) {
     } else if (node->tag == NT_FOR) {
         if (node->forstmt.def) {
             if (node->forstmt.def->tag == NT_LOCALDECL) gen_lvardecl(node->forstmt.def, env);
-            else gen_expr(node->forstmt.def, env);
+            else {
+                gen_expr(node->forstmt.def, env);
+                printf("  pop rax\n");
+            }
         }
         printf(".L%d.FOR:\n", id);
-        if (node->forstmt.cond) gen_expr(node->forstmt.cond, env);
-        printf("  pop rax\n");
-        printf("  cmp rax, 0\n");
-        printf("  je  .L%d.END\n", id);
-        if (node->forstmt.body) gen_stmt(node->forstmt.body, env);
-        if (node->forstmt.next) gen_expr(node->forstmt.next, env);
+        if (node->forstmt.cond) {
+            gen_expr(node->forstmt.cond, env);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  je  .L%d.END\n", id);
+        }
+        gen_stmt(node->forstmt.body, env);
+        if (node->forstmt.next) {
+            gen_expr(node->forstmt.next, env);
+            printf("  pop rax\n");
+        }
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_LOCALDECL) return gen_lvardecl(node, env);
     else if (node->tag == NT_PARAMDECL) return;
+
+    // expr statement
     gen_expr(node, env);
+    printf("  pop rax\n");
 }
 
 static char *type2asm(Type *type) {

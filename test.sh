@@ -201,5 +201,6 @@ assert 'int main(){if(1==1||0==2) return 0; else return 1;}' 0
 assert 'int main(){if(1==0||2==1||3==3) return 0; else return 1;}' 0
 assert 'int main(){int a=0;1==1||(a=1);return a;}' 0
 assert 'int main(){int a=0;1==0||(a=1);return a;}' 1
+assert 'int main(){;;;;;; if(1);else {} return 0;}' 0
 
 echo "all tests passed"
