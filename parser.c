@@ -648,7 +648,7 @@ static Node *param_decl(Parser *parser) {
 }
 
 static Node *stmt(Parser *parser) {
-    Node *node;
+    Node *node = NULL;
     switch (peek(parser)->tag) {
         case TT_BRACE_L:
             return block(parser);
@@ -667,8 +667,7 @@ static Node *stmt(Parser *parser) {
             if (peek(parser)->tag != TT_SEMICOLON) node->unary_expr = expr(parser);
             break;
         case TT_SEMICOLON:
-            consume(parser);
-            return NULL;
+            break;
         default:
             node = expr(parser);
             break;

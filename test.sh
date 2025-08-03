@@ -178,6 +178,7 @@ assert 'int main() { return 10%3; }' 1
 assert 'int main() { return 7%10; }' 7
 assert 'int main() {int a[3] = {1, 2+3, ident(4),}; return a[2];}' 4
 assert 'int main() {char a[4] = {1, 2, 3, 4}; return a[2];}' 3
+# assert 'int main(){char *s[2]={"abc", "def"}; return s[1][1];}' 101
 assert 'int main() { return sizeof(int[4]); }' 16
 assert 'int main() { return sizeof(int*[4]); }' 32
 assert 'int main() { return sizeof(int(*)[4]); }' 8
