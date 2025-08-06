@@ -1,5 +1,6 @@
 #include "kcc.h"
 
+
 enum OpPrecedence {
     PREC_NONE = 0, // for syntax error check
     PREC_LOWEST,
@@ -54,10 +55,11 @@ static bool is_right_assoc(TokenTag tag) {
         || tag == TT_SLASH_EQ;
 }
 
-static bool is_typename(Token *token) {
+static bool is_type_specifier(Token *token) {
     return token->tag == TT_KW_VOID
         || token->tag == TT_KW_INT
-        || token->tag == TT_KW_CHAR;
+        || token->tag == TT_KW_CHAR
+        || token->tag == TT_KW_STRUCT;
 }
 
 // NodeList
@@ -132,12 +134,23 @@ static Symbol *append_func_type(Parser *parser, Token *ident, Type *type) {
     return symbol;
 }
 
+static Symbol *append_struct(Parser *parser, Token *ident, Type *type) {
+    Symbol **deftypes = &parser->defined_types;
+    Symbol *symbol = symbol_new(ST_STRUCT, ident, type, *deftypes);
+    *deftypes = symbol;
+    return symbol;
+}
+
 Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident) {
     for (Symbol *sym = symlist; sym != NULL; sym = sym->next) {
         if (ident->len != sym->token->len) continue;
         if (sym->tag == tag && strncmp(sym->token->start, ident->start, sym->token->len) == 0) return sym;
     }
     return NULL;
+}
+
+int align_n(int x, int n) {
+    return ((x + n - 1) / n) * n;
 }
 
 // Parser
@@ -255,6 +268,7 @@ static Token *consume(Parser *parser) {
     return token;
 }
 
+static Type *struct_decl(Parser *parser);
 static Type *decl_spec(Parser *parser);
 static Type *pointer(Parser *parser, Type *type);
 static Type *array(Parser *parser, Type *type);
@@ -288,11 +302,39 @@ static Node *toplevel(Parser *parser);
 
 // parse type
 
+static Symbol *struct_decl_list(Parser *parser) {
+    Symbol *list;
+    int current_offset = 0;
+    while (is_type_specifier(peek(parser))) {
+        Type *type_spec = decl_spec(parser);
+        Node *declr = declarator(parser, type_spec);
+        list = symbol_new(ST_DECL, declr->main_token, declr->type, list);
+        int size = sizeof_type(declr->type);
+        list->offset = align_n(current_offset + size, size);
+        current_offset = list->offset;
+        if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
+    }
+    return list;
+}
+
+static Type *struct_decl(Parser *parser) {
+    Node *ident = NULL;
+    if (peek(parser)->tag == TT_IDENT) ident = ident_new(consume(parser));
+    if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
+    Symbol *list = struct_decl_list(parser);
+    if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
+    int size = align_n(list->offset, 4);
+    Type *struct_typ = struct_new(ident, list, size);
+    if (ident) append_struct(parser, ident->main_token, struct_typ);
+    return struct_typ;
+}
+
 static Type *decl_spec(Parser *parser) {
     Token *token = consume(parser);
     if (token->tag == TT_KW_VOID) return type_void;
     else if (token->tag == TT_KW_CHAR) return type_char;
     else if (token->tag == TT_KW_INT) return type_int;
+    else if (token->tag == TT_KW_STRUCT) return struct_decl(parser);
     else panic("expected type");
     return type_int;
 }
@@ -307,7 +349,7 @@ static Type *pointer(Parser *parser, Type *type) {
 
 static Node *try_typename(Parser *parser) {
     Token *token = peek(parser);
-    if (!is_typename(token)) return NULL;
+    if (!is_type_specifier(token)) return NULL;
     Type *base = decl_spec(parser);
     Node *node = abstract_declarator(parser, base);
     return node;
@@ -412,14 +454,16 @@ static Node *expr_cond(Parser *parser, Token *token, Node *cond) {
 
 static Node *expr_bp(Parser *parser, int min_bp, bool comma_op) {
     Node *lhs = expr_prefix(parser);
-    while (is_infix(peek(parser)->tag)) {
-        if (!comma_op && peek(parser)->tag == TT_COMMA) break;
-        int prec = precedences[peek(parser)->tag];
-        bool left_assoc = !is_right_assoc(peek(parser)->tag);
+    Token *token = peek(parser);
+    while (is_infix(token->tag)) {
+        int prec = precedences[token->tag];
+        bool left_assoc = !is_right_assoc(token->tag);
+
+        if (!comma_op && token->tag == TT_COMMA) break;
         if (left_assoc && prec <= min_bp) break;
         else if (prec < min_bp) break;
 
-        Token *token = consume(parser);
+        token = consume(parser);
         if (token->tag == TT_QUESTION) return expr_cond(parser, token, lhs);
         Node *rhs = expr_bp(parser, prec, comma_op);
         lhs = expr_new(token, lhs, rhs);
@@ -430,6 +474,7 @@ static Node *expr_bp(Parser *parser, int min_bp, bool comma_op) {
             lhs->expr.lhs = lhs->expr.rhs;
             lhs->expr.rhs = tmp;
         }
+        token = peek(parser);
     }
     return lhs;
 }
@@ -482,7 +527,7 @@ static Node *for_stmt(Parser *parser) {
 
     // def
     if (peek(parser)->tag != TT_SEMICOLON) {
-        node->forstmt.def = is_typename(peek(parser)) ?
+        node->forstmt.def = is_type_specifier(peek(parser)) ?
                             local_decl(parser) : expr(parser);
     }
     consume(parser);
@@ -640,6 +685,7 @@ static Node *stmt(Parser *parser) {
             return for_stmt(parser);
         case TT_KW_CHAR:
         case TT_KW_INT:
+        case TT_KW_STRUCT:
             node = local_decl(parser); 
             break;
         case TT_KW_RETURN:

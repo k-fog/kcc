@@ -2,15 +2,16 @@
 
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types) {
     Env *env = calloc(1, sizeof(Env));
+    env->current_func = NULL;
     env->local_vars = local_vars;
     env->global_vars = global_vars;
     env->func_types = func_types;
     return env;
 }
 
-Type *type_void = &(Type){TYP_VOID, NULL, 0};
-Type *type_int = &(Type){TYP_INT, NULL, 0};
-Type *type_char = &(Type){TYP_CHAR, NULL, 0};
+Type *type_void = &(Type){TYP_VOID, 0};
+Type *type_char = &(Type){TYP_CHAR, 0};
+Type *type_int = &(Type){TYP_INT, 0};
 
 Type *pointer_to(Type *base) {
     Type *ptr = calloc(1, sizeof(Type));
@@ -27,12 +28,22 @@ Type *array_of(Type *base, int size) {
     return arr;
 }
 
+Type *struct_new(Node *ident, Symbol *list, int size) {
+    Type *typ = calloc(1, sizeof(Type));
+    typ->tag = TYP_STRUCT;
+    typ->tagged_typ.ident = ident;
+    typ->tagged_typ.list = list;
+    typ->tagged_typ.size = size;
+    return typ;
+}
+
 int sizeof_type(Type *type) {
     switch (type->tag) {
         case TYP_CHAR: return 1;
         case TYP_INT: return 4;
         case TYP_PTR: return 8;
         case TYP_ARRAY: return sizeof_type(type->base) * type->array_size;
+        case TYP_STRUCT: return type->tagged_typ.size;
         default: panic("error at sizeof_type");
     }
     return 0;

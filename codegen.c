@@ -6,8 +6,6 @@ static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static char *str_label = ".L.STR";
 
-static Node *current_func;
-
 void print_token(Token *token) {
     const char *start = token->start;
     int len = token->len;
@@ -35,11 +33,6 @@ static void gen_stmt(Node *node, Env *env);
 static void gen_func(Node *node, Env *env);
 
 static void gen_globalvar(Symbol *var);
-
-static int align_16(int n) {
-    // return ((n + 15) / 16) * 16;
-    return (n + 15) & ~0xF;
-}
 
 // load [rax] to rax
 static void gen_load(Type *type) {
@@ -434,8 +427,9 @@ static void gen_stmt(Node *node, Env *env) {
     if (!node) return;
     int id = count();
     if (node->tag == NT_RETURN) {
-        const char *name = current_func->func.name->main_token->start;
-        int name_len = current_func->func.name->main_token->len;
+        Node *fnode = env->current_func;
+        const char *name = fnode->func.name->main_token->start;
+        int name_len = fnode->func.name->main_token->len;
         if (node->unary_expr) {
             gen_expr(node->unary_expr, env);
             printf("  pop rax\n");
@@ -546,7 +540,6 @@ static void gen_globalvar(Symbol *var) {
 }
 
 static void gen_func(Node *node, Env *env) {
-    current_func = node;
     int offset = env->local_vars ? env->local_vars->offset : 0;
     const char *name = node->func.name->main_token->start;
     int name_len = node->func.name->main_token->len;
@@ -558,7 +551,7 @@ static void gen_func(Node *node, Env *env) {
     // prologue
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", align_16(offset));
+    printf("  sub rsp, %d\n", align_n(offset, 16));
 
     // set args
     NodeList *params = node->func.params;
@@ -606,6 +599,7 @@ void gen(Program *prog) {
     Env *env = env_new(NULL, prog->global_vars, prog->func_types);
     for (int i = 0; i < prog->funcs->len; i++) {
         Node *fnode = prog->funcs->nodes[i];
+        env->current_func = fnode;
         env->local_vars = fnode->func.locals; // set local variables
         gen_func(fnode, env);
         printf("\n");

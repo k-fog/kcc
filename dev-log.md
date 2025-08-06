@@ -267,3 +267,9 @@ main(){ fib(10); } // => 55
 - [ドーナツ](https://sozysozbot.github.io/seccamp-2022-c-compiler-seminar/#permalink_2d4df40be11b02e75bdfb006d357d3ad)が動いた
   - プロトタイプ宣言・エスケープシーケンスは非対応
   - #includeはgccに任せている
+
+## 2025-08-05
+- 大学の期末試験が終わった！
+
+## 2025-08-07
+- `struct`をパース

@@ -55,6 +55,7 @@ typedef enum {
     TT_KW_VOID,             // void
     TT_KW_INT,              // int
     TT_KW_CHAR,             // char
+    TT_KW_STRUCT,           // struct
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -84,6 +85,7 @@ typedef struct {
     Node *current_func;
     Symbol *func_types;
     Symbol *global_vars;
+    Symbol *defined_types;
     TokenList *string_tokens;
 } Parser;
 
@@ -178,7 +180,7 @@ TokenList *tokenlist_new(int capacity);
 void tokenlist_append(TokenList *tlist, Token *token);
 
 typedef enum {
-    ST_LVAR, ST_GVAR, ST_FUNC
+    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_DECL,
 } SymbolTag;
 
 struct Symbol {
@@ -188,15 +190,18 @@ struct Symbol {
     Symbol *next;
 
     union {
-        int offset; // for local variable
+        int offset; // for local variable, struct
         Node *init; // for global variable
     };
 };
+
+int align_n(int x, int n);
 
 typedef struct {
     NodeList *funcs;
     Symbol *func_types;
     Symbol *global_vars;
+    Symbol *defined_types;
     TokenList *string_tokens;
 } Program;
 
@@ -207,9 +212,12 @@ Program *parse(Parser *parser);
 
 // type
 struct Type {
-    enum { TYP_VOID, TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY } tag;
-    Type *base; // pointer to
-    int array_size;
+    enum { TYP_VOID, TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY, TYP_STRUCT } tag;
+    int array_size; // array
+    union {
+        Type *base; // pointer to
+        struct { Node *ident; Symbol *list; int size; } tagged_typ; // struct
+    };
 };
 
 extern Type *type_void;
@@ -217,9 +225,11 @@ extern Type *type_int;
 extern Type *type_char;
 
 struct Env {
+    Node *current_func;
     Symbol *local_vars;
     Symbol *global_vars;
     Symbol *func_types;
+    Symbol *defined_types;
 };
 
 bool is_integer(Type *type);
@@ -230,6 +240,7 @@ int sizeof_type(Type *type);
 Type *type_copy(Type *type);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
+Type *struct_new(Node *ident, Symbol *list, int size);
 void type_funcs(Program *prog);
 
 // codegen

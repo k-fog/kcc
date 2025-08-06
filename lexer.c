@@ -12,6 +12,7 @@ struct {
     {"int",    TT_KW_INT},
     {"char",   TT_KW_CHAR},
     {"sizeof", TT_KW_SIZEOF},
+    {"struct", TT_KW_STRUCT},
     {NULL,     -1},
 };
 

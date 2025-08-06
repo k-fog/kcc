@@ -203,5 +203,9 @@ assert 'int main(){if(1==0||2==1||3==3) return 0; else return 1;}' 0
 assert 'int main(){int a=0;1==1||(a=1);return a;}' 0
 assert 'int main(){int a=0;1==0||(a=1);return a;}' 1
 assert 'int main(){;;;;;; if(1);else {} return 0;}' 0
+assert 'int main(){struct {int x; int y; char z;} s; return sizeof(s);}' 12
+assert 'int main(){struct {char a; char b; int c;} s; return sizeof(s);}' 8
+assert 'int main(){struct {int x; struct {char a; char b;} inner; int y;} s; return sizeof(s);}' 12
+assert 'int main(){struct {char a[5]; int b;} s; return sizeof(s);}' 12
 
 echo "all tests passed"
