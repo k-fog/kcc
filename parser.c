@@ -40,38 +40,18 @@ int precedences[META_TT_NUM] = {
     // otherwise PREC_NONE (== 0)
 };
 
-typedef enum {
-    ASSOC_LEFT,  // binding power (l), r > l, (r)
-    ASSOC_RIGHT, // binding power (l), r < l, (r)
-} OpAssoc;
-
-OpAssoc assocs[] = {
-    [TT_EQ]         = ASSOC_RIGHT,
-    [TT_PLUS_EQ]    = ASSOC_RIGHT,
-    [TT_MINUS_EQ]   = ASSOC_RIGHT,
-    [TT_STAR_EQ]    = ASSOC_RIGHT,
-    [TT_SLASH_EQ]   = ASSOC_RIGHT,
-    [TT_EQ_EQ]      = ASSOC_LEFT,
-    [TT_BANG_EQ]    = ASSOC_LEFT,
-    [TT_ANGLE_L]    = ASSOC_LEFT,
-    [TT_ANGLE_R]    = ASSOC_LEFT,
-    [TT_ANGLE_L_EQ] = ASSOC_LEFT,
-    [TT_ANGLE_R_EQ] = ASSOC_LEFT,
-    [TT_PLUS]       = ASSOC_LEFT,
-    [TT_MINUS]      = ASSOC_LEFT,
-    [TT_STAR]       = ASSOC_LEFT,
-    [TT_SLASH]      = ASSOC_LEFT,
-    [TT_PERCENT]    = ASSOC_LEFT,
-    [TT_QUESTION]   = ASSOC_LEFT,
-    [TT_COMMA]      = ASSOC_LEFT,
-    [TT_AND_AND]    = ASSOC_LEFT,
-    [TT_PIPE_PIPE]  = ASSOC_LEFT,
-    // [TT_PAREN_L]    = ASSOC_LEFT,
-    // [TT_BRACKET_L]  = ASSOC_LEFT,
-};
-
 static bool is_infix(TokenTag tag) {
     return precedences[tag] != PREC_NONE;
+}
+
+static bool is_right_assoc(TokenTag tag) {
+    // left-associative : binding power (l), r > l, (r)
+    // right-associative: binding power (l), r < l, (r)
+    return tag == TT_EQ
+        || tag == TT_PLUS_EQ
+        || tag == TT_MINUS_EQ
+        || tag == TT_STAR_EQ
+        || tag == TT_SLASH_EQ;
 }
 
 static bool is_typename(Token *token) {
@@ -435,9 +415,9 @@ static Node *expr_bp(Parser *parser, int min_bp, bool comma_op) {
     while (is_infix(peek(parser)->tag)) {
         if (!comma_op && peek(parser)->tag == TT_COMMA) break;
         int prec = precedences[peek(parser)->tag];
-        int assoc = assocs[peek(parser)->tag];
-        if (assoc == ASSOC_LEFT && prec <= min_bp) break;
-        else if (assoc == ASSOC_RIGHT && prec < min_bp) break;
+        bool left_assoc = !is_right_assoc(peek(parser)->tag);
+        if (left_assoc && prec <= min_bp) break;
+        else if (prec < min_bp) break;
 
         Token *token = consume(parser);
         if (token->tag == TT_QUESTION) return expr_cond(parser, token, lhs);
