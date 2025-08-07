@@ -149,6 +149,17 @@ Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident) {
     return NULL;
 }
 
+Symbol *reverse_symbols(Symbol *list) {
+    Symbol *prev = NULL, *current = list;
+    while (current) {
+        Symbol *next = current->next;
+        current->next = prev;
+        prev = current;
+        current = next;
+    }
+    return prev;
+}
+
 int align_n(int x, int n) {
     return ((x + n - 1) / n) * n;
 }
@@ -258,6 +269,19 @@ static Node *postfix_new(Token *token, Node *expr) {
     return node;
 }
 
+static Node *member_access_new(Token *token, Node *lhs, Node *member) {
+    NodeTag tag;
+    switch (token->tag) {
+        case TT_PERIOD: tag = NT_DOT; break;
+        case TT_MINUS_ANGLE_R: tag = NT_ARROW; break;
+        default: panic("member_access_new: invalid token tag=%d", token->tag);
+    }
+    Node *node = node_new(tag, token);
+    node->member_access.lhs = lhs;
+    node->member_access.member = member;
+    return node;
+}
+
 static Token *peek(Parser *parser) {
     return parser->current_token;
 }
@@ -303,15 +327,11 @@ static Node *toplevel(Parser *parser);
 // parse type
 
 static Symbol *struct_decl_list(Parser *parser) {
-    Symbol *list;
-    int current_offset = 0;
+    Symbol *list = NULL;
     while (is_type_specifier(peek(parser))) {
         Type *type_spec = decl_spec(parser);
         Node *declr = declarator(parser, type_spec);
-        list = symbol_new(ST_DECL, declr->main_token, declr->type, list);
-        int size = sizeof_type(declr->type);
-        list->offset = align_n(current_offset + size, size);
-        current_offset = list->offset;
+        list = symbol_new(ST_MEMBER, declr->main_token, declr->type, list);
         if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     }
     return list;
@@ -321,9 +341,20 @@ static Type *struct_decl(Parser *parser) {
     Node *ident = NULL;
     if (peek(parser)->tag == TT_IDENT) ident = ident_new(consume(parser));
     if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
+
     Symbol *list = struct_decl_list(parser);
+    list = reverse_symbols(list);
+
+    int current_offset = 0;
+    for (Symbol *elem = list; elem != NULL; elem = elem->next) {
+        int align = sizeof_type(elem->type);
+        current_offset = align_n(current_offset, align);
+        elem->offset = current_offset;
+        current_offset += sizeof_type(elem->type);
+    }
+
+    int size = align_n(current_offset, 4); // TODO: alignment
     if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
-    int size = align_n(list->offset, 4);
     Type *struct_typ = struct_new(ident, list, size);
     if (ident) append_struct(parser, ident->main_token, struct_typ);
     return struct_typ;
@@ -334,9 +365,19 @@ static Type *decl_spec(Parser *parser) {
     if (token->tag == TT_KW_VOID) return type_void;
     else if (token->tag == TT_KW_CHAR) return type_char;
     else if (token->tag == TT_KW_INT) return type_int;
-    else if (token->tag == TT_KW_STRUCT) return struct_decl(parser);
+    else if (token->tag == TT_KW_STRUCT) {
+        Token *next = peek(parser);
+        if (next->tag == TT_IDENT) {
+            Symbol *struct_sym = find_symbol(ST_STRUCT, parser->defined_types, next);
+            if (struct_sym != NULL) {
+                consume(parser); // struct tag
+                return struct_sym->type;
+            }
+        }
+        return struct_decl(parser);
+    }
     else panic("expected type");
-    return type_int;
+    return NULL;
 }
 
 static Type *pointer(Parser *parser, Type *type) {
@@ -430,6 +471,12 @@ static Node *expr_postfix(Parser *parser, Node *lhs) {
             Node *add = expr_new(lbracket, lhs, index);
             lhs = node_new(NT_DEREF, lbracket);
             lhs->unary_expr = add;
+            break;
+        }
+        case TT_PERIOD:
+        case TT_MINUS_ANGLE_R: {
+            Token *op = consume(parser);
+            lhs = member_access_new(op, lhs, ident_new(consume(parser)));
             break;
         }
         case TT_PLUS_PLUS:
@@ -637,7 +684,7 @@ static Node *local_decl(Parser *parser) {
     Node *node = node_new(NT_LOCALDECL, peek(parser));
     node->declarators = nodelist_new(DEFAULT_NODELIST_CAP);
     Type *type_spec = decl_spec(parser);
-    if (!type_spec) panic("expected variable declaration");
+    if (peek(parser)->tag == TT_SEMICOLON) return node;
     do {
         Node *dnode = init_declarator(parser, type_spec);
         Node *name = dnode->declarator.name;
@@ -748,7 +795,7 @@ Program *parse(Parser *parser) {
         if (node->tag == NT_FUNC) nodelist_append(prog->funcs, node);
     }
     prog->func_types = parser->func_types;
-    prog->global_vars = parser->global_vars;
+    prog->global_vars = reverse_symbols(parser->global_vars);
     prog->string_tokens = parser->string_tokens;
     return prog;
 }

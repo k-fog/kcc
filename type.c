@@ -165,6 +165,19 @@ static Node *typed(Node *node, Env *env) {
             node->type = rhs_typ;
             break;
         }
+        case NT_DOT:
+        case NT_ARROW: {
+            Node *lhs = node->member_access.lhs;
+            Node *member = node->member_access.member;
+            Type *lhs_typ = typed(lhs, env)->type;
+            if ((node->tag == NT_DOT && lhs_typ->tag != TYP_STRUCT)
+                || (node->tag == NT_ARROW && (lhs_typ->tag != TYP_PTR || lhs_typ->base->tag != TYP_STRUCT)))
+                panic("type check error: invalid member access");
+            Symbol *member_sym = find_symbol(ST_MEMBER, lhs_typ->tagged_typ.list, member->main_token);
+            if (!member_sym) panic("type check error: invalid member access");
+            node->type = member_sym->type;
+            break;
+        }
         case NT_FNCALL: {
             for (int i = 0; i < node->fncall.args->len; i++)
                 typed(node->fncall.args->nodes[i], env);

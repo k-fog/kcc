@@ -207,5 +207,10 @@ assert 'int main(){struct {int x; int y; char z;} s; return sizeof(s);}' 12
 assert 'int main(){struct {char a; char b; int c;} s; return sizeof(s);}' 8
 assert 'int main(){struct {int x; struct {char a; char b;} inner; int y;} s; return sizeof(s);}' 12
 assert 'int main(){struct {char a[5]; int b;} s; return sizeof(s);}' 12
+assert 'int main(){struct {int x; int y; char z;} s; s.x = 1; s.y = 2; s.z = 3; return s.x + s.y + s.z;}' 6
+assert 'int main(){struct {int x; char y; char z;} s; s.x = 1; s.y = 2; s.z = 3; return s.x + s.y + s.z;}' 6
+assert 'int main(){struct {char x; char y; char z;} s; s.x = 1; s.y = 2; s.z = 3; if (sizeof(s) != 4) return 0; return s.x + s.y + s.z;}' 6
+assert 'int main(){struct s {int x; int y;}; struct s x; return sizeof(x);}' 8
+assert 'int main(){struct s {int x; int y;}; struct s x; x.x=1; x.y=2;return x.x+x.y;}' 3
 
 echo "all tests passed"

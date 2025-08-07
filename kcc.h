@@ -37,6 +37,8 @@ typedef enum {
     TT_KW_SIZEOF,           // sizeof
     TT_PAREN_L, TT_PAREN_R, // ( )
     TT_COMMA,               // ,
+    TT_PERIOD,              // .
+    TT_MINUS_ANGLE_R,       // ->
     TT_PLUS_PLUS,           // ++
     TT_MINUS_MINUS,         // --
     TT_INT,
@@ -119,6 +121,8 @@ typedef enum {     // token node->???
     NT_COMMA,      // , expr
     NT_AND,        // && expr
     NT_OR,         // || expr
+    NT_DOT,        // . member_access
+    NT_ARROW,      // -> member_access
     NT_FNCALL,     // <function call> fncall
     NT_BLOCK,      // {<stmt>*} block
     NT_RETURN,     // return unary_expr
@@ -156,6 +160,7 @@ struct Node {
         struct { Node *name; Node *init; } declarator;
         NodeList *declarators;
         NodeList *initializers;
+        struct { Node *lhs; Node *member; } member_access;
     };
 };
 
@@ -180,7 +185,7 @@ TokenList *tokenlist_new(int capacity);
 void tokenlist_append(TokenList *tlist, Token *token);
 
 typedef enum {
-    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_DECL,
+    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_MEMBER,
 } SymbolTag;
 
 struct Symbol {
@@ -195,6 +200,7 @@ struct Symbol {
     };
 };
 
+Symbol *reverse_symbols(Symbol *list);
 int align_n(int x, int n);
 
 typedef struct {

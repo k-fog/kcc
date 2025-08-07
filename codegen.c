@@ -66,6 +66,7 @@ static void gen_store(Type *type) {
             printf("  mov [rdi], rax\n");
             break;
         case TYP_ARRAY: panic("invalid store target: array");
+        case TYP_STRUCT: panic("invalid store target: struct");
     }
 }
 
@@ -80,13 +81,23 @@ static void gen_addr(Node *node, Env *env) {
             return;
         }
         var = find_symbol(ST_GVAR, env->global_vars, node->main_token);
-        if (var == NULL) panic("undefined variable");
+        if (!var) panic("undefined variable");
         printf("  lea rax, %.*s[rip]\n", var->token->len, var->token->start);
         printf("  push rax\n");
     } else if (node->tag == NT_DEREF) {
         gen_expr(node->unary_expr, env); // push rax
     } else if (node->tag == NT_STRING) {
         printf("  lea rax, %s%d[rip]\n", str_label, node->index);
+        printf("  push rax\n");
+    } else if (node->tag == NT_DOT) {
+        Node *lhs = node->member_access.lhs;
+        Node *mnode = node->member_access.member;
+        Symbol *member = find_symbol(ST_MEMBER, lhs->type->tagged_typ.list, mnode->main_token);
+        if (!member) panic("wrong member");
+        int offset = member->offset;
+        gen_addr(lhs, env);
+        printf("  pop rax\n");
+        printf("  add rax, %d\n", offset);
         printf("  push rax\n");
     } else {
         panic("unexpected node NodeTag=%d", node->tag);
@@ -357,6 +368,7 @@ static void gen_expr(Node *node, Env *env) {
             printf("  push %d\n", node->integer);
             return;
         case NT_IDENT:
+        case NT_DOT:
             gen_addr(node, env);
             printf("  pop rax\n");
             gen_load(node->type);

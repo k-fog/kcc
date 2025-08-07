@@ -83,6 +83,9 @@ Token *tokenize(Lexer *lexer) {
                 } else if (peek(lexer) == '=') {
                     consume(lexer);
                     token->next = token_new(TT_MINUS_EQ, start, 2);
+                } else if (peek(lexer) == '>') {
+                    consume(lexer);
+                    token->next = token_new(TT_MINUS_ANGLE_R, start, 2);
                 } else {
                     token->next = token_new(TT_MINUS, start, 1);
                 }
@@ -199,6 +202,9 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_STRING, start, len);
                 break;
             }
+            case '.':
+                token->next = token_new(TT_PERIOD, start, 1);
+                break;
             default:
                 if (isdigit(*start)) {
                     while (isdigit(peek(lexer))) end = consume(lexer);
