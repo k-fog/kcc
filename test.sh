@@ -215,5 +215,17 @@ assert 'int main(){struct s {int x; int y;}; struct s x; x.x=1; x.y=2;return x.x
 assert 'struct s {int x; int y; char z;} var; int main() {var.x = 1; var.y = 2; var.z = 3; return var.x + var.y + var.z;}' 6
 assert 'struct {int a;} sa; struct {char b;} sb; int main() {sa.a=1; sb.b=2; return sa.a+sb.b; }' 3
 assert 'struct {int *a;} pa; int x=5; int main() {pa.a = &x; return *pa.a;}' 5
+assert 'struct test {int a; int b;}; int main() {struct test *var = malloc(8); var->a=1; var->b=2; return var->a + var->b;}' 3
+assert '
+struct cons { int car; struct cons *cdr; };
+int main() {
+    struct cons *second = malloc(16);
+    second->car = 2;
+    struct cons *first = malloc(16);
+    first->cdr = second;
+    first->car = 1;
+    return first->car + first->cdr->car;
+}
+' 3
 
 echo "all tests passed"

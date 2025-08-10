@@ -15,6 +15,7 @@ enum OpPrecedence {
     PREC_PREFIX,
     // PREC_CALL,
     // PREC_INDEX,
+    PREC_MEMBER,
 };
 
 int precedences[META_TT_NUM] = {
@@ -38,6 +39,8 @@ int precedences[META_TT_NUM] = {
     [TT_COMMA]      = PREC_COMMA,
     [TT_AND_AND]    = PREC_LOGICAL,
     [TT_PIPE_PIPE]  = PREC_LOGICAL,
+    [TT_PERIOD]        = PREC_MEMBER,
+    [TT_MINUS_ANGLE_R] = PREC_MEMBER,
     // otherwise PREC_NONE (== 0)
 };
 
@@ -226,6 +229,19 @@ static Node *unary_new(Token *token, Node *expr) {
     return node;
 }
 
+static Node *member_access_new(Token *token, Node *lhs, Node *member) {
+    NodeTag tag;
+    switch (token->tag) {
+        case TT_PERIOD: tag = NT_DOT; break;
+        case TT_MINUS_ANGLE_R: tag = NT_ARROW; break;
+        default: panic("member_access_new: invalid token tag=%d", token->tag);
+    }
+    Node *node = node_new(tag, token);
+    node->member_access.lhs = lhs;
+    node->member_access.member = member;
+    return node;
+}
+
 static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
     NodeTag tag;
     switch (token->tag) {
@@ -249,6 +265,9 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
         case TT_COMMA:      tag = NT_COMMA; break;
         case TT_AND_AND:    tag = NT_AND; break;
         case TT_PIPE_PIPE:  tag = NT_OR; break;
+        case TT_PERIOD:
+        case TT_MINUS_ANGLE_R:
+            return member_access_new(token, lhs, rhs);
         default: panic("expr_new: invalid token tag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
@@ -266,19 +285,6 @@ static Node *postfix_new(Token *token, Node *expr) {
     }
     Node *node = node_new(tag, token);
     node->pre_expr = expr;
-    return node;
-}
-
-static Node *member_access_new(Token *token, Node *lhs, Node *member) {
-    NodeTag tag;
-    switch (token->tag) {
-        case TT_PERIOD: tag = NT_DOT; break;
-        case TT_MINUS_ANGLE_R: tag = NT_ARROW; break;
-        default: panic("member_access_new: invalid token tag=%d", token->tag);
-    }
-    Node *node = node_new(tag, token);
-    node->member_access.lhs = lhs;
-    node->member_access.member = member;
     return node;
 }
 
@@ -339,7 +345,11 @@ static Symbol *struct_decl_list(Parser *parser) {
 
 static Type *struct_decl(Parser *parser) {
     Node *ident = NULL;
-    if (peek(parser)->tag == TT_IDENT) ident = ident_new(consume(parser));
+    Type *struct_typ = struct_new(NULL, NULL, 0, 0); // placeholder
+    if (peek(parser)->tag == TT_IDENT) {
+        ident = ident_new(consume(parser));
+        append_struct(parser, ident->main_token, struct_typ);
+    }
     if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
 
     Symbol *list = struct_decl_list(parser);
@@ -357,8 +367,14 @@ static Type *struct_decl(Parser *parser) {
 
     int total_size = align_n(current_offset, align_max);
     if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
-    Type *struct_typ = struct_new(ident, list, total_size, align_max);
-    if (ident) append_struct(parser, ident->main_token, struct_typ);
+    struct_typ->tagged_typ.ident = ident;
+    struct_typ->tagged_typ.list = list;
+    struct_typ->tagged_typ.size = total_size;
+    struct_typ->tagged_typ.align = align_max;
+    if (ident) {
+        Symbol *struct_sym = find_symbol(ST_STRUCT, parser->defined_types, ident->main_token);
+        struct_sym->type = struct_typ;
+    }
     return struct_typ;
 }
 
@@ -473,12 +489,6 @@ static Node *expr_postfix(Parser *parser, Node *lhs) {
             Node *add = expr_new(lbracket, lhs, index);
             lhs = node_new(NT_DEREF, lbracket);
             lhs->unary_expr = add;
-            break;
-        }
-        case TT_PERIOD:
-        case TT_MINUS_ANGLE_R: {
-            Token *op = consume(parser);
-            lhs = member_access_new(op, lhs, ident_new(consume(parser)));
             break;
         }
         case TT_PLUS_PLUS:
@@ -789,6 +799,7 @@ static Node *func(Parser *parser, Type *return_type, Token *name) {
 
 static Node *toplevel(Parser *parser) {
     Type *type_spec = decl_spec(parser);
+    if (peek(parser)->tag == TT_SEMICOLON && consume(parser)) return NULL;
     Node *node = declarator(parser, type_spec);
     Type *type = node->type;
     Token *ident_token = node->main_token;
@@ -802,7 +813,7 @@ Program *parse(Parser *parser) {
     prog->funcs = nodelist_new(DEFAULT_NODELIST_CAP);
     while (peek(parser)->tag != TT_EOF) {
         Node *node = toplevel(parser);
-        if (node->tag == NT_FUNC) nodelist_append(prog->funcs, node);
+        if (node && node->tag == NT_FUNC) nodelist_append(prog->funcs, node);
     }
     prog->func_types = parser->func_types;
     prog->global_vars = reverse_symbols(parser->global_vars);

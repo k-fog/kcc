@@ -31,6 +31,10 @@ void dump_type(Type *type) {
             printf("array (size:%d) of ", type->array_size);
             dump_type(type->base);
             break;
+        case TYP_STRUCT:
+            printf("struct ");
+            print_token(type->tagged_typ.ident->main_token);
+            break;
     }
 }
 

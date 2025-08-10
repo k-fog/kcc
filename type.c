@@ -77,9 +77,18 @@ static Type *promote_if_integer(Type *type) {
     else return type;
 }
 
+static bool identeq(Node *a, Node *b) {
+    if (!a || !b) return false;
+    Token *token_a = a->main_token;
+    Token *token_b = b->main_token;
+    return strncmp(token_a->start, token_b->start, token_a->len) == 0;
+}
+
 static bool is_compatible(Type *a, Type *b) {
-    if (a->tag == TYP_PTR && a->tag == TYP_PTR)
+    if (a->tag == TYP_PTR && b->tag == TYP_PTR)
         return is_compatible(a->base, b->base);
+    else if (a->tag == TYP_STRUCT && b->tag == TYP_STRUCT)
+        return identeq(a->tagged_typ.ident, b->tagged_typ.ident);
     else return is_integer(a) && is_integer(b);
 }
 
@@ -178,15 +187,24 @@ static Node *typed(Node *node, Env *env) {
             node->type = rhs_typ;
             break;
         }
-        case NT_DOT:
+        case NT_DOT: {
+            Node *lhs = node->member_access.lhs;
+            Node *member = node->member_access.member;
+            Type *lhs_typ = typed(lhs, env)->type;
+            if (node->tag == NT_DOT && lhs_typ->tag != TYP_STRUCT)
+                panic("type check error: invalid member access");
+            Symbol *member_sym = find_symbol(ST_MEMBER, lhs_typ->tagged_typ.list, member->main_token);
+            if (!member_sym) panic("type check error: invalid member access");
+            node->type = member_sym->type;
+            break;
+        }
         case NT_ARROW: {
             Node *lhs = node->member_access.lhs;
             Node *member = node->member_access.member;
             Type *lhs_typ = typed(lhs, env)->type;
-            if ((node->tag == NT_DOT && lhs_typ->tag != TYP_STRUCT)
-                || (node->tag == NT_ARROW && (lhs_typ->tag != TYP_PTR || lhs_typ->base->tag != TYP_STRUCT)))
+            if (node->tag == NT_ARROW && (lhs_typ->tag != TYP_PTR || lhs_typ->base->tag != TYP_STRUCT))
                 panic("type check error: invalid member access");
-            Symbol *member_sym = find_symbol(ST_MEMBER, lhs_typ->tagged_typ.list, member->main_token);
+            Symbol *member_sym = find_symbol(ST_MEMBER, lhs_typ->base->tagged_typ.list, member->main_token);
             if (!member_sym) panic("type check error: invalid member access");
             node->type = member_sym->type;
             break;
