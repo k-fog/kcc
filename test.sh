@@ -209,8 +209,11 @@ assert 'int main(){struct {int x; struct {char a; char b;} inner; int y;} s; ret
 assert 'int main(){struct {char a[5]; int b;} s; return sizeof(s);}' 12
 assert 'int main(){struct {int x; int y; char z;} s; s.x = 1; s.y = 2; s.z = 3; return s.x + s.y + s.z;}' 6
 assert 'int main(){struct {int x; char y; char z;} s; s.x = 1; s.y = 2; s.z = 3; return s.x + s.y + s.z;}' 6
-assert 'int main(){struct {char x; char y; char z;} s; s.x = 1; s.y = 2; s.z = 3; if (sizeof(s) != 4) return 0; return s.x + s.y + s.z;}' 6
+assert 'int main(){struct {char x; char y; char z;} s; s.x = 1; s.y = 2; s.z = 3; if (sizeof(s) != 3) return 0; return s.x + s.y + s.z;}' 6
 assert 'int main(){struct s {int x; int y;}; struct s x; return sizeof(x);}' 8
 assert 'int main(){struct s {int x; int y;}; struct s x; x.x=1; x.y=2;return x.x+x.y;}' 3
+assert 'struct s {int x; int y; char z;} var; int main() {var.x = 1; var.y = 2; var.z = 3; return var.x + var.y + var.z;}' 6
+assert 'struct {int a;} sa; struct {char b;} sb; int main() {sa.a=1; sb.b=2; return sa.a+sb.b; }' 3
+assert 'struct {int *a;} pa; int x=5; int main() {pa.a = &x; return *pa.a;}' 5
 
 echo "all tests passed"

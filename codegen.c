@@ -48,6 +48,7 @@ static void gen_load(Type *type) {
             printf("  mov rax, qword ptr [rax]\n");
             break;
         case TYP_ARRAY: return;
+        case TYP_STRUCT: panic("invalid load target: struct");
     }
 }
 
@@ -547,7 +548,11 @@ static void gen_globalvar(Symbol *var) {
                 int init_val = init ? init->integer : 0;
                 printf("  %s %d\n", type2asm(var->type->base), init_val);
             }
+            break;
         }
+        case TYP_STRUCT:
+            printf("  .zero %d\n", sizeof_type(var->type));
+            break;
     }
 }
 

@@ -28,12 +28,13 @@ Type *array_of(Type *base, int size) {
     return arr;
 }
 
-Type *struct_new(Node *ident, Symbol *list, int size) {
+Type *struct_new(Node *ident, Symbol *list, int size, int align) {
     Type *typ = calloc(1, sizeof(Type));
     typ->tag = TYP_STRUCT;
     typ->tagged_typ.ident = ident;
     typ->tagged_typ.list = list;
     typ->tagged_typ.size = size;
+    typ->tagged_typ.align = align;
     return typ;
 }
 
@@ -45,6 +46,18 @@ int sizeof_type(Type *type) {
         case TYP_ARRAY: return sizeof_type(type->base) * type->array_size;
         case TYP_STRUCT: return type->tagged_typ.size;
         default: panic("error at sizeof_type");
+    }
+    return 0;
+}
+
+int alignof_type(Type *type) {
+    switch (type->tag) {
+        case TYP_CHAR: return 1;
+        case TYP_INT: return 4;
+        case TYP_PTR: return 8;
+        case TYP_ARRAY: return alignof_type(type->base);
+        case TYP_STRUCT: return type->tagged_typ.align;
+        default: panic("error at alignof_type");
     }
     return 0;
 }

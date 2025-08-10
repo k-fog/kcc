@@ -346,16 +346,18 @@ static Type *struct_decl(Parser *parser) {
     list = reverse_symbols(list);
 
     int current_offset = 0;
+    int align_max = -1;
     for (Symbol *elem = list; elem != NULL; elem = elem->next) {
-        int align = sizeof_type(elem->type);
+        int align = alignof_type(elem->type);
         current_offset = align_n(current_offset, align);
         elem->offset = current_offset;
         current_offset += sizeof_type(elem->type);
+        align_max = align > align_max ? align : align_max;
     }
 
-    int size = align_n(current_offset, 4); // TODO: alignment
+    int total_size = align_n(current_offset, align_max);
     if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
-    Type *struct_typ = struct_new(ident, list, size);
+    Type *struct_typ = struct_new(ident, list, total_size, align_max);
     if (ident) append_struct(parser, ident->main_token, struct_typ);
     return struct_typ;
 }
@@ -694,18 +696,28 @@ static Node *local_decl(Parser *parser) {
     return node;
 }
 
-static Node *global_decl(Parser *parser) {
+static Node *global_decl(Parser *parser, Type *type_spec, Node *typed_ident) {
     Node *node = node_new(NT_GLOBALDECL, peek(parser));
     node->declarators = nodelist_new(DEFAULT_NODELIST_CAP);
-    Type *type_spec = decl_spec(parser);
-    if (!type_spec) panic("expected variable declaration");
-    do {
+    
+    Node *first_dnode = node_new(NT_DECLARATOR, typed_ident->main_token);
+    first_dnode->declarator.name = typed_ident;
+    if (peek(parser)->tag == TT_EQ) {
+        consume(parser); // =
+        first_dnode->declarator.init = initializer(parser);
+    }
+    Node *name = first_dnode->declarator.name;
+    Node *init = first_dnode->declarator.init;
+    append_global_var(parser, name->main_token, name->type, init);
+    nodelist_append(node->declarators, first_dnode);
+
+    while (peek(parser)->tag == TT_COMMA && consume(parser)) {
         Node *dnode = init_declarator(parser, type_spec);
-        Node *name = dnode->declarator.name;
-        Node *init = dnode->declarator.init;
+        name = dnode->declarator.name;
+        init = dnode->declarator.init;
         append_global_var(parser, name->main_token, name->type, init);
         nodelist_append(node->declarators, dnode);
-    } while (peek(parser)->tag == TT_COMMA && consume(parser));
+    }
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     return node;
 }
@@ -776,15 +788,13 @@ static Node *func(Parser *parser, Type *return_type, Token *name) {
 }
 
 static Node *toplevel(Parser *parser) {
-    Token *rollback_point = parser->current_token;
     Type *type_spec = decl_spec(parser);
     Node *node = declarator(parser, type_spec);
     Type *type = node->type;
     Token *ident_token = node->main_token;
 
     if (peek(parser)->tag == TT_PAREN_L) return func(parser, type, ident_token);
-    parser->current_token = rollback_point;
-    return global_decl(parser);
+    return global_decl(parser, type_spec, node);
 }
 
 Program *parse(Parser *parser) {
@@ -797,5 +807,6 @@ Program *parse(Parser *parser) {
     prog->func_types = parser->func_types;
     prog->global_vars = reverse_symbols(parser->global_vars);
     prog->string_tokens = parser->string_tokens;
+    prog->defined_types = parser->defined_types;
     return prog;
 }

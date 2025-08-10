@@ -222,7 +222,7 @@ struct Type {
     int array_size; // array
     union {
         Type *base; // pointer to
-        struct { Node *ident; Symbol *list; int size; } tagged_typ; // struct
+        struct { Node *ident; Symbol *list; int size; int align; } tagged_typ; // struct
     };
 };
 
@@ -243,10 +243,11 @@ bool is_ptr_or_arr(Type *type);
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types);
 
 int sizeof_type(Type *type);
+int alignof_type(Type *type);
 Type *type_copy(Type *type);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
-Type *struct_new(Node *ident, Symbol *list, int size);
+Type *struct_new(Node *ident, Symbol *list, int size, int align);
 void type_funcs(Program *prog);
 
 // codegen
