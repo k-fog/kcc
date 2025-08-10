@@ -13,8 +13,8 @@ enum OpPrecedence {
     PREC_ADD,
     PREC_MUL,
     PREC_PREFIX,
-    // PREC_CALL,
-    // PREC_INDEX,
+    PREC_CALL,
+    PREC_INDEX,
     PREC_MEMBER,
 };
 
@@ -41,6 +41,8 @@ int precedences[META_TT_NUM] = {
     [TT_PIPE_PIPE]  = PREC_LOGICAL,
     [TT_PERIOD]        = PREC_MEMBER,
     [TT_MINUS_ANGLE_R] = PREC_MEMBER,
+    [TT_PAREN_L]    = PREC_INDEX,
+    [TT_BRACKET_L]  = PREC_INDEX,
     // otherwise PREC_NONE (== 0)
 };
 
@@ -309,8 +311,10 @@ static NodeList *args(Parser *parser);
 static Node *unary(Parser *parser);
 static Node *expr_prefix(Parser *parser);
 static Node *expr_postfix(Parser *parser, Node *lhs);
-static Node *expr_bp(Parser *parser, int min_bp, bool comma_op);
+static Node *expr_bp(Parser *parser, int min_bp);
 static Node *expr_cond(Parser *parser, Token *token, Node *cond);
+static Node *expr_fncall(Parser *parser, Token *token, Node *fn);
+static Node *expr_array_index(Parser *parser, Token *token, Node *lhs);
 static Node *expr(Parser *parser);
 static Node *expr_disable_comma(Parser *parser);
 static Node *block(Parser *parser);
@@ -445,7 +449,7 @@ static Node *unary(Parser *parser) {
             return unary_new(token, node);
         }
     }
-    return unary_new(token, expr_bp(parser, PREC_PREFIX, true));
+    return unary_new(token, expr_bp(parser, PREC_PREFIX));
 }
 
 static Node *expr_prefix(Parser *parser) {
@@ -474,23 +478,6 @@ static Node *expr_prefix(Parser *parser) {
 
 static Node *expr_postfix(Parser *parser, Node *lhs) {
     switch (peek(parser)->tag) {
-        case TT_PAREN_L: {
-            NodeList *arg_nodes;
-            consume(parser); // (
-            arg_nodes = args(parser);
-            if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'"); // )
-            lhs = fncall_new(lhs->main_token, lhs, arg_nodes);
-            break;
-        }
-        case TT_BRACKET_L: {
-            Token *lbracket = consume(parser); // [
-            Node *index = expr(parser);
-            if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'"); // ]
-            Node *add = expr_new(lbracket, lhs, index);
-            lhs = node_new(NT_DEREF, lbracket);
-            lhs->unary_expr = add;
-            break;
-        }
         case TT_PLUS_PLUS:
         case TT_MINUS_MINUS:
             lhs = postfix_new(consume(parser), lhs);
@@ -511,27 +498,45 @@ static Node *expr_cond(Parser *parser, Token *token, Node *cond) {
     return expr;
 }
 
-static Node *expr_bp(Parser *parser, int min_bp, bool comma_op) {
+static Node *expr_fncall(Parser *parser, Token *token, Node *fn) {
+    NodeList *arg_nodes = args(parser);
+    if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'"); // )
+    return fncall_new(fn->main_token, fn, arg_nodes);
+}
+
+static Node *expr_array_index(Parser *parser, Token *token, Node *lhs) {
+    Node *index = expr(parser);
+    if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'"); // ]
+    Node *add = expr_new(token, lhs, index);
+    lhs = node_new(NT_DEREF, token);
+    lhs->unary_expr = add;
+    return lhs;
+}
+
+static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = expr_prefix(parser);
     Token *token = peek(parser);
     while (is_infix(token->tag)) {
         int prec = precedences[token->tag];
         bool left_assoc = !is_right_assoc(token->tag);
 
-        if (!comma_op && token->tag == TT_COMMA) break;
         if (left_assoc && prec <= min_bp) break;
         else if (prec < min_bp) break;
 
         token = consume(parser);
-        if (token->tag == TT_QUESTION) return expr_cond(parser, token, lhs);
-        Node *rhs = expr_bp(parser, prec, comma_op);
-        lhs = expr_new(token, lhs, rhs);
+        if (token->tag == TT_QUESTION) lhs = expr_cond(parser, token, lhs);
+        else if (token->tag == TT_PAREN_L) lhs = expr_fncall(parser, token, lhs);
+        else if (token->tag == TT_BRACKET_L) lhs = expr_array_index(parser, token, lhs);
+        else {
+            Node *rhs = expr_bp(parser, prec);
+            lhs = expr_new(token, lhs, rhs);
 
-        // if token is ">" or ">=", swap lhs, rhs
-        if (token->tag == TT_ANGLE_R || token->tag == TT_ANGLE_R_EQ) {
-            Node *tmp = lhs->expr.lhs;
-            lhs->expr.lhs = lhs->expr.rhs;
-            lhs->expr.rhs = tmp;
+            // if token is ">" or ">=", swap lhs, rhs
+            if (token->tag == TT_ANGLE_R || token->tag == TT_ANGLE_R_EQ) {
+                Node *tmp = lhs->expr.lhs;
+                lhs->expr.lhs = lhs->expr.rhs;
+                lhs->expr.rhs = tmp;
+            }
         }
         token = peek(parser);
     }
@@ -539,11 +544,11 @@ static Node *expr_bp(Parser *parser, int min_bp, bool comma_op) {
 }
 
 static Node *expr(Parser *parser) {
-    return expr_bp(parser, PREC_LOWEST, true);
+    return expr_bp(parser, PREC_LOWEST);
 }
 
 static Node *expr_disable_comma(Parser *parser) {
-    return expr_bp(parser, PREC_LOWEST, false);
+    return expr_bp(parser, PREC_ASSIGN);
 }
 
 static Node *block(Parser *parser) {

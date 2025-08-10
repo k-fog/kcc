@@ -144,8 +144,7 @@ assert 'int main() { char *x; x = "abc"; return x[0]; }' 97
 assert 'int main() { char *x; char *y; x = "abc"; y = "def"; return y[2]; }' 102
 assert 'int main() { return "abc"[1]; }' 98
 assert 'char chr() { return 0; } int main() { return sizeof(chr()); }' 1
-# assert 'int *ptr() {int *p; alloc4(&p,1,2,4,8); return p;} int main() {return ptr()[3];}' 8
-assert 'int *ptr() {int *p; alloc4(&p,1,2,4,8); return p;} int main() {return (ptr())[3];}' 8
+assert 'int *ptr() {int *p; alloc4(&p,1,2,4,8); return p;} int main() {return ptr()[3];}' 8
 assert 'int main() { return sizeof(char); }' 1
 assert 'int main() { return sizeof(int); }' 4
 assert 'int main() { return sizeof("123456789")/sizeof(char); }' 10
@@ -178,7 +177,7 @@ assert 'int main() { return 10%3; }' 1
 assert 'int main() { return 7%10; }' 7
 assert 'int main() {int a[3] = {1, 2+3, ident(4),}; return a[2];}' 4
 assert 'int main() {char a[4] = {1, 2, 3, 4}; return a[2];}' 3
-# assert 'int main(){char *s[2]={"abc", "def"}; return s[1][1];}' 101
+assert 'int main(){char *s[2]={"abc", "def"}; return s[1][1];}' 101
 assert 'int main() { return sizeof(int[4]); }' 16
 assert 'int main() { return sizeof(int*[4]); }' 32
 assert 'int main() { return sizeof(int(*)[4]); }' 8
