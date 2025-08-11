@@ -552,7 +552,7 @@ static void gen_globalvar(Symbol *var) {
         }
         case TYP_PTR:
             if (!var->init)
-                printf("  %s %d\n", type2asm(var->type->base), 0);
+                printf("  %s %d\n", type2asm(var->type), 0);
             else
                 panic("unimplemented: global pointer initializer");
             break;
