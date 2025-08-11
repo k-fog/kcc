@@ -233,8 +233,20 @@ static void gen_expr_assign(Node *node, Env *env) {
     if (node->tag == NT_ASSIGN) {
         printf("  pop rax\n");
     } else {
-        printf("  pop rdi\n");
-        printf("  pop rsi\n");
+        Type *lt = node->expr.lhs->type;
+        Type *rt = node->expr.rhs->type;
+
+        if (is_ptr_or_arr(lt) && is_integer(rt)) {
+            // ptr +=/-= int
+            if (node->tag != NT_ASSIGN_ADD && node->tag != NT_ASSIGN_SUB)
+                panic("codegen: invalid operands");
+            printf("  pop rdi\n");
+            printf("  imul rdi, %d\n", sizeof_type(lt->base));
+            printf("  pop rsi\n");
+        } else {
+            printf("  pop rdi\n");
+            printf("  pop rsi\n");
+        }
         printf("  mov rax, rsi\n");
         if (node->tag == NT_ASSIGN_ADD) {
             gen_load(node->type);

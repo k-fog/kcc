@@ -183,7 +183,10 @@ static Node *typed(Node *node, Env *env) {
             Type *lhs_typ = typed(node->expr.lhs, env)->type;
             Type *rhs_typ = typed(node->expr.rhs, env)->type;
             if (rhs_typ->tag == TYP_ARRAY) rhs_typ = pointer_to(rhs_typ->base);
-            if (!is_compatible(lhs_typ, rhs_typ)) panic("type check error: incompatible type");
+            if ((node->tag == NT_ASSIGN_ADD || node->tag == NT_ASSIGN_SUB)
+                && (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT))
+                node->type = lhs_typ;
+            else if (!is_compatible(lhs_typ, rhs_typ)) panic("type check error: incompatible type");
             node->type = rhs_typ;
             break;
         }

@@ -233,5 +233,7 @@ assert "int main() { return '\\''; }" 39
 assert "int main() { return '\\\"'; }" 34
 assert "int main() { return '\\\\'; }" 92
 assert "int zero(void) { return 0; } int main() { return zero(); }" 0
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=2; return *p;}' 4
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=2; p-=1; return *p;}' 2
 
 echo "all tests passed"

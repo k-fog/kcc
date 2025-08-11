@@ -197,7 +197,10 @@ Token *tokenize(Lexer *lexer) {
                 }
                 break;
             case '"': {
-                while (peek(lexer) != '"') end = consume(lexer);
+                while (peek(lexer) != '"') {
+                    end = consume(lexer);
+                    if (*end == '\\' && *(end + 1) == '\"') consume(lexer);
+                }
                 consume(lexer); // end "
                 int len = end - start + 2; // string literal's token contains double quotes
                 token->next = token_new(TT_STRING, start, len);
