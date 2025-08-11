@@ -13,6 +13,7 @@ struct {
     {"char",   TT_KW_CHAR},
     {"sizeof", TT_KW_SIZEOF},
     {"struct", TT_KW_STRUCT},
+    {"const",  TT_KW_CONST},
     {NULL,     -1},
 };
 

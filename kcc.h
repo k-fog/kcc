@@ -59,6 +59,7 @@ typedef enum {
     TT_KW_INT,              // int
     TT_KW_CHAR,             // char
     TT_KW_STRUCT,           // struct
+    TT_KW_CONST,            // const
     TT_EOF,
     META_TT_NUM,
 } TokenTag;

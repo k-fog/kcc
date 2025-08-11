@@ -383,6 +383,7 @@ static Type *struct_decl(Parser *parser) {
 }
 
 static Type *decl_spec(Parser *parser) {
+    if (peek(parser)->tag == TT_KW_CONST) consume(parser); // ignore
     Token *token = consume(parser);
     if (token->tag == TT_KW_VOID) return type_void;
     else if (token->tag == TT_KW_CHAR) return type_char;
