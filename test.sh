@@ -227,10 +227,11 @@ int main() {
 }
 ' 3
 assert "int main() { return 'z' - 'a'; }" 25
-assert "int main() { return '\n'; }" 10
-assert "int main() { return '\0'; }" 0
+assert "int main() { return '\\n'; }" 10
+assert "int main() { return '\\0'; }" 0
 assert "int main() { return '\\''; }" 39
 assert "int main() { return '\\\"'; }" 34
 assert "int main() { return '\\\\'; }" 92
+assert "int zero(void) { return 0; } int main() { return zero(); }" 0
 
 echo "all tests passed"

@@ -803,6 +803,10 @@ static Node *stmt(Parser *parser) {
 static NodeList *params(Parser *parser) {
     NodeList *params = nodelist_new(DEFAULT_NODELIST_CAP);
     if (peek(parser)->tag == TT_PAREN_R) return params;
+    else if (peek(parser)->tag == TT_KW_VOID) {
+        consume(parser);
+        return params;
+    }
     do {
         Node *node = param_decl(parser);
         nodelist_append(params, node);
