@@ -817,7 +817,8 @@ static NodeList *params(Parser *parser) {
 
 static Node *func(Parser *parser, Type *return_type, Token *name) {
     Node *node = node_new(NT_FUNC, name); 
-    append_func_type(parser, name, return_type);
+    Symbol *fn_symbol = find_symbol(ST_FUNC, parser->func_types, name);
+    if (!fn_symbol) append_func_type(parser, name, return_type);
 
     parser->current_func = node;
     node->func.locals = NULL;
@@ -826,6 +827,7 @@ static Node *func(Parser *parser, Type *return_type, Token *name) {
     if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
     node->func.params = params(parser);
     if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    if (peek(parser)->tag == TT_SEMICOLON && consume(parser)) return NULL;
     node->func.body = stmt(parser);
     return node;
 }

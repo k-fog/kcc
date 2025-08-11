@@ -85,8 +85,10 @@ static bool identeq(Node *a, Node *b) {
 }
 
 static bool is_compatible(Type *a, Type *b) {
-    if (a->tag == TYP_PTR && b->tag == TYP_PTR)
+    if (a->tag == TYP_PTR && b->tag == TYP_PTR) {
+        if (a->base->tag == TYP_VOID || b->base->tag == TYP_VOID) return true;
         return is_compatible(a->base, b->base);
+    }
     else if (a->tag == TYP_STRUCT && b->tag == TYP_STRUCT)
         return identeq(a->tagged_typ.ident, b->tagged_typ.ident);
     else return is_integer(a) && is_integer(b);
@@ -130,20 +132,26 @@ static Node *typed(Node *node, Env *env) {
             else panic("undefined: int - ptr");
             break;
         }
-        case NT_MUL:
-        case NT_DIV:
-        case NT_MOD:
         case NT_EQ:
         case NT_NE:
         case NT_LT:
-        case NT_LE:
-        case NT_AND:
-        case NT_OR: {
-            if (!is_integer(typed(node->expr.lhs, env)->type)) panic("invalid operands");
-            if (!is_integer(typed(node->expr.rhs, env)->type)) panic("invalid operands");
+        case NT_LE: {
+            // TOOD: type check
+            typed(node->expr.lhs, env);
+            typed(node->expr.rhs, env);
             node->type = type_int;
             break;
         }
+        case NT_MUL:
+        case NT_DIV:
+        case NT_MOD:
+        case NT_AND:
+        case NT_OR:
+            // TODO: type check
+            typed(node->expr.lhs, env);
+            typed(node->expr.rhs, env);
+            node->type = type_int;
+            break;
         case NT_COMMA: {
             typed(node->expr.lhs, env);
             typed(node->expr.rhs, env); // TODO: type check
@@ -183,7 +191,7 @@ static Node *typed(Node *node, Env *env) {
             Type *lhs_typ = typed(node->expr.lhs, env)->type;
             Type *rhs_typ = typed(node->expr.rhs, env)->type;
             if (rhs_typ->tag == TYP_ARRAY) rhs_typ = pointer_to(rhs_typ->base);
-            if ((node->tag == NT_ASSIGN_ADD || node->tag == NT_ASSIGN_SUB)
+            if ((node->tag == NT_ASSIGN_ADD || node->tag == NT_ASSIGN_SUB || node->tag == NT_ASSIGN)
                 && (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT))
                 node->type = lhs_typ;
             else if (!is_compatible(lhs_typ, rhs_typ)) panic("type check error: incompatible type");

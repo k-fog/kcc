@@ -239,7 +239,7 @@ static void gen_expr_assign(Node *node, Env *env) {
         if (is_ptr_or_arr(lt) && is_integer(rt)) {
             // ptr +=/-= int
             if (node->tag != NT_ASSIGN_ADD && node->tag != NT_ASSIGN_SUB)
-                panic("codegen: invalid operands");
+                panic("codegen: invalid operands (ptr op ptr)");
             printf("  pop rdi\n");
             printf("  imul rdi, %d\n", sizeof_type(lt->base));
             printf("  pop rsi\n");
@@ -283,25 +283,35 @@ static void gen_expr_binary(Node *node, Env *env) {
 
     if (is_ptr_or_arr(lt) && is_integer(rt)) {
         // ptr +/- int
-        if (node->tag != NT_ADD && node->tag != NT_SUB) panic("codegen: invalid operands");
+        if (node->tag != NT_ADD && node->tag != NT_SUB
+            && node->tag != NT_EQ && node->tag != NT_NE)
+            panic("codegen: invalid operands (pointer op int)");
         printf("  pop rdi\n");
         printf("  imul rdi, %d\n", sizeof_type(lt->base));
         printf("  pop rax\n");
     } else if (is_integer(lt) && is_ptr_or_arr(rt)) {
         // int + ptr
-        if (node->tag != NT_ADD) panic("codegen: invalid operands");
+        if (node->tag != NT_ADD) panic("codegen: invalid operands (int op pointer)");
         printf("  pop rdi\n");
         printf("  pop rax\n");
         printf("  imul rax, %d\n", sizeof_type(rt->base));
     } else if (is_ptr_or_arr(lt) && is_ptr_or_arr(rt)) {
         // ptr - ptr
-        if (node->tag != NT_SUB) panic("codegen: invalid operands");
-        printf("  pop rdi\n");
-        printf("  pop rax\n");
-        printf("  sub rax, rdi\n");
-        printf("  sar rax, %d\n", 2);// sizeof_type(node->type));
-        printf("  push rax\n");
-        return;
+        if (node->tag == NT_SUB) {
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+            printf("  sub rax, rdi\n");
+            printf("  sar rax, %d\n", 2);// sizeof_type(node->type));
+            printf("  push rax\n");
+            return;
+        } else {
+            // ptr op ptr
+            if (node->tag != NT_EQ && node->tag != NT_NE
+                && node->tag != NT_LT && node->tag != NT_LE)
+                panic("codegen: invalid operands (pointer op pointer)");
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+        }
     } else {
         // int op int 
         printf("  pop rdi\n");

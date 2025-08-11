@@ -165,8 +165,10 @@ assert 'int main() {int a=0; ++a; return a;}' 1
 assert 'int main() {int a=0; ++a; return ++a;}' 2
 assert 'int main() {int a=10; --a; return a;}' 9
 assert 'int main() {int a=10; --a; return --a;}' 8
-assert 'int main() {int a[3]; a[1]=2; int *p = a; return *(++p);}' 2
-assert 'int main() {int a[3]; a[1]=2; int *p = a + 2; return *(--p);}' 2
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p++; p++; return *p++;}' 4
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); ++p; return *++p;}' 4
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=3; p--; return *p--;}' 4
+assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=3; p--; return *--p;}' 2
 assert 'int main() {int a=0; a++; return a;}' 1
 assert 'int main() {int a=0; a++; return a++;}' 1
 assert 'int main() {int a=10; a--; return a;}' 9
@@ -235,5 +237,7 @@ assert "int main() { return '\\\\'; }" 92
 assert "int zero(void) { return 0; } int main() { return zero(); }" 0
 assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=2; return *p;}' 4
 assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=2; p-=1; return *p;}' 2
+assert 'int *p;int main(){ return !p; }' 1
+assert 'struct test {char a; char b; int c;};int main() {return sizeof(struct test);}' 8
 
 echo "all tests passed"
