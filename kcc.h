@@ -44,6 +44,7 @@ typedef enum {
     TT_INT,
     TT_IDENT,
     TT_STRING,
+    TT_CHAR,
     TT_BRACE_L, TT_BRACE_R, // { }
     TT_BRACKET_L,           // [
     TT_BRACKET_R,           // ]

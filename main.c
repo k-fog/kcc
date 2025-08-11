@@ -232,7 +232,7 @@ char *read_file(char *path) {
         buf[len++] = (char)c;
     }
     buf[len++] = '\n';
-    buf[len] = '\0';
+    buf[len++] = '\0';
 
     if (fp != stdin) fclose(fp);
     return buf;

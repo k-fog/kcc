@@ -224,7 +224,7 @@ static Node *unary_new(Token *token, Node *expr) {
         case TT_KW_SIZEOF:  tag = NT_SIZEOF; break;
         case TT_PLUS_PLUS:  tag = NT_PREINC; break;
         case TT_MINUS_MINUS:tag = NT_PREDEC; break;
-        default: panic("unary_new: invalid token TokenTag=%d", token->tag);
+        default: panic("unary_new: invalid token TokenTag=%d (%.*s)", token->tag, token->len, token->start);
     }
     Node *node = node_new(tag, token);
     node->unary_expr = expr;
@@ -452,6 +452,23 @@ static Node *unary(Parser *parser) {
     return unary_new(token, expr_bp(parser, PREC_PREFIX));
 }
 
+static int int_from_charlit(Token *token) {
+    const char *start = token->start + 1; // ignore '
+    if (*start == '\\') {
+        start++;
+        switch (*start) {
+            case '\\': return '\\';
+            case '\'': return '\'';
+            case '\"': return '\"';
+            case 'n': return '\n';
+            case 't': return '\t';
+            case '0': if (*(start + 1) == '\'') return '\0';
+        }
+        panic("unknown escape sequence");
+    }
+    return *start;
+}
+
 static Node *expr_prefix(Parser *parser) {
     Node *node;
     switch (peek(parser)->tag) {
@@ -461,6 +478,11 @@ static Node *expr_prefix(Parser *parser) {
         case TT_IDENT:
             node = ident_new(consume(parser));
             break;
+        case TT_CHAR: {
+            Token *token = consume(parser);
+            node = int_new(token, int_from_charlit(token));
+            break;
+        }
         case TT_STRING:
             node = string_new(parser->string_tokens, consume(parser));
             break;
@@ -757,6 +779,7 @@ static Node *stmt(Parser *parser) {
             return while_stmt(parser);
         case TT_KW_FOR:
             return for_stmt(parser);
+        case TT_KW_VOID:
         case TT_KW_CHAR:
         case TT_KW_INT:
         case TT_KW_STRUCT:

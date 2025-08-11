@@ -202,6 +202,16 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_STRING, start, len);
                 break;
             }
+            case '\'': {
+                if (peek(lexer) == '\\') {
+                    consume(lexer); // consume back slash
+                    end = consume(lexer);
+                }
+                while (peek(lexer) != '\'') end = consume(lexer);
+                end = consume(lexer); // end '
+                token->next = token_new(TT_CHAR, start, end - start + 1);
+                break;
+            }
             case '.':
                 token->next = token_new(TT_PERIOD, start, 1);
                 break;
@@ -215,7 +225,7 @@ Token *tokenize(Lexer *lexer) {
                     TokenTag tag = lookup_ident(start, len); // TT_IDENT or TT_<keyword>
                     token->next = token_new(tag, start, end - start + 1);
                 } else {
-                    panic("tokenize error");
+                    panic("tokenize error: %c", *start);
                 }
                 break;
         }
