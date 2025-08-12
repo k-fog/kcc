@@ -307,7 +307,9 @@ static void gen_expr_binary(Node *node, Env *env) {
             printf("  pop rdi\n");
             printf("  pop rax\n");
             printf("  sub rax, rdi\n");
-            printf("  sar rax, %d\n", 2);// sizeof_type(node->type));
+            printf("  mov rsi, %d\n", sizeof_type(lt->base));
+            printf("  cqo\n");
+            printf("  idiv rsi\n");
             printf("  push rax\n");
             return;
         } else {
@@ -648,6 +650,7 @@ static void gen_func(Node *node, Env *env) {
 }
 
 void gen(Program *prog) {
+    printf("# COMPILED BY KCC\n");
     printf(".intel_syntax noprefix\n\n");
 
     // generate strings
