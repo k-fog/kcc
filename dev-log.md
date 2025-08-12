@@ -408,12 +408,19 @@ main(){ fib(10); } // => 55
 - コード生成で使用するデータを`GenContext`構造体にまとめるように変更
   - `type.c`ではこれまで通りデータを`Env`で持つ
   - `codegen.c`で使うデータは`GenContext`
+- セキュキャン2025 2日目の記録
+  - （午前中） デバッグ
+  - （昼） デバッグ
+  - （15:53） 2kmccのコンパイルに成功
+  - （夕方） break, continue, do-while
+  - （夜） 共通講義・LT大会
 
 ## セルフホストに向けたTODOまとめ
   - [x] continue, break
   - [x] do while
   - [ ] switch, case
   - [ ] union
+  - [ ] enum
   - [ ] typedef
   - [ ] 構造体の初期化子
   - [ ] #define
