@@ -36,6 +36,7 @@ static void gen_globalvar(Symbol *var);
 
 // load [rax] to rax
 static void gen_load(Type *type) {
+    printf("  # gen_load\n");
     switch (type->tag) {
         case TYP_VOID: panic("invalid load target: void");
         case TYP_CHAR:
@@ -54,6 +55,7 @@ static void gen_load(Type *type) {
 
 // store *ax to [stack top]
 static void gen_store(Type *type) {
+    printf("  # gen_store\n");
     printf("  pop rdi\n");
     switch (type->tag) {
         case TYP_VOID: panic("invalid store target: void");
@@ -72,9 +74,12 @@ static void gen_store(Type *type) {
 }
 
 static void gen_addr(Node *node, Env *env) {
+    printf("  # gen_addr\n");
     switch (node->tag) {
         case NT_IDENT: {
             Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
+            Token *ident = node->main_token;
+            printf("  # address of `%.*s`\n", ident->len, ident->start);
             if (var != NULL) {
                 int offset = var->offset;
                 printf("  mov rax, rbp\n");
@@ -228,6 +233,7 @@ static void gen_expr_postfix(Node *node, Env *env) {
 }
 
 static void gen_expr_assign(Node *node, Env *env) {
+    printf("  # gen_expr_assign\n");
     gen_addr(node->expr.lhs, env);
     gen_expr(node->expr.rhs, env);
     if (node->tag == NT_ASSIGN) {
@@ -405,6 +411,7 @@ static void gen_expr_logical(Node *node, Env *env) {
 }
 
 static void gen_expr(Node *node, Env *env) {
+    printf("  # gen_expr\n");
     switch (node->tag) {
         case NT_INT:
             printf("  push %d\n", node->integer);
@@ -480,6 +487,7 @@ static void gen_lvardecl(Node *node, Env *env) {
 
 static void gen_stmt(Node *node, Env *env) {
     if (!node) return;
+    printf("  # gen_stmt\n");
     int id = count();
     if (node->tag == NT_RETURN) {
         Node *fnode = env->current_func;
