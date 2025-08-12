@@ -320,6 +320,7 @@ static Node *expr_disable_comma(Parser *parser);
 static Node *block(Parser *parser);
 static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
+static Node *do_while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
 static Node *direct_declarator(Parser *parser, Type *type);
@@ -608,6 +609,16 @@ static Node *while_stmt(Parser *parser) {
     return node;
 }
 
+static Node *do_while_stmt(Parser *parser) {
+    Node *node = node_new(NT_DO_WHILE, consume(parser));
+    node->whilestmt.body = stmt(parser);
+    if (consume(parser)->tag != TT_KW_WHILE) panic("expected \'while\'");
+    if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
+    node->whilestmt.cond = expr(parser);
+    if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    return node;
+}
+
 static Node *for_stmt(Parser *parser) {
     Node *node = node_new(NT_FOR, consume(parser));
     if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
@@ -778,6 +789,9 @@ static Node *stmt(Parser *parser) {
             return if_stmt(parser);
         case TT_KW_WHILE:
             return while_stmt(parser);
+        case TT_KW_DO:
+            node = do_while_stmt(parser);
+            break;
         case TT_KW_FOR:
             return for_stmt(parser);
         case TT_KW_VOID:

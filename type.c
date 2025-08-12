@@ -247,6 +247,11 @@ static Node *typed(Node *node, Env *env) {
             typed(node->whilestmt.body, env);
             node->type = NULL;
             break;
+        case NT_DO_WHILE:
+            typed(node->whilestmt.body, env);
+            typed(node->whilestmt.cond, env);
+            node->type = NULL;
+            break;
         case NT_FOR:
             typed(node->forstmt.def, env);
             typed(node->forstmt.cond, env);
@@ -298,6 +303,10 @@ static Node *typed(Node *node, Env *env) {
         case NT_POSTINC:
         case NT_POSTDEC:
             node->type = promote_if_integer(typed(node->pre_expr, env)->type);
+            break;
+        case NT_BREAK:
+        case NT_CONTINUE:
+            node->type = NULL;
             break;
     }
     return node;

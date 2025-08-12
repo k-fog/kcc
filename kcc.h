@@ -62,6 +62,7 @@ typedef enum {
     TT_KW_CONST,            // const
     TT_KW_BREAK,            // break
     TT_KW_CONTINUE,         // continue
+    TT_KW_DO,               // do
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -143,6 +144,7 @@ typedef enum {     // token node->???
     NT_TYPENAME,   // <type> type (for sizeof)
     NT_BREAK,      // break
     NT_CONTINUE,   // continue
+    NT_DO_WHILE,   // do-while whilestmt
 } NodeTag;
 
 struct Node {

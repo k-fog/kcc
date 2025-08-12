@@ -411,7 +411,7 @@ main(){ fib(10); } // => 55
 
 ## セルフホストに向けたTODOまとめ
   - [x] continue, break
-  - [ ] do while
+  - [x] do while
   - [ ] switch, case
   - [ ] union
   - [ ] typedef

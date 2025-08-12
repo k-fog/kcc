@@ -273,7 +273,9 @@ assert 'int main(){int cnt=0; for(int i=0;i<3;i++){ for(int j=0;j<5;j++){ if(j==
 assert 'int main(){int cnt=0; for(int i=0;i<3;i++){ for(int j=0;j<5;j++){ if(j==2) continue; cnt++; }} return cnt;}' 12
 assert 'int main(){int i,k; for(i=0,k=0;i<5;i++,k++){ if(1) continue; } return k;}' 5
 assert 'int main(){int cnt=0,flag=0; for(int i=0;i<3;i++){ for(int j=0;j<3;j++){ if(i==1&&j==1){ flag=1; break;} cnt++; } if(flag) break; } return cnt;}' 4
-
+assert 'int main() {int a = 0; do { a++; } while (a < 10); return a; }' 10
+assert 'int main() {int a = 0, sum = 0; do { a++; if (a % 2 == 0) continue; sum+=a; } while (a < 10); return sum; }' 25
+assert 'int main() {int a = 0; do { a++; if (a == 10) break; } while (1); return a; }' 10
 
 
 echo "all tests passed"

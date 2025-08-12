@@ -16,6 +16,7 @@ struct {
     {"const",    TT_KW_CONST},
     {"break",    TT_KW_BREAK},
     {"continue", TT_KW_CONTINUE},
+    {"do",       TT_KW_DO},
     {NULL, -1},
 };
 

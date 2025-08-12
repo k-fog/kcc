@@ -562,6 +562,18 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         printf(".L%d.END:\n", id);
         exit_loop(ctx, id);
         return;
+    } else if (node->tag == NT_DO_WHILE) {
+        into_loop(ctx, id);
+        printf(".L%d.DO:\n", id);
+        gen_stmt(node->whilestmt.body, ctx);
+        printf(".L%d.CONTINUE:\n", id);
+        gen_expr(node->whilestmt.cond, ctx);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  jne .L%d.DO\n", id);
+        printf(".L%d.END:\n", id);
+        exit_loop(ctx, id);
+        return;
     } else if (node->tag == NT_FOR) {
         into_loop(ctx, id);
         if (node->forstmt.def) {
