@@ -385,4 +385,17 @@ main(){ fib(10); } // => 55
     
     型情報がおかしいため、type.cの誤りを探す。
     assignの型付けを変えるとテストケースは通った！
-    
+  - kccでコンパイルした2kmccの文字列出力が不完全な問題は解決せず。
+    ここで`name`メンバ変数に代入されているが、関係ある？
+    ```
+    struct NameAndType *consume_type_and_ident_1st_half() {
+        struct Type *type = consume_simple_type();
+        expect_otherwise_panic(enum4('I', 'D', 'N', 'T'));
+        char *name = (tokens_cursor++)->identifier_name_or_escaped_string_content;
+        struct NameAndType *ans = calloc(1, sizeof(struct NameAndType));
+        ans->name = name;
+        ans->type = type;
+        return ans;
+    }
+    ```
+
