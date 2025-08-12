@@ -12,6 +12,36 @@ void print_token(Token *token) {
     printf("%.*s", len, start);
 }
 
+GenContext *gencontext_new(Node *current_func, Symbol *local_vars, Symbol *global_vars,
+                           Symbol *func_types, Symbol *defined_types) {
+    GenContext *ctx = calloc(1, sizeof(GenContext));
+    ctx->current_func = current_func;
+    ctx->local_vars = local_vars;
+    ctx->global_vars = global_vars;
+    ctx->func_types = func_types;
+    ctx->defined_types = defined_types;
+    ctx->id_stack_top = 0;
+    return ctx;
+}
+
+void into_loop(GenContext *ctx, int id) {
+    int top = ctx->id_stack_top;
+    if (top == LOOP_STACK_SIZE) panic("internal error: too nested loop");
+    ctx->loop_id_stack[top] = id;
+    ctx->id_stack_top++;
+    return;
+}
+
+void exit_loop(GenContext *ctx, int id) {
+    ctx->id_stack_top--;
+    return;
+}
+
+int current_loop_id(GenContext *ctx) {
+    int top = ctx->id_stack_top;
+    return ctx->loop_id_stack[top - 1];
+}
+
 static int count() {
     static int i = 0;
     return i++;
@@ -19,18 +49,18 @@ static int count() {
 
 static void gen_load(Type *type);
 static void gen_store(Type *type);
-static void gen_addr(Node *node, Env *env);
-static void gen_fncall(Node *node, Env *env);
-static void gen_expr_unary(Node *node, Env *env);
-static void gen_expr_postfix(Node *node, Env *env);
-static void gen_expr_assign(Node *node, Env *env);
-static void gen_expr_binary(Node *node, Env *env);
-static void gen_expr_cond(Node *node, Env *env);
-static void gen_expr_logical(Node *node, Env *env);
-static void gen_expr(Node *node, Env *env);
-static void gen_lvardecl(Node *node, Env *env);
-static void gen_stmt(Node *node, Env *env);
-static void gen_func(Node *node, Env *env);
+static void gen_addr(Node *node, GenContext *ctx);
+static void gen_fncall(Node *node, GenContext *ctx);
+static void gen_expr_unary(Node *node, GenContext *ctx);
+static void gen_expr_postfix(Node *node, GenContext *ctx);
+static void gen_expr_assign(Node *node, GenContext *ctx);
+static void gen_expr_binary(Node *node, GenContext *ctx);
+static void gen_expr_cond(Node *node, GenContext *ctx);
+static void gen_expr_logical(Node *node, GenContext *ctx);
+static void gen_expr(Node *node, GenContext *ctx);
+static void gen_lvardecl(Node *node, GenContext *ctx);
+static void gen_stmt(Node *node, GenContext *ctx);
+static void gen_func(Node *node, GenContext *ctx);
 
 static void gen_globalvar(Symbol *var);
 
@@ -73,11 +103,11 @@ static void gen_store(Type *type) {
     }
 }
 
-static void gen_addr(Node *node, Env *env) {
+static void gen_addr(Node *node, GenContext *ctx) {
     printf("  # gen_addr\n");
     switch (node->tag) {
         case NT_IDENT: {
-            Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
+            Symbol *var = find_symbol(ST_LVAR, ctx->local_vars, node->main_token);
             Token *ident = node->main_token;
             printf("  # address of `%.*s`\n", ident->len, ident->start);
             if (var != NULL) {
@@ -87,14 +117,14 @@ static void gen_addr(Node *node, Env *env) {
                 printf("  push rax\n");
                 return;
             }
-            var = find_symbol(ST_GVAR, env->global_vars, node->main_token);
+            var = find_symbol(ST_GVAR, ctx->global_vars, node->main_token);
             if (!var) panic("undefined variable");
             printf("  lea rax, %.*s[rip]\n", var->token->len, var->token->start);
             printf("  push rax\n");
             break;
         }
         case NT_DEREF:
-            gen_expr(node->unary_expr, env); // push rax
+            gen_expr(node->unary_expr, ctx); // push rax
             break;
         case NT_STRING:
             printf("  lea rax, %s%d[rip]\n", str_label, node->index);
@@ -106,7 +136,7 @@ static void gen_addr(Node *node, Env *env) {
             Symbol *member = find_symbol(ST_MEMBER, lhs->type->tagged_typ.list, mnode->main_token);
             if (!member) panic("wrong member");
             int offset = member->offset;
-            gen_addr(lhs, env);
+            gen_addr(lhs, ctx);
             printf("  pop rax\n");
             printf("  add rax, %d\n", offset);
             printf("  push rax\n");
@@ -118,7 +148,7 @@ static void gen_addr(Node *node, Env *env) {
             Symbol *member = find_symbol(ST_MEMBER, lhs->type->base->tagged_typ.list, mnode->main_token);
             if (!member) panic("wrong member");
             int offset = member->offset;
-            gen_expr(lhs, env);
+            gen_expr(lhs, ctx);
             printf("  pop rax\n");
             printf("  add rax, %d\n", offset);
             printf("  push rax\n");
@@ -129,13 +159,13 @@ static void gen_addr(Node *node, Env *env) {
     }
 }
 
-static void gen_fncall(Node *node, Env *env) {
+static void gen_fncall(Node *node, GenContext *ctx) {
     int id = count();
     Node **nodes = node->fncall.args->nodes;
     int narg = node->fncall.args->len;
     if (sizeof(argreg64) / sizeof(char*) < narg) panic("too many args");
 
-    for (int i = 0; i < narg; i++) gen_expr(nodes[i], env);
+    for (int i = 0; i < narg; i++) gen_expr(nodes[i], ctx);
     for (int i = narg - 1; 0 <= i; i--) {
         printf("  pop rax\n");
         printf("  mov %s, rax\n", argreg64[i]);
@@ -160,24 +190,24 @@ static void gen_fncall(Node *node, Env *env) {
     printf("  push rax\n");
 }
 
-static void gen_expr_unary(Node *node, Env *env) {
+static void gen_expr_unary(Node *node, GenContext *ctx) {
     switch (node->tag) {
         case NT_NEG:
-            gen_expr(node->unary_expr, env);
+            gen_expr(node->unary_expr, ctx);
             printf("  pop rax\n");
             printf("  neg rax\n");
             printf("  push rax\n");
             break;
         case NT_ADDR:
-            return gen_addr(node->unary_expr, env);
+            return gen_addr(node->unary_expr, ctx);
         case NT_DEREF:
-            gen_expr(node->unary_expr, env);
+            gen_expr(node->unary_expr, ctx);
             printf("  pop rax\n");
             gen_load(node->type);
             printf("  push rax\n");
             break;
         case NT_BOOL_NOT:
-            gen_expr(node->unary_expr, env);
+            gen_expr(node->unary_expr, ctx);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
             printf("  sete al\n");
@@ -190,7 +220,7 @@ static void gen_expr_unary(Node *node, Env *env) {
             break;
         }
         case NT_PREINC:
-            gen_addr(node->unary_expr, env); // push addr, rax=address
+            gen_addr(node->unary_expr, ctx); // push addr, rax=address
             gen_load(node->type);
             if (is_integer(node->type)) printf("  inc rax\n");
             else if (is_ptr_or_arr(node->type)) printf("  add rax, %d\n", sizeof_type(node->type->base));
@@ -198,7 +228,7 @@ static void gen_expr_unary(Node *node, Env *env) {
             printf("  push rax\n");
             break;
         case NT_PREDEC:
-            gen_addr(node->unary_expr, env); // push addr, rax=address
+            gen_addr(node->unary_expr, ctx); // push addr, rax=address
             gen_load(node->type);
             if (is_integer(node->type)) printf("  dec rax\n");
             else if (is_ptr_or_arr(node->type)) printf("  sub rax, %d\n", sizeof_type(node->type->base));
@@ -210,9 +240,9 @@ static void gen_expr_unary(Node *node, Env *env) {
     return;
 }
 
-static void gen_expr_postfix(Node *node, Env *env) {
+static void gen_expr_postfix(Node *node, GenContext *ctx) {
     if (node->tag == NT_POSTINC) {
-        gen_addr(node->pre_expr, env); // push addr
+        gen_addr(node->pre_expr, ctx); // push addr
         gen_load(node->type);
         printf(" mov rdx, rax\n");
         if (is_integer(node->type)) printf("  inc rax\n");
@@ -220,7 +250,7 @@ static void gen_expr_postfix(Node *node, Env *env) {
         gen_store(node->type); // pop addr
         printf(" push rdx\n");
     } else if (node->tag == NT_POSTDEC) {
-        gen_addr(node->pre_expr, env); // push addr
+        gen_addr(node->pre_expr, ctx); // push addr
         gen_load(node->type);
         printf(" mov rdx, rax\n");
         if (is_integer(node->type)) printf("  dec rax\n");
@@ -232,10 +262,10 @@ static void gen_expr_postfix(Node *node, Env *env) {
     }
 }
 
-static void gen_expr_assign(Node *node, Env *env) {
+static void gen_expr_assign(Node *node, GenContext *ctx) {
     printf("  # gen_expr_assign\n");
-    gen_addr(node->expr.lhs, env);
-    gen_expr(node->expr.rhs, env);
+    gen_addr(node->expr.lhs, ctx);
+    gen_expr(node->expr.rhs, ctx);
     if (node->tag == NT_ASSIGN) {
         printf("  pop rax\n");
     } else {
@@ -280,9 +310,9 @@ static void gen_expr_assign(Node *node, Env *env) {
     return;
 }
 
-static void gen_expr_binary(Node *node, Env *env) {
-    gen_expr(node->expr.lhs, env);
-    gen_expr(node->expr.rhs, env);
+static void gen_expr_binary(Node *node, GenContext *ctx) {
+    gen_expr(node->expr.lhs, ctx);
+    gen_expr(node->expr.rhs, ctx);
 
     Type *lt = node->expr.lhs->type;
     Type *rt = node->expr.rhs->type;
@@ -370,27 +400,27 @@ static void gen_expr_binary(Node *node, Env *env) {
     printf("  push rax\n");
 }
 
-static void gen_expr_cond(Node *node, Env *env) {
+static void gen_expr_cond(Node *node, GenContext *ctx) {
     int id = count();
-    gen_expr(node->cond_expr.cond, env);
+    gen_expr(node->cond_expr.cond, ctx);
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
     printf("  je  .L%d.ELSE\n", id);
-    gen_expr(node->cond_expr.then, env);
+    gen_expr(node->cond_expr.then, ctx);
     printf("  jmp .L%d.END\n", id);
     printf(".L%d.ELSE:\n", id);
-    gen_expr(node->cond_expr.els, env);
+    gen_expr(node->cond_expr.els, ctx);
     printf(".L%d.END:\n", id);
 }
 
-static void gen_expr_logical(Node *node, Env *env) {
+static void gen_expr_logical(Node *node, GenContext *ctx) {
     int id = count();
     if (node->tag == NT_AND) {
-        gen_expr(node->expr.lhs, env);
+        gen_expr(node->expr.lhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je  .L%d.END\n", id);
-        gen_expr(node->expr.rhs, env);
+        gen_expr(node->expr.rhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf(".L%d.END:\n", id);
@@ -398,11 +428,11 @@ static void gen_expr_logical(Node *node, Env *env) {
         printf("  movzb rax, al\n");
         printf("  push rax\n");
     } else if (node->tag == NT_OR) {
-        gen_expr(node->expr.lhs, env);
+        gen_expr(node->expr.lhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  jne .L%d.END\n", id);
-        gen_expr(node->expr.rhs, env);
+        gen_expr(node->expr.rhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf(".L%d.END:\n", id);
@@ -412,7 +442,7 @@ static void gen_expr_logical(Node *node, Env *env) {
     } else panic("codegen: error at gen_expr_logical");
 }
 
-static void gen_expr(Node *node, Env *env) {
+static void gen_expr(Node *node, GenContext *ctx) {
     Token *token = node->main_token;
     printf("  # gen_expr: %.*s\n", token->len, token->start);
     switch (node->tag) {
@@ -422,27 +452,27 @@ static void gen_expr(Node *node, Env *env) {
         case NT_IDENT:
         case NT_DOT:
         case NT_ARROW:
-            gen_addr(node, env);
+            gen_addr(node, ctx);
             printf("  pop rax\n");
             gen_load(node->type);
             printf("  push rax\n");
             return;
-        case NT_STRING: return gen_addr(node, env);
+        case NT_STRING: return gen_addr(node, ctx);
         case NT_NEG:
         case NT_ADDR:
         case NT_DEREF:
         case NT_BOOL_NOT:
         case NT_PREINC:
         case NT_PREDEC:
-        case NT_SIZEOF: return gen_expr_unary(node, env);
+        case NT_SIZEOF: return gen_expr_unary(node, ctx);
         case NT_POSTINC:
-        case NT_POSTDEC: return gen_expr_postfix(node, env);
+        case NT_POSTDEC: return gen_expr_postfix(node, ctx);
         case NT_ASSIGN:
         case NT_ASSIGN_ADD:
         case NT_ASSIGN_SUB:
         case NT_ASSIGN_MUL:
-        case NT_ASSIGN_DIV: return gen_expr_assign(node, env);
-        case NT_FNCALL: return gen_fncall(node, env);
+        case NT_ASSIGN_DIV: return gen_expr_assign(node, ctx);
+        case NT_FNCALL: return gen_fncall(node, ctx);
         case NT_ADD:
         case NT_SUB:
         case NT_MUL:
@@ -452,15 +482,15 @@ static void gen_expr(Node *node, Env *env) {
         case NT_NE:
         case NT_LT:
         case NT_LE:
-        case NT_COMMA: return gen_expr_binary(node, env);
-        case NT_COND: return gen_expr_cond(node, env);
+        case NT_COMMA: return gen_expr_binary(node, ctx);
+        case NT_COND: return gen_expr_cond(node, ctx);
         case NT_AND:
-        case NT_OR: return gen_expr_logical(node, env);
+        case NT_OR: return gen_expr_logical(node, ctx);
         default: panic("codegen: error at gen_expr");
     }
 }
 
-static void gen_lvardecl(Node *node, Env *env) {
+static void gen_lvardecl(Node *node, GenContext *ctx) {
     NodeList *declarators = node->declarators;
     for (int i = 0; i < declarators->len; i++) {
         Node *child = declarators->nodes[i]; // declarator
@@ -468,36 +498,36 @@ static void gen_lvardecl(Node *node, Env *env) {
         Node *init = child->declarator.init;
         if (!init) continue;
 
-        gen_addr(name, env);
+        gen_addr(name, ctx);
         if (init->tag == NT_INITS) {
             NodeList *inits = init->initializers;
             printf("  mov rdx, rax\n");
             for (int i = 0; i < inits->len; i++) {
                 Node *elem = inits->nodes[i]; // initializer
-                gen_expr(elem, env);
+                gen_expr(elem, ctx);
                 printf("  pop rax\n");
                 gen_store(name->type->base);
                 printf("  add rdx, %d\n", sizeof_type(name->type->base));
                 printf("  push rdx\n");
             }
         } else {
-            gen_expr(init, env);
+            gen_expr(init, ctx);
             printf("  pop rax\n");
             gen_store(name->type);
         }
     }
 }
 
-static void gen_stmt(Node *node, Env *env) {
+static void gen_stmt(Node *node, GenContext *ctx) {
     if (!node) return;
     printf("  # gen_stmt\n");
     int id = count();
     if (node->tag == NT_RETURN) {
-        Node *fnode = env->current_func;
+        Node *fnode = ctx->current_func;
         const char *name = fnode->func.name->main_token->start;
         int name_len = fnode->func.name->main_token->len;
         if (node->unary_expr) {
-            gen_expr(node->unary_expr, env);
+            gen_expr(node->unary_expr, ctx);
             printf("  pop rax\n");
         }
         printf("  jmp .L.RETURN.%.*s\n", name_len, name);
@@ -505,58 +535,72 @@ static void gen_stmt(Node *node, Env *env) {
     } else if (node->tag == NT_BLOCK) {
         for (int i = 0; i < node->block->len; i++) {
             Node *child = node->block->nodes[i];
-            gen_stmt(child, env);
+            gen_stmt(child, ctx);
         }
         return;
     } else if (node->tag == NT_IF) {
-        gen_expr(node->ifstmt.cond, env);
+        gen_expr(node->ifstmt.cond, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je  .L%d.ELSE\n", id);
-        gen_stmt(node->ifstmt.then, env);
+        gen_stmt(node->ifstmt.then, ctx);
         printf("  jmp .L%d.END\n", id);
         printf(".L%d.ELSE:\n", id);
-        gen_stmt(node->ifstmt.els, env);
+        gen_stmt(node->ifstmt.els, ctx);
         printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_WHILE) {
+        into_loop(ctx, id);
         printf(".L%d.WHILE:\n", id);
-        gen_expr(node->whilestmt.cond, env);
+        printf(".L%d.CONTINUE:\n", id);
+        gen_expr(node->whilestmt.cond, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je  .L%d.END\n", id);
-        gen_stmt(node->whilestmt.body, env);
+        gen_stmt(node->whilestmt.body, ctx);
         printf("  jmp .L%d.WHILE\n", id);
         printf(".L%d.END:\n", id);
+        exit_loop(ctx, id);
         return;
     } else if (node->tag == NT_FOR) {
+        into_loop(ctx, id);
         if (node->forstmt.def) {
-            if (node->forstmt.def->tag == NT_LOCALDECL) gen_lvardecl(node->forstmt.def, env);
+            if (node->forstmt.def->tag == NT_LOCALDECL) gen_lvardecl(node->forstmt.def, ctx);
             else {
-                gen_expr(node->forstmt.def, env);
+                gen_expr(node->forstmt.def, ctx);
                 printf("  pop rax\n");
             }
         }
         printf(".L%d.FOR:\n", id);
         if (node->forstmt.cond) {
-            gen_expr(node->forstmt.cond, env);
+            gen_expr(node->forstmt.cond, ctx);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
             printf("  je  .L%d.END\n", id);
         }
-        gen_stmt(node->forstmt.body, env);
+        gen_stmt(node->forstmt.body, ctx);
+        printf(".L%d.CONTINUE:\n", id);
         if (node->forstmt.next) {
-            gen_expr(node->forstmt.next, env);
+            gen_expr(node->forstmt.next, ctx);
             printf("  pop rax\n");
         }
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
+        exit_loop(ctx, id);
         return;
-    } else if (node->tag == NT_LOCALDECL) return gen_lvardecl(node, env);
+    } else if (node->tag == NT_BREAK) {
+        int goto_id = current_loop_id(ctx);
+        printf("  jmp .L%d.END\n", goto_id);
+        return;
+    } else if (node->tag == NT_CONTINUE) {
+        int goto_id = current_loop_id(ctx);
+        printf("  jmp .L%d.CONTINUE\n", goto_id);
+        return;
+    } else if (node->tag == NT_LOCALDECL) return gen_lvardecl(node, ctx);
     else if (node->tag == NT_PARAMDECL) return;
 
     // expr statement
-    gen_expr(node, env);
+    gen_expr(node, ctx);
     printf("  pop rax\n");
 }
 
@@ -609,8 +653,8 @@ static void gen_globalvar(Symbol *var) {
     }
 }
 
-static void gen_func(Node *node, Env *env) {
-    int offset = env->local_vars ? env->local_vars->offset : 0;
+static void gen_func(Node *node, GenContext *ctx) {
+    int offset = ctx->local_vars ? ctx->local_vars->offset : 0;
     const char *name = node->func.name->main_token->start;
     int name_len = node->func.name->main_token->len;
     Node *body = node->func.body;
@@ -628,7 +672,7 @@ static void gen_func(Node *node, Env *env) {
     int nparam = params->len;
     for (int i = 0; i < nparam; i++) {
         Node *node = params->nodes[i];
-        Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->ident->main_token);
+        Symbol *var = find_symbol(ST_LVAR, ctx->local_vars, node->ident->main_token);
         int offset = var->offset;
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", offset);
@@ -640,7 +684,7 @@ static void gen_func(Node *node, Env *env) {
     }
 
     if (body->tag != NT_BLOCK) panic("codegen: expected block");
-    gen_stmt(body, env);
+    gen_stmt(body, ctx);
 
     // epilogue
     printf(".L.RETURN.%.*s:\n", name_len, name);
@@ -667,13 +711,14 @@ void gen(Program *prog) {
     }
 
     // generate functions
-    Env *env = env_new(NULL, prog->global_vars, prog->func_types);
+    GenContext *ctx = gencontext_new(NULL, NULL, prog->global_vars,
+                                     prog->func_types, prog->defined_types);
     for (int i = 0; i < prog->funcs->len; i++) {
         Node *fnode = prog->funcs->nodes[i];
-        env->current_func = fnode;
-        env->local_vars = fnode->func.locals; // set local variables
-        gen_func(fnode, env);
+        ctx->current_func = fnode;
+        ctx->local_vars = fnode->func.locals; // set local variables
+        gen_func(fnode, ctx);
         printf("\n");
     }
-    free(env);
+    free(ctx);
 }

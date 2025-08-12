@@ -264,6 +264,15 @@ int main() {
     char *c = &x;
     return *c;
 }' 255
+assert 'int main(){ int i = 0; while(1) { if (++i == 10) break; } return 3;}' 3
+assert 'int main(){ int a = 0; for (int i = 0; i <= 8; i++) { if (i % 2 != 0) continue; a += i; } return a; }' 20
+assert 'int main(){int s=0; for(int i=1;i<=10;i++){ if(i%2==0) continue; s+=i;} return s;}' 25
+assert 'int main(){int i,k; for(i=0,k=0;i<10;i++,k++){ if(i==5) break; } return k*10+i;}' 55
+assert "int main(){int i=0,s=0; while(i<10){ i++; if(i%3==0) continue; s+=i;} return s;}" 37
+assert 'int main(){int cnt=0; for(int i=0;i<3;i++){ for(int j=0;j<5;j++){ if(j==2) break; cnt++; }} return cnt;}' 6
+assert 'int main(){int cnt=0; for(int i=0;i<3;i++){ for(int j=0;j<5;j++){ if(j==2) continue; cnt++; }} return cnt;}' 12
+assert 'int main(){int i,k; for(i=0,k=0;i<5;i++,k++){ if(1) continue; } return k;}' 5
+assert 'int main(){int cnt=0,flag=0; for(int i=0;i<3;i++){ for(int j=0;j<3;j++){ if(i==1&&j==1){ flag=1; break;} cnt++; } if(flag) break; } return cnt;}' 4
 
 
 

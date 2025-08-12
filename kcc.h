@@ -60,6 +60,8 @@ typedef enum {
     TT_KW_CHAR,             // char
     TT_KW_STRUCT,           // struct
     TT_KW_CONST,            // const
+    TT_KW_BREAK,            // break
+    TT_KW_CONTINUE,         // continue
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -139,6 +141,8 @@ typedef enum {     // token node->???
     NT_GLOBALDECL, // <global variable declaration> unary_expr
     NT_SIZEOF,     // sizeof unary_expr
     NT_TYPENAME,   // <type> type (for sizeof)
+    NT_BREAK,      // break
+    NT_CONTINUE,   // continue
 } NodeTag;
 
 struct Node {
@@ -233,7 +237,6 @@ extern Type *type_int;
 extern Type *type_char;
 
 struct Env {
-    Node *current_func;
     Symbol *local_vars;
     Symbol *global_vars;
     Symbol *func_types;
@@ -253,5 +256,15 @@ Type *struct_new(Node *ident, Symbol *list, int size, int align);
 void type_funcs(Program *prog);
 
 // codegen
+#define LOOP_STACK_SIZE 16
+typedef struct {
+    int loop_id_stack[LOOP_STACK_SIZE];
+    int id_stack_top;
+    Node *current_func;
+    Symbol *local_vars;
+    Symbol *global_vars;
+    Symbol *func_types;
+    Symbol *defined_types;
+} GenContext;
 void print_token(Token *token);
 void gen(Program *prog);

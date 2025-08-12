@@ -790,6 +790,12 @@ static Node *stmt(Parser *parser) {
             node = node_new(NT_RETURN, consume(parser));
             if (peek(parser)->tag != TT_SEMICOLON) node->unary_expr = expr(parser);
             break;
+        case TT_KW_BREAK:
+            node = node_new(NT_BREAK, consume(parser));
+            break;
+        case TT_KW_CONTINUE:
+            node = node_new(NT_CONTINUE, consume(parser));
+            break;
         case TT_SEMICOLON:
             break;
         default:

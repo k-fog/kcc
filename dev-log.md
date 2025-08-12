@@ -404,9 +404,14 @@ main(){ fib(10); } // => 55
   - やった。2kmccを関係箇所のみ64行まで削る。
   - 2kmccのプログラム中にポインタ同士の減算を発見。そういえば、サボってint型しか対応してなかった
   - ポインタ同士の減算を実装すると、2kmccがコンパイルできた
+- break, continueを追加
+- コード生成で使用するデータを`GenContext`構造体にまとめるように変更
+  - `type.c`ではこれまで通りデータを`Env`で持つ
+  - `codegen.c`で使うデータは`GenContext`
 
 ## セルフホストに向けたTODOまとめ
-  - [ ] continue, break
+  - [x] continue, break
+  - [ ] do while
   - [ ] switch, case
   - [ ] union
   - [ ] typedef

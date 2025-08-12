@@ -3,18 +3,20 @@
 struct {
     char *str; TokenTag tag;
 } keywords[] = {
-    {"return", TT_KW_RETURN},
-    {"if",     TT_KW_IF},
-    {"else",   TT_KW_ELSE},
-    {"while",  TT_KW_WHILE},
-    {"for",    TT_KW_FOR},
-    {"void",   TT_KW_VOID},
-    {"int",    TT_KW_INT},
-    {"char",   TT_KW_CHAR},
-    {"sizeof", TT_KW_SIZEOF},
-    {"struct", TT_KW_STRUCT},
-    {"const",  TT_KW_CONST},
-    {NULL,     -1},
+    {"return",   TT_KW_RETURN},
+    {"if",       TT_KW_IF},
+    {"else",     TT_KW_ELSE},
+    {"while",    TT_KW_WHILE},
+    {"for",      TT_KW_FOR},
+    {"void",     TT_KW_VOID},
+    {"int",      TT_KW_INT},
+    {"char",     TT_KW_CHAR},
+    {"sizeof",   TT_KW_SIZEOF},
+    {"struct",   TT_KW_STRUCT},
+    {"const",    TT_KW_CONST},
+    {"break",    TT_KW_BREAK},
+    {"continue", TT_KW_CONTINUE},
+    {NULL, -1},
 };
 
 Lexer *lexer_new(const char *input) {

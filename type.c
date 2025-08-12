@@ -2,7 +2,6 @@
 
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types) {
     Env *env = calloc(1, sizeof(Env));
-    env->current_func = NULL;
     env->local_vars = local_vars;
     env->global_vars = global_vars;
     env->func_types = func_types;
