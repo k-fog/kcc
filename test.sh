@@ -239,5 +239,13 @@ assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=2; return *p;}' 4
 assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=2; p-=1; return *p;}' 2
 assert 'int *p;int main(){ return !p; }' 1
 assert 'struct test {char a; char b; int c;};int main() {return sizeof(struct test);}' 8
+assert '
+int main() {
+    int **tests = calloc(2, sizeof(int*));
+    tests[1] = calloc(3, sizeof(int));
+    tests[1][1] = 4;
+    return tests[1][1] + 5;
+}' 9
+
 
 echo "all tests passed"

@@ -411,7 +411,8 @@ static void gen_expr_logical(Node *node, Env *env) {
 }
 
 static void gen_expr(Node *node, Env *env) {
-    printf("  # gen_expr\n");
+    Token *token = node->main_token;
+    printf("  # gen_expr: %.*s\n", token->len, token->start);
     switch (node->tag) {
         case NT_INT:
             printf("  push %d\n", node->integer);

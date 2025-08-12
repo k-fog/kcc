@@ -195,7 +195,7 @@ static Node *typed(Node *node, Env *env) {
                 && (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT))
                 node->type = lhs_typ;
             else if (!is_compatible(lhs_typ, rhs_typ)) panic("type check error: incompatible type");
-            node->type = rhs_typ;
+            node->type = lhs_typ;
             break;
         }
         case NT_DOT: {

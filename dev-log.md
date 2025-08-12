@@ -318,3 +318,71 @@ main(){ fib(10); } // => 55
 - プロトタイプ宣言的なものに対応
   - 返り値のみ見ている
 - 型チェックの杜撰な部分を見つけて更新したが、依然として杜撰
+
+## 2025-08-12
+- 2kmccをコンパイルしたい
+- デバッグ記録
+  - kccで2kmccをコンパイルし、アセンブリが出力された。
+    kccでコンパイルした2kmccでプログラムをコンパイルすると、文字列が正しく出力されない。
+    例えば、以下の例ではmain関数の`main`が`m`しか出力されていない。
+    
+    ```
+     % ./2kmcc 'int main() {return 0;}'
+    .intel_syntax noprefix
+      .text
+      .section .rodata
+      .text
+    .text
+    .globl m
+    m:
+      push rbp
+      mov rbp, rsp
+      sub rsp, 0
+      mov rax, 1
+      mov rax, 0
+      mov rsp, rbp
+      pop rbp
+      ret
+      mov rax, 42
+      mov rsp, rbp
+      pop rbp
+      ret
+    ```
+    
+    関数名を出力している2kmccのソースコードはこのあたり。
+
+    ```
+    struct NameAndType {
+        char *name;
+        struct Type *type;
+    };
+    struct NameAndType *global_vars_start[100];
+    printf(".globl %s\n", global_vars_start[i]->name);
+    ```
+    
+    エラーが再現する最小ケースを探したい。
+    - 配列アクセスがだめ？
+    - アロー演算子がだめ？
+    - 組み合わせるとだめ？
+    
+    このケースが通らないことが分かった。
+
+    ```
+    int main() {
+        int **tests = calloc(2, sizeof(int*));
+        tests[1] = calloc(3, sizeof(int));
+        tests[1][1] = 4;
+        return tests[1][1] + 5;
+    }
+    ```
+    
+    - uchan先生からのアドバイス
+      - gdbの`-x`オプションでスクリプトを書いておくとデバッグ時に便利
+      - codegenでprintfをしておくとアセンブリが読みやすくなる
+    
+    アセンブリを読むと、64bitのアドレスを保存したいのに`mov [rdi], eax`となっており、おかしいことが分かった。
+    int**を一度デリファレンスしたものがintに判定されている？？
+    
+    型情報がおかしいため、type.cの誤りを探す。
+    assignの型付けを変えるとテストケースは通った！
+    
