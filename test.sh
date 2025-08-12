@@ -240,12 +240,30 @@ assert 'int main(){int *p; alloc4(&p, 1,2,4,8); p+=2; p-=1; return *p;}' 2
 assert 'int *p;int main(){ return !p; }' 1
 assert 'struct test {char a; char b; int c;};int main() {return sizeof(struct test);}' 8
 assert '
+void *calloc();
 int main() {
     int **tests = calloc(2, sizeof(int*));
     tests[1] = calloc(3, sizeof(int));
     tests[1][1] = 4;
     return tests[1][1] + 5;
 }' 9
+assert '
+int main() {
+    char a=1;
+    char b=2;
+    char c=3;
+    char d=4;
+    int x = 65535;
+    x = a;
+    return x + 5;
+}' 6
+assert '
+int main() {
+    int x = 65535; // 0x00 00 FF FF
+    char *c = &x;
+    return *c;
+}' 255
+
 
 
 echo "all tests passed"
