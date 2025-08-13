@@ -363,7 +363,7 @@ assert 'typedef struct S{int a;} S; int main(){ S s; s.a=42; return s.a; }' 42
 assert 'int main(){ typedef int T; return sizeof(T)==sizeof(int); }' 1
 assert 'typedef int I; typedef I I2; int main(){ I2 x=42; return x; }' 42
 assert 'typedef enum {A,B} E; int main(){ E e=A; return e+B; }' 1
-# assert 'typedef struct Node Node; struct Node{ int v; Node* next; }; int main(){ struct Node a; a.v=19; a.next=0; struct Node b; b.v=23; b.next=0; a.next=&b; return a.v + a.next->v; }' 42
-# assert 'typedef int* IP; void add2(IP p){ *p+=2; } int main(){ int x=40; add2(&x); return x; }' 42
+assert 'typedef struct Node Node; struct Node{ int v; Node* next; }; int main(){ struct Node a; a.v=19; a.next=0; struct Node b; b.v=23; b.next=0; a.next=&b; return a.v + a.next->v; }' 42
+assert 'typedef int* IP; void add_two(IP p){ *p+=2; } int main(){ int x=40; add_two(&x); return x; }' 42
 
 echo "all tests passed"

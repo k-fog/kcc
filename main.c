@@ -33,11 +33,11 @@ void dump_type(Type *type) {
             break;
         case TYP_STRUCT:
             printf("struct ");
-            print_token(type->tagged_typ.ident->main_token);
+            print_token(type->tagged_typ.ident);
             break;
         case TYP_UNION:
             printf("union ");
-            print_token(type->tagged_typ.ident->main_token);
+            print_token(type->tagged_typ.ident);
             break;
         case TYP_ENUM:
             printf("enum ");

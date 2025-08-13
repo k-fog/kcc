@@ -28,7 +28,7 @@ Type *array_of(Type *base, int size) {
     return arr;
 }
 
-Type *struct_new(Node *ident, Symbol *list, int size, int align) {
+Type *struct_new(Token *ident, Symbol *list, int size, int align) {
     Type *typ = calloc(1, sizeof(Type));
     typ->tag = TYP_STRUCT;
     typ->tagged_typ.ident = ident;
@@ -38,7 +38,7 @@ Type *struct_new(Node *ident, Symbol *list, int size, int align) {
     return typ;
 }
 
-Type *union_new(Node *ident, Symbol *list, int size, int align) {
+Type *union_new(Token *ident, Symbol *list, int size, int align) {
     Type *typ = calloc(1, sizeof(Type));
     typ->tag = TYP_UNION;
     typ->tagged_typ.ident = ident;
@@ -48,7 +48,7 @@ Type *union_new(Node *ident, Symbol *list, int size, int align) {
     return typ;
 }
 
-Type *enum_new(Node *ident, Symbol *list) {
+Type *enum_new(Token *ident, Symbol *list) {
     Type *typ = calloc(1, sizeof(Type));
     typ->tag = TYP_ENUM;
     typ->tagged_typ.ident = ident;
@@ -102,11 +102,9 @@ static Type *promote_if_integer(Type *type) {
     else return type;
 }
 
-static bool identeq(Node *a, Node *b) {
+static bool identeq(Token *a, Token *b) {
     if (!a || !b) return false;
-    Token *token_a = a->main_token;
-    Token *token_b = b->main_token;
-    return strncmp(token_a->start, token_b->start, token_a->len) == 0;
+    return strncmp(a->start, b->start, a->len) == 0;
 }
 
 static bool is_compatible(Type *a, Type *b) {

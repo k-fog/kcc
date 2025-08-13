@@ -243,7 +243,7 @@ struct Type {
     int array_size; // array
     union {
         Type *base; // pointer to
-        struct { Node *ident; Symbol *list; int size; int align; } tagged_typ; // struct
+        struct { Token *ident; Symbol *list; int size; int align; } tagged_typ; // struct
     };
 };
 
@@ -267,9 +267,9 @@ int alignof_type(Type *type);
 Type *type_copy(Type *type);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
-Type *struct_new(Node *ident, Symbol *list, int size, int align);
-Type *union_new(Node *ident, Symbol *list, int size, int align);
-Type *enum_new(Node *ident, Symbol *list);
+Type *struct_new(Token *ident, Symbol *list, int size, int align);
+Type *union_new(Token *ident, Symbol *list, int size, int align);
+Type *enum_new(Token *ident, Symbol *list);
 void type_funcs(Program *prog);
 
 // codegen

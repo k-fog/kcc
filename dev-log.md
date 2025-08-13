@@ -430,7 +430,11 @@ main(){ fib(10); } // => 55
   - `enum P { Q, R, S, } var;`のような記法にのみ対応
   - `codegen.c`があまりよくない
 - typedefを追加
-  - TODO: 不完全型
+  - ~~TODO~~: 不完全型
+- セキュキャン2025 3日目の記録
+  - （朝～夕方）コンパイラ作り
+  - （夜）BoF座談会
+  - 結構疲れた
 
 ## セルフホストに向けたTODOまとめ
 - [x] continue, break
@@ -438,7 +442,7 @@ main(){ fib(10); } // => 55
 - [x] switch, case
 - [x] union
 - [x] enum
-- [ ] typedef
+- [x] typedef
 - [ ] #define
 - [ ] #include
 - [ ] 構造体の初期化子
