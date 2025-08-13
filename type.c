@@ -89,6 +89,7 @@ int alignof_type(Type *type) {
 bool is_integer(Type *type) {
     if (type->tag == TYP_CHAR) return true;
     else if (type->tag == TYP_INT) return true;
+    else if (type->tag == TYP_ENUM) return true;
     else return false;
 }
 

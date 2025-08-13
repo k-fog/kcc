@@ -353,5 +353,17 @@ assert 'int main(){ enum {A,B}; int n=B; switch(n){case A: return 1; case B: ret
 assert 'int main(){ enum {C0,C1}; return C1; }' 1
 assert 'int main(){ enum T{Q}; struct P{ enum T t; }; struct P p; p.t=Q; return p.t; }' 0
 
+assert 'int main(){ typedef int I; I x=40; return x+2; }' 42
+assert 'int main(){ typedef int* IP; int x=41; IP p=&x; (*p)++; return x; }' 42
+assert 'typedef int T; int main(){ T T=42; return T; }' 42
+assert 'typedef int I; int f(I x){ return x+2; } int main(){ return f(40); }' 42
+assert 'typedef struct {int a; int b;} S; int main(){ S s; s.a=20; s.b=22; return s.a+s.b; }' 42
+assert 'struct S{int a;}; typedef int S; int main(){ struct S x; x.a=40; S y=2; return x.a+y; }' 42
+assert 'typedef struct S{int a;} S; int main(){ S s; s.a=42; return s.a; }' 42
+assert 'int main(){ typedef int T; return sizeof(T)==sizeof(int); }' 1
+assert 'typedef int I; typedef I I2; int main(){ I2 x=42; return x; }' 42
+assert 'typedef enum {A,B} E; int main(){ E e=A; return e+B; }' 1
+# assert 'typedef struct Node Node; struct Node{ int v; Node* next; }; int main(){ struct Node a; a.v=19; a.next=0; struct Node b; b.v=23; b.next=0; a.next=&b; return a.v + a.next->v; }' 42
+# assert 'typedef int* IP; void add2(IP p){ *p+=2; } int main(){ int x=40; add2(&x); return x; }' 42
 
 echo "all tests passed"

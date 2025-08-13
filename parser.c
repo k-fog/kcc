@@ -60,15 +60,6 @@ static bool is_right_assoc(TokenTag tag) {
         || tag == TT_SLASH_EQ;
 }
 
-static bool is_type_specifier(Token *token) {
-    return token->tag == TT_KW_VOID
-        || token->tag == TT_KW_INT
-        || token->tag == TT_KW_CHAR
-        || token->tag == TT_KW_STRUCT
-        || token->tag == TT_KW_UNION
-        || token->tag == TT_KW_ENUM;
-}
-
 // NodeList
 
 NodeList *nodelist_new(int capacity) {
@@ -335,8 +326,10 @@ static Token *consume(Parser *parser) {
     return token;
 }
 
-static Type *struct_decl(Parser *parser);
+static Type *struct_decl(Parser *parser, Type *incomplete_type);
 static Type *union_decl(Parser *parser);
+static Type *enum_decl(Parser *parser);
+static Type *typedef_decl(Parser *parser);
 static Type *decl_spec(Parser *parser);
 static Type *pointer(Parser *parser, Type *type);
 static Type *array(Parser *parser, Type *type);
@@ -374,9 +367,35 @@ static Node *toplevel(Parser *parser);
 
 // parse type
 
+static Type *check_defined_tagged_type(Parser *parser, SymbolTag tag, Token *name) {
+    Symbol *sym = find_symbol(tag, parser->defined_types, name);
+    if (sym != NULL) {
+        consume(parser); // tag
+        return sym->type;
+    }
+    return NULL;
+}
+
+static Type *check_defined_type(Parser *parser, Token *token) {
+    Symbol *sym = find_symbol(ST_TYPEDEF, parser->defined_types, token);
+    if (sym != NULL) return sym->type;
+    return NULL;
+}
+
+static bool is_type_specifier(Parser *parser, Token *token) {
+    Type *type = check_defined_type(parser, token);
+    if (type) return true;
+    return token->tag == TT_KW_VOID
+        || token->tag == TT_KW_INT
+        || token->tag == TT_KW_CHAR
+        || token->tag == TT_KW_STRUCT
+        || token->tag == TT_KW_UNION
+        || token->tag == TT_KW_ENUM;
+}
+
 static Symbol *struct_decl_list(Parser *parser) {
     Symbol *list = NULL;
-    while (is_type_specifier(peek(parser))) {
+    while (is_type_specifier(parser, peek(parser))) {
         Type *type_spec = decl_spec(parser);
         Node *declr = NULL;
         if (peek(parser)->tag != TT_SEMICOLON) declr = declarator(parser, type_spec);
@@ -389,14 +408,15 @@ static Symbol *struct_decl_list(Parser *parser) {
     return list;
 }
 
-static Type *struct_decl(Parser *parser) {
+static Type *struct_decl(Parser *parser, Type *incomplete_type) {
     Node *ident = NULL;
-    Type *struct_typ = struct_new(NULL, NULL, 0, 0); // placeholder
+    Type *struct_typ = incomplete_type ? incomplete_type : struct_new(NULL, NULL, 0, 0); // placeholder
     if (peek(parser)->tag == TT_IDENT) {
         ident = ident_new(consume(parser));
         append_type(parser, ST_STRUCT, ident->main_token, struct_typ);
     }
-    if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
+    if (peek(parser)->tag != TT_BRACE_L) return struct_typ;
+    consume(parser); // {
 
     Symbol *list = struct_decl_list(parser);
     list = reverse_symbols(list);
@@ -468,44 +488,38 @@ static Type *enum_decl(Parser *parser) {
     return enum_typ;
 }
 
+static Type *typedef_decl(Parser *parser) {
+    Node *typenode = try_typename(parser);
+    if (!typenode) panic("expected typename");
+    if (peek(parser)->tag != TT_IDENT) panic("expected identifier");
+    Node *ident = ident_new(consume(parser));
+    Type *type = typenode->type;
+    append_type(parser, ST_TYPEDEF, ident->main_token, type);
+    return type;
+}
+
 static Type *decl_spec(Parser *parser) {
     if (peek(parser)->tag == TT_KW_CONST) consume(parser); // ignore
+    if (peek(parser)->tag == TT_KW_TYPEDEF && consume(parser))
+        return typedef_decl(parser);
     Token *token = consume(parser);
     if (token->tag == TT_KW_VOID) return type_void;
     else if (token->tag == TT_KW_CHAR) return type_char;
     else if (token->tag == TT_KW_INT) return type_int;
     else if (token->tag == TT_KW_STRUCT) {
-        Token *next = peek(parser);
-        if (next->tag == TT_IDENT) {
-            Symbol *struct_sym = find_symbol(ST_STRUCT, parser->defined_types, next);
-            if (struct_sym != NULL) {
-                consume(parser); // struct tag
-                return struct_sym->type;
-            }
-        }
-        return struct_decl(parser);
+        Type *typ = check_defined_tagged_type(parser, ST_STRUCT, peek(parser));
+        return typ && typ->tagged_typ.list ? typ : struct_decl(parser, typ);
     } else if (token->tag == TT_KW_UNION) {
-        Token *next = peek(parser);
-        if (next->tag == TT_IDENT) {
-            Symbol *union_sym = find_symbol(ST_UNION, parser->defined_types, next);
-            if (union_sym != NULL) {
-                consume(parser); // union tag
-                return union_sym->type;
-            }
-        }
-        return union_decl(parser);
+        Type *typ = check_defined_tagged_type(parser, ST_UNION, peek(parser));
+        return typ && typ->tagged_typ.list ? typ : union_decl(parser);
     } else if (token->tag == TT_KW_ENUM) {
-        Token *next = peek(parser);
-        if (next->tag == TT_IDENT) {
-            Symbol *enum_sym = find_symbol(ST_ENUM, parser->defined_types, next);
-            if (enum_sym != NULL) {
-                consume(parser); // enum tag
-                return enum_sym->type;
-            }
-        }
-        return enum_decl(parser);
+        Type *typ = check_defined_tagged_type(parser, ST_ENUM, peek(parser));
+        return typ && typ->tagged_typ.list ? typ : enum_decl(parser);
+    } else {
+        Type *typ = check_defined_type(parser, token);
+        if (!typ) panic("expected type");
+        return typ;
     }
-    else panic("expected type");
     return NULL;
 }
 
@@ -519,7 +533,7 @@ static Type *pointer(Parser *parser, Type *type) {
 
 static Node *try_typename(Parser *parser) {
     Token *token = peek(parser);
-    if (!is_type_specifier(token)) return NULL;
+    if (!is_type_specifier(parser, token)) return NULL;
     Type *base = decl_spec(parser);
     Node *node = abstract_declarator(parser, base);
     return node;
@@ -730,7 +744,7 @@ static Node *for_stmt(Parser *parser) {
 
     // def
     if (peek(parser)->tag != TT_SEMICOLON) {
-        node->forstmt.def = is_type_specifier(peek(parser)) ?
+        node->forstmt.def = is_type_specifier(parser, peek(parser)) ?
                             local_decl(parser) : expr(parser);
     }
     consume(parser);
@@ -942,6 +956,10 @@ static Node *stmt(Parser *parser) {
         case TT_KW_ENUM:
             node = local_decl(parser); 
             break;
+        case TT_KW_TYPEDEF:
+            consume(parser);
+            typedef_decl(parser);
+            break;
         case TT_KW_RETURN:
             node = node_new(NT_RETURN, consume(parser));
             if (peek(parser)->tag != TT_SEMICOLON) node->unary_expr = expr(parser);
@@ -954,9 +972,12 @@ static Node *stmt(Parser *parser) {
             break;
         case TT_SEMICOLON:
             break;
-        default:
-            node = expr(parser);
+        default: {
+            Type *type = check_defined_type(parser, peek(parser));
+            if (type) node = local_decl(parser); 
+            else node = expr(parser);
             break;
+        }
     }
     if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     return node;

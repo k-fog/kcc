@@ -68,6 +68,7 @@ typedef enum {
     TT_KW_DEFAULT,          // default
     TT_KW_UNION,            // union
     TT_KW_ENUM,             // enum
+    TT_KW_TYPEDEF,          // typedef
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -202,7 +203,7 @@ TokenList *tokenlist_new(int capacity);
 void tokenlist_append(TokenList *tlist, Token *token);
 
 typedef enum {
-    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_UNION, ST_ENUM, ST_MEMBER,
+    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_UNION, ST_ENUM, ST_MEMBER, ST_TYPEDEF
 } SymbolTag;
 
 struct Symbol {

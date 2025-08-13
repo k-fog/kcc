@@ -22,6 +22,7 @@ struct {
     {"default",  TT_KW_DEFAULT},
     {"union",    TT_KW_UNION},
     {"enum",     TT_KW_ENUM},
+    {"typedef",  TT_KW_TYPEDEF},
     {NULL, -1},
 };
 
