@@ -24,7 +24,7 @@ GenContext *gencontext_new(Node *current_func, Symbol *local_vars, Symbol *globa
     return ctx;
 }
 
-void into_loop(GenContext *ctx, int id) {
+void push_jump_id(GenContext *ctx, int id) {
     int top = ctx->id_stack_top;
     if (top == LOOP_STACK_SIZE) panic("internal error: too nested loop");
     ctx->loop_id_stack[top] = id;
@@ -32,7 +32,7 @@ void into_loop(GenContext *ctx, int id) {
     return;
 }
 
-void exit_loop(GenContext *ctx, int id) {
+void pop_jump_id(GenContext *ctx, int id) {
     ctx->id_stack_top--;
     return;
 }
@@ -550,7 +550,7 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_WHILE) {
-        into_loop(ctx, id);
+        push_jump_id(ctx, id);
         printf(".L%d.WHILE:\n", id);
         printf(".L%d.CONTINUE:\n", id);
         gen_expr(node->whilestmt.cond, ctx);
@@ -560,10 +560,10 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         gen_stmt(node->whilestmt.body, ctx);
         printf("  jmp .L%d.WHILE\n", id);
         printf(".L%d.END:\n", id);
-        exit_loop(ctx, id);
+        pop_jump_id(ctx, id);
         return;
     } else if (node->tag == NT_DO_WHILE) {
-        into_loop(ctx, id);
+        push_jump_id(ctx, id);
         printf(".L%d.DO:\n", id);
         gen_stmt(node->whilestmt.body, ctx);
         printf(".L%d.CONTINUE:\n", id);
@@ -572,10 +572,45 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         printf("  cmp rax, 0\n");
         printf("  jne .L%d.DO\n", id);
         printf(".L%d.END:\n", id);
-        exit_loop(ctx, id);
+        pop_jump_id(ctx, id);
+        return;
+    } else if (node->tag == NT_CASE) {
+        for (int i = 0; i < node->caseblock.stmts->len; i++) {
+            Node *child = node->caseblock.stmts->nodes[i];
+            gen_stmt(child, ctx);
+        }
+        return;
+    } else if (node->tag == NT_SWITCH) {
+        push_jump_id(ctx, id);
+        int default_id = -1;
+        for (int i = 0; i < node->switchstmt.cases->len; i++) {
+            Node *child = node->switchstmt.cases->nodes[i];
+            if (child->caseblock.constant == NULL) {
+                default_id = i;
+                continue;
+            }
+            gen_expr(child->caseblock.constant, ctx); // push
+            gen_addr(node->switchstmt.control, ctx);  // push
+            printf("  pop rax\n");                    // pop
+            gen_load(node->switchstmt.control->type); // -> rax
+            printf("  pop rdi\n");                    // pop
+            printf("  cmp rax, rdi\n");
+            printf("  je .L%d.CASE%d\n", id, i);
+        }
+        if (0 <= default_id) {
+            // default:
+            printf("  jmp .L%d.CASE%d\n", id, default_id);
+        }
+        for (int i = 0; i < node->switchstmt.cases->len; i++) {
+            Node *child = node->switchstmt.cases->nodes[i];
+            printf(".L%d.CASE%d:\n", id, i);
+            gen_stmt(child, ctx);
+        }
+        printf(".L%d.END:\n", id);
+        pop_jump_id(ctx, id);
         return;
     } else if (node->tag == NT_FOR) {
-        into_loop(ctx, id);
+        push_jump_id(ctx, id);
         if (node->forstmt.def) {
             if (node->forstmt.def->tag == NT_LOCALDECL) gen_lvardecl(node->forstmt.def, ctx);
             else {
@@ -598,7 +633,7 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         }
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
-        exit_loop(ctx, id);
+        pop_jump_id(ctx, id);
         return;
     } else if (node->tag == NT_BREAK) {
         int goto_id = current_loop_id(ctx);

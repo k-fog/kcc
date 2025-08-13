@@ -17,6 +17,9 @@ struct {
     {"break",    TT_KW_BREAK},
     {"continue", TT_KW_CONTINUE},
     {"do",       TT_KW_DO},
+    {"switch",   TT_KW_SWITCH},
+    {"case",     TT_KW_CASE},
+    {"default",  TT_KW_DEFAULT},
     {NULL, -1},
 };
 

@@ -63,6 +63,9 @@ typedef enum {
     TT_KW_BREAK,            // break
     TT_KW_CONTINUE,         // continue
     TT_KW_DO,               // do
+    TT_KW_SWITCH,           // switch
+    TT_KW_CASE,             // case
+    TT_KW_DEFAULT,          // default
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -145,6 +148,8 @@ typedef enum {     // token node->???
     NT_BREAK,      // break
     NT_CONTINUE,   // continue
     NT_DO_WHILE,   // do-while whilestmt
+    NT_SWITCH,     // switch switchstmt
+    NT_CASE,       // case caseblock
 } NodeTag;
 
 struct Node {
@@ -169,6 +174,8 @@ struct Node {
         NodeList *declarators;
         NodeList *initializers;
         struct { Node *lhs; Node *member; } member_access;
+        struct { Node *control; NodeList *cases; } switchstmt;
+        struct { Node *constant; NodeList *stmts; } caseblock; // constant == NULL -> default: label
     };
 };
 

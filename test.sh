@@ -36,6 +36,33 @@ assert() {
     fi
 }
 
+assert 'int main() {
+    int a = 2;
+    switch (a) {
+        case 0: return 1;
+        case 1: return 2;
+        case 2: return 3;
+        default: return 4;
+    }
+}' 3
+assert 'int main() {
+    int a = 1;
+    switch (a) {
+        case 0: break;
+        case 1: a += 3; // fallthrough
+        case 2: a += 4; break;
+        default: return 3;
+    }
+}' 8
+assert 'int main() {
+    int a = 0;
+    switch (a) {
+        default: return 4;
+        case 0: return 1;
+        case 1: return 2;
+        case 2: return 3;
+    }
+}' 1
 assert 'int main(){return 0;}' 0 
 assert 'int main(){return 42;}' 42
 assert 'int main(){return 1+2+3;}' 6

@@ -93,6 +93,14 @@ static bool is_compatible(Type *a, Type *b) {
     else return is_integer(a) && is_integer(b);
 }
 
+static Node *typed(Node *node, Env *env);
+
+static void type_nodelist(NodeList *list, Env *env) {
+    for (int i = 0; i < list->len; i++)
+        typed(list->nodes[i], env);
+    return;
+}
+
 static Node *typed(Node *node, Env *env) {
     if (!node || node->type != NULL) return node;
     switch (node->tag) {
@@ -258,6 +266,15 @@ static Node *typed(Node *node, Env *env) {
             typed(node->forstmt.next, env);
             typed(node->forstmt.body, env);
             node->type = NULL;
+            break;
+        case NT_SWITCH:
+            typed(node->switchstmt.control, env);
+            type_nodelist(node->switchstmt.cases, env);
+            node->type = NULL;
+            break;
+        case NT_CASE:
+            typed(node->caseblock.constant, env);
+            type_nodelist(node->caseblock.stmts, env);
             break;
         case NT_FUNC:
             for (int i = 0; i < node->func.params->len; i++)

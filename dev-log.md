@@ -415,10 +415,16 @@ main(){ fib(10); } // => 55
   - （夕方） break, continue, do-while
   - （夜） 共通講義・LT大会
 
+## 2025-08-13
+- switch, caseを追加
+  - `jg`命令を使うgcc賢い
+  - `default`ラベルが最初に来てもOK
+  - codegenをあまり綺麗に実装できなかった
+
 ## セルフホストに向けたTODOまとめ
   - [x] continue, break
   - [x] do while
-  - [ ] switch, case
+  - [x] switch, case
   - [ ] union
   - [ ] enum
   - [ ] typedef

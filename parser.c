@@ -322,6 +322,7 @@ static Node *if_stmt(Parser *parser);
 static Node *while_stmt(Parser *parser);
 static Node *do_while_stmt(Parser *parser);
 static Node *for_stmt(Parser *parser);
+static Node *switch_stmt(Parser *parser);
 static Node *stmt(Parser *parser);
 static Node *direct_declarator(Parser *parser, Type *type);
 static Node *direct_abstract_declarator(Parser *parser, Type *type);
@@ -640,6 +641,39 @@ static Node *for_stmt(Parser *parser) {
     return node;
 }
 
+static Node *case_block(Parser *parser) {
+    Token *token = consume(parser);
+    Node *node = node_new(NT_CASE, token);
+    if (token->tag == TT_KW_CASE) node->caseblock.constant = expr(parser);
+    else if (token->tag != TT_KW_DEFAULT) panic("expected case/default");
+    if (consume(parser)->tag != TT_COLON) panic("expected \':\'");
+    node->caseblock.stmts = nodelist_new(DEFAULT_NODELIST_CAP);
+    token = peek(parser);
+    while (token->tag != TT_KW_CASE && token->tag != TT_KW_DEFAULT && token->tag != TT_BRACE_R) {
+        Node *stmtnode = stmt(parser);
+        nodelist_append(node->caseblock.stmts, stmtnode);
+        token = peek(parser);
+    }
+    return node;
+}
+
+static Node *switch_stmt(Parser *parser) {
+    Node *node = node_new(NT_SWITCH, consume(parser));
+    if (consume(parser)->tag != TT_PAREN_L) panic("expected \'(\'");
+    node->switchstmt.control = expr(parser);
+    if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
+    if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
+    node->switchstmt.cases = nodelist_new(DEFAULT_NODELIST_CAP);
+    Token *token = peek(parser);
+    while (token->tag == TT_KW_CASE || token->tag == TT_KW_DEFAULT) {
+        Node *casenode = case_block(parser);
+        nodelist_append(node->switchstmt.cases, casenode);
+        token = peek(parser);
+    }
+    if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
+    return node;
+}
+
 static Type *array(Parser *parser, Type *type) {
     int len = 0;
     int capacity = 4;
@@ -794,6 +828,8 @@ static Node *stmt(Parser *parser) {
             break;
         case TT_KW_FOR:
             return for_stmt(parser);
+        case TT_KW_SWITCH:
+            return switch_stmt(parser);
         case TT_KW_VOID:
         case TT_KW_CHAR:
         case TT_KW_INT:
