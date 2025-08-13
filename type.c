@@ -37,13 +37,24 @@ Type *struct_new(Node *ident, Symbol *list, int size, int align) {
     return typ;
 }
 
+Type *union_new(Node *ident, Symbol *list, int size, int align) {
+    Type *typ = calloc(1, sizeof(Type));
+    typ->tag = TYP_UNION;
+    typ->tagged_typ.ident = ident;
+    typ->tagged_typ.list = list;
+    typ->tagged_typ.size = size;
+    typ->tagged_typ.align = align;
+    return typ;
+}
+
 int sizeof_type(Type *type) {
     switch (type->tag) {
         case TYP_CHAR: return 1;
         case TYP_INT: return 4;
         case TYP_PTR: return 8;
         case TYP_ARRAY: return sizeof_type(type->base) * type->array_size;
-        case TYP_STRUCT: return type->tagged_typ.size;
+        case TYP_STRUCT:
+        case TYP_UNION: return type->tagged_typ.size;
         default: panic("error at sizeof_type");
     }
     return 0;
@@ -55,7 +66,8 @@ int alignof_type(Type *type) {
         case TYP_INT: return 4;
         case TYP_PTR: return 8;
         case TYP_ARRAY: return alignof_type(type->base);
-        case TYP_STRUCT: return type->tagged_typ.align;
+        case TYP_STRUCT:
+        case TYP_UNION: return type->tagged_typ.align;
         default: panic("error at alignof_type");
     }
     return 0;
@@ -209,7 +221,7 @@ static Node *typed(Node *node, Env *env) {
             Node *lhs = node->member_access.lhs;
             Node *member = node->member_access.member;
             Type *lhs_typ = typed(lhs, env)->type;
-            if (node->tag == NT_DOT && lhs_typ->tag != TYP_STRUCT)
+            if (node->tag == NT_DOT && lhs_typ->tag != TYP_STRUCT && lhs_typ->tag != TYP_UNION)
                 panic("type check error: invalid member access");
             Symbol *member_sym = find_symbol(ST_MEMBER, lhs_typ->tagged_typ.list, member->main_token);
             if (!member_sym) panic("type check error: invalid member access");

@@ -66,6 +66,7 @@ typedef enum {
     TT_KW_SWITCH,           // switch
     TT_KW_CASE,             // case
     TT_KW_DEFAULT,          // default
+    TT_KW_UNION,            // union
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -200,7 +201,7 @@ TokenList *tokenlist_new(int capacity);
 void tokenlist_append(TokenList *tlist, Token *token);
 
 typedef enum {
-    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_MEMBER,
+    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_UNION, ST_MEMBER,
 } SymbolTag;
 
 struct Symbol {
@@ -233,7 +234,7 @@ Program *parse(Parser *parser);
 
 // type
 struct Type {
-    enum { TYP_VOID, TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY, TYP_STRUCT } tag;
+    enum { TYP_VOID, TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY, TYP_STRUCT, TYP_UNION } tag;
     int array_size; // array
     union {
         Type *base; // pointer to
@@ -262,6 +263,7 @@ Type *type_copy(Type *type);
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
 Type *struct_new(Node *ident, Symbol *list, int size, int align);
+Type *union_new(Node *ident, Symbol *list, int size, int align);
 void type_funcs(Program *prog);
 
 // codegen

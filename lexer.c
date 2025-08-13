@@ -20,6 +20,7 @@ struct {
     {"switch",   TT_KW_SWITCH},
     {"case",     TT_KW_CASE},
     {"default",  TT_KW_DEFAULT},
+    {"union",    TT_KW_UNION},
     {NULL, -1},
 };
 

@@ -64,7 +64,8 @@ static bool is_type_specifier(Token *token) {
     return token->tag == TT_KW_VOID
         || token->tag == TT_KW_INT
         || token->tag == TT_KW_CHAR
-        || token->tag == TT_KW_STRUCT;
+        || token->tag == TT_KW_STRUCT
+        || token->tag == TT_KW_UNION;
 }
 
 // NodeList
@@ -139,9 +140,9 @@ static Symbol *append_func_type(Parser *parser, Token *ident, Type *type) {
     return symbol;
 }
 
-static Symbol *append_struct(Parser *parser, Token *ident, Type *type) {
+static Symbol *append_type(Parser *parser, SymbolTag tag, Token *ident, Type *type) {
     Symbol **deftypes = &parser->defined_types;
-    Symbol *symbol = symbol_new(ST_STRUCT, ident, type, *deftypes);
+    Symbol *symbol = symbol_new(tag, ident, type, *deftypes);
     *deftypes = symbol;
     return symbol;
 }
@@ -301,6 +302,7 @@ static Token *consume(Parser *parser) {
 }
 
 static Type *struct_decl(Parser *parser);
+static Type *union_decl(Parser *parser);
 static Type *decl_spec(Parser *parser);
 static Type *pointer(Parser *parser, Type *type);
 static Type *array(Parser *parser, Type *type);
@@ -354,7 +356,7 @@ static Type *struct_decl(Parser *parser) {
     Type *struct_typ = struct_new(NULL, NULL, 0, 0); // placeholder
     if (peek(parser)->tag == TT_IDENT) {
         ident = ident_new(consume(parser));
-        append_struct(parser, ident->main_token, struct_typ);
+        append_type(parser, ST_STRUCT, ident->main_token, struct_typ);
     }
     if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
 
@@ -362,7 +364,7 @@ static Type *struct_decl(Parser *parser) {
     list = reverse_symbols(list);
 
     int current_offset = 0;
-    int align_max = -1;
+    int align_max = 0;
     for (Symbol *elem = list; elem != NULL; elem = elem->next) {
         int align = alignof_type(elem->type);
         current_offset = align_n(current_offset, align);
@@ -384,6 +386,30 @@ static Type *struct_decl(Parser *parser) {
     return struct_typ;
 }
 
+static Type *union_decl(Parser *parser) {
+    Node *ident = NULL;
+    if (peek(parser)->tag == TT_IDENT) ident = ident_new(consume(parser));
+    if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
+
+    Symbol *list = struct_decl_list(parser);
+    list = reverse_symbols(list);
+
+    int size_max = 0;
+    int align_max = 0;
+    for (Symbol *elem = list; elem != NULL; elem = elem->next) {
+        elem->offset = 0;
+        int align = alignof_type(elem->type);
+        int size = sizeof_type(elem->type);
+        align_max = align > align_max ? align : align_max;
+        size_max = size > size_max ? size : size_max;
+    }
+    int total_size = align_n(size_max, align_max);
+    if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
+    Type *union_typ = union_new(ident, list, total_size, align_max);
+    if (ident) append_type(parser, ST_UNION, ident->main_token, union_typ);
+    return union_typ;
+}
+
 static Type *decl_spec(Parser *parser) {
     if (peek(parser)->tag == TT_KW_CONST) consume(parser); // ignore
     Token *token = consume(parser);
@@ -400,6 +426,16 @@ static Type *decl_spec(Parser *parser) {
             }
         }
         return struct_decl(parser);
+    } else if (token->tag == TT_KW_UNION) {
+        Token *next = peek(parser);
+        if (next->tag == TT_IDENT) {
+            Symbol *union_sym = find_symbol(ST_UNION, parser->defined_types, next);
+            if (union_sym != NULL) {
+                consume(parser); // struct tag
+                return union_sym->type;
+            }
+        }
+        return union_decl(parser);
     }
     else panic("expected type");
     return NULL;
@@ -834,6 +870,7 @@ static Node *stmt(Parser *parser) {
         case TT_KW_CHAR:
         case TT_KW_INT:
         case TT_KW_STRUCT:
+        case TT_KW_UNION:
             node = local_decl(parser); 
             break;
         case TT_KW_RETURN:

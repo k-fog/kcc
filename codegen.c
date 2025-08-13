@@ -80,6 +80,7 @@ static void gen_load(Type *type) {
             break;
         case TYP_ARRAY: return;
         case TYP_STRUCT: panic("invalid load target: struct");
+        case TYP_UNION: panic("invalid load target: union");
     }
 }
 
@@ -100,6 +101,7 @@ static void gen_store(Type *type) {
             break;
         case TYP_ARRAY: panic("invalid store target: array");
         case TYP_STRUCT: panic("invalid store target: struct");
+        case TYP_UNION: panic("invalid store target: struct");
     }
 }
 
@@ -695,6 +697,7 @@ static void gen_globalvar(Symbol *var) {
             break;
         }
         case TYP_STRUCT:
+        case TYP_UNION:
             printf("  .zero %d\n", sizeof_type(var->type));
             break;
     }

@@ -35,6 +35,10 @@ void dump_type(Type *type) {
             printf("struct ");
             print_token(type->tagged_typ.ident->main_token);
             break;
+        case TYP_UNION:
+            printf("union ");
+            print_token(type->tagged_typ.ident->main_token);
+            break;
     }
 }
 

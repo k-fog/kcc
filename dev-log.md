@@ -420,6 +420,9 @@ main(){ fib(10); } // => 55
   - `jg`命令を使うgcc賢い
   - `default`ラベルが最初に来てもOK
   - codegenをあまり綺麗に実装できなかった
+- unionを追加
+  - ほとんどstructからコピペし、offsetを0にする
+  - TODO: struct内の無名union
 
 ## セルフホストに向けたTODOまとめ
   - [x] continue, break
