@@ -223,7 +223,7 @@ static Node *typed(Node *node, Env *env) {
             Type *lhs_typ = typed(lhs, env)->type;
             if (node->tag == NT_DOT && lhs_typ->tag != TYP_STRUCT && lhs_typ->tag != TYP_UNION)
                 panic("type check error: invalid member access");
-            Symbol *member_sym = find_symbol(ST_MEMBER, lhs_typ->tagged_typ.list, member->main_token);
+            Symbol *member_sym = find_member(lhs_typ->tagged_typ.list, member->main_token, NULL);
             if (!member_sym) panic("type check error: invalid member access");
             node->type = member_sym->type;
             break;
@@ -234,7 +234,7 @@ static Node *typed(Node *node, Env *env) {
             Type *lhs_typ = typed(lhs, env)->type;
             if (node->tag == NT_ARROW && (lhs_typ->tag != TYP_PTR || lhs_typ->base->tag != TYP_STRUCT))
                 panic("type check error: invalid member access");
-            Symbol *member_sym = find_symbol(ST_MEMBER, lhs_typ->base->tagged_typ.list, member->main_token);
+            Symbol *member_sym = find_member(lhs_typ->base->tagged_typ.list, member->main_token, NULL);
             if (!member_sym) panic("type check error: invalid member access");
             node->type = member_sym->type;
             break;

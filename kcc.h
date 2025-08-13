@@ -228,6 +228,7 @@ typedef struct {
 } Program;
 
 Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident);
+Symbol *find_member(Symbol *symlist, Token *ident, int *offset);
 
 Parser *parser_new(Token *tokens);
 Program *parse(Parser *parser);

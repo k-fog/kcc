@@ -135,9 +135,9 @@ static void gen_addr(Node *node, GenContext *ctx) {
         case NT_DOT: {
             Node *lhs = node->member_access.lhs;
             Node *mnode = node->member_access.member;
-            Symbol *member = find_symbol(ST_MEMBER, lhs->type->tagged_typ.list, mnode->main_token);
+            int offset = 0;
+            Symbol *member = find_member(lhs->type->tagged_typ.list, mnode->main_token, &offset);
             if (!member) panic("wrong member");
-            int offset = member->offset;
             gen_addr(lhs, ctx);
             printf("  pop rax\n");
             printf("  add rax, %d\n", offset);
@@ -147,9 +147,9 @@ static void gen_addr(Node *node, GenContext *ctx) {
         case NT_ARROW: {
             Node *lhs = node->member_access.lhs;
             Node *mnode = node->member_access.member;
-            Symbol *member = find_symbol(ST_MEMBER, lhs->type->base->tagged_typ.list, mnode->main_token);
+            int offset = 0;
+            Symbol *member = find_member(lhs->type->base->tagged_typ.list, mnode->main_token, &offset);
             if (!member) panic("wrong member");
-            int offset = member->offset;
             gen_expr(lhs, ctx);
             printf("  pop rax\n");
             printf("  add rax, %d\n", offset);

@@ -423,12 +423,14 @@ main(){ fib(10); } // => 55
 - unionを追加
   - ほとんどstructからコピペし、offsetを0にする
   - TODO: struct内の無名union
+  - 無名共用体を追加。ついでに無名構造体も
+    - テストはChatGPTに手伝って書いてもらった
 
 ## セルフホストに向けたTODOまとめ
   - [x] continue, break
   - [x] do while
   - [x] switch, case
-  - [ ] union
+  - [x] union
   - [ ] enum
   - [ ] typedef
   - [ ] 構造体の初期化子

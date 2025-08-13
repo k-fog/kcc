@@ -331,5 +331,20 @@ int main() {
     u.x = 123;
     return u.y;
 }' 123
+assert 'struct test {int x; union {int y; int z;};} s;
+int main() {
+    s.y = 123;
+    return s.z;
+}' 123
+assert 'int main(){ struct S{ union{ int a; int b; }; int c; } s; s.a=3; s.c=4; return s.a + s.c; }' 7
+assert 'int main(){ struct S{ struct{ int x; }; }; struct S s; s.x=5; return s.x; }' 5
+assert "int main(){ struct A{ union{ struct{ int x; int y; }; int arr[2]; }; }; struct A a; a.x=2; a.y=3; return a.arr[0]+a.arr[1]; }" 5
+assert 'int main(){ struct S{ union{ int x; int y; }; }; struct S s; s.x=42; return s.y; }' 42
+assert 'int main(){ struct S{ union{ int x; }; int y; }; struct S s; s.x=7; s.y=5; return s.x + s.y; }' 12
+assert 'int main(){ struct S{ union{ int x; }; }; struct S s; s.x=3; int *p=&s.x; *p+=4; return s.x; }' 7
+assert 'int main(){ struct T{ struct{ int a; }; struct{ int b; }; }; struct T t; t.a=2; t.b=4; return t.a*t.b; }' 8
+assert 'int main(){ struct U{ union{ int a; int b; }; }; struct U u; u.a=10; u.b+=5; return u.a; }' 15
+assert 'int main(){ struct S{ union{ int x; }; }; struct S arr[2]; arr[0].x=11; arr[1].x=31; return arr[0].x+arr[1].x; }' 42
+
 
 echo "all tests passed"

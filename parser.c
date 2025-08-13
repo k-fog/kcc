@@ -155,6 +155,30 @@ Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident) {
     return NULL;
 }
 
+Symbol *find_member(Symbol *symlist, Token *ident, int *offset) {
+    for (Symbol *sym = symlist; sym != NULL; sym = sym->next) {
+        if (sym->token == NULL) {
+            // anonymous struct / union
+            if (sym->type->tag != TYP_STRUCT && sym->type->tag != TYP_UNION)
+                panic("invalid member");
+
+            if (offset) *offset += sym->offset;
+            Symbol *sub_sym = find_member(sym->type->tagged_typ.list, ident, offset);
+            if (sub_sym) {
+                return sub_sym;
+            }
+            if (offset) *offset -= sym->offset;
+            continue;
+        }
+        if (ident->len != sym->token->len) continue;
+        if (sym->tag == ST_MEMBER && strncmp(sym->token->start, ident->start, sym->token->len) == 0) {
+            if (offset) *offset += sym->offset;
+            return sym;
+        }
+    }
+    return NULL;
+}
+
 Symbol *reverse_symbols(Symbol *list) {
     Symbol *prev = NULL, *current = list;
     while (current) {
@@ -344,8 +368,12 @@ static Symbol *struct_decl_list(Parser *parser) {
     Symbol *list = NULL;
     while (is_type_specifier(peek(parser))) {
         Type *type_spec = decl_spec(parser);
-        Node *declr = declarator(parser, type_spec);
-        list = symbol_new(ST_MEMBER, declr->main_token, declr->type, list);
+        Node *declr = NULL;
+        if (peek(parser)->tag != TT_SEMICOLON) declr = declarator(parser, type_spec);
+        list = symbol_new(ST_MEMBER,
+                          declr ? declr->main_token : NULL,
+                          declr ? declr->type : type_spec,
+                          list);
         if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
     }
     return list;
