@@ -39,6 +39,9 @@ void dump_type(Type *type) {
             printf("union ");
             print_token(type->tagged_typ.ident->main_token);
             break;
+        case TYP_ENUM:
+            printf("enum ");
+            break;
     }
 }
 

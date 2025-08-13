@@ -1,10 +1,11 @@
 #include "kcc.h"
 
-Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types) {
+Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol *defined_types) {
     Env *env = calloc(1, sizeof(Env));
     env->local_vars = local_vars;
     env->global_vars = global_vars;
     env->func_types = func_types;
+    env->defined_types = defined_types;
     return env;
 }
 
@@ -47,9 +48,20 @@ Type *union_new(Node *ident, Symbol *list, int size, int align) {
     return typ;
 }
 
+Type *enum_new(Node *ident, Symbol *list) {
+    Type *typ = calloc(1, sizeof(Type));
+    typ->tag = TYP_ENUM;
+    typ->tagged_typ.ident = ident;
+    typ->tagged_typ.list = list;
+    typ->tagged_typ.size = 4;
+    typ->tagged_typ.align = 4;
+    return typ;
+}
+
 int sizeof_type(Type *type) {
     switch (type->tag) {
         case TYP_CHAR: return 1;
+        case TYP_ENUM:
         case TYP_INT: return 4;
         case TYP_PTR: return 8;
         case TYP_ARRAY: return sizeof_type(type->base) * type->array_size;
@@ -63,6 +75,7 @@ int sizeof_type(Type *type) {
 int alignof_type(Type *type) {
     switch (type->tag) {
         case TYP_CHAR: return 1;
+        case TYP_ENUM:
         case TYP_INT: return 4;
         case TYP_PTR: return 8;
         case TYP_ARRAY: return alignof_type(type->base);
@@ -102,6 +115,8 @@ static bool is_compatible(Type *a, Type *b) {
     }
     else if (a->tag == TYP_STRUCT && b->tag == TYP_STRUCT)
         return identeq(a->tagged_typ.ident, b->tagged_typ.ident);
+    else if (a->tag == TYP_ENUM && is_integer(b))
+        return true; // TODO: type check
     else return is_integer(a) && is_integer(b);
 }
 
@@ -122,6 +137,7 @@ static Node *typed(Node *node, Env *env) {
         case NT_IDENT: {
             Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
             if (!var) var = find_symbol(ST_GVAR, env->global_vars, node->main_token);
+            if (!var) var = find_enum_val(env->defined_types, node->main_token);
             if (!var) panic("undefined variable: %.*s", node->main_token->len, node->main_token->start);
             node->type = var->type;
             break;
@@ -343,7 +359,7 @@ static Node *typed(Node *node, Env *env) {
 
 void type_funcs(Program *prog) {
     NodeList *funcs = prog->funcs;
-    Env *env = env_new(NULL, prog->global_vars, prog->func_types);
+    Env *env = env_new(NULL, prog->global_vars, prog->func_types, prog->defined_types);
     for (int i = 0; i < funcs->len; i++) {
         Node *fnode = funcs->nodes[i];
         env->local_vars = fnode->func.locals; // set local variables

@@ -21,6 +21,7 @@ struct {
     {"case",     TT_KW_CASE},
     {"default",  TT_KW_DEFAULT},
     {"union",    TT_KW_UNION},
+    {"enum",     TT_KW_ENUM},
     {NULL, -1},
 };
 

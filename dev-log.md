@@ -300,7 +300,7 @@ main(){ fib(10); } // => 55
 - 型チェックをする`is_compatible`関数を修正
 
 ## 2025-08-11
-- 文字リテラルを追加
+- 文字定数を追加
 - `const`を読むが、無視する
 - 引数が無い関数に`void`を指定できるように
 - セキュキャン2025 1日目の記録
@@ -425,17 +425,25 @@ main(){ fib(10); } // => 55
   - TODO: struct内の無名union
   - 無名共用体を追加。ついでに無名構造体も
     - テストはChatGPTに手伝って書いてもらった
+- enumを追加
+  - 適当すぎるが、一応動いた
+  - `enum P { Q, R, S, } var;`のような記法にのみ対応
+  - `codegen.c`があまりよくない
 
 ## セルフホストに向けたTODOまとめ
-  - [x] continue, break
-  - [x] do while
-  - [x] switch, case
-  - [x] union
-  - [ ] enum
-  - [ ] typedef
-  - [ ] 構造体の初期化子
-  - [ ] #define
-  - [ ] #include
-  - [ ] エラー出力
-  - [ ] 文字列中のエスケープ処理
-  - [ ] 関数型のパース
+- [x] continue, break
+- [x] do while
+- [x] switch, case
+- [x] union
+- [x] enum
+- [ ] typedef
+- [ ] #define
+- [ ] #include
+- [ ] 構造体の初期化子
+
+## クオリティ向上のためのTODOまとめ
+- [ ] 型の確認
+- [ ] エラー出力
+- [ ] 文字列中のエスケープ処理
+- [ ] 関数型のパース
+- [ ] enumの改良

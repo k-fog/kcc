@@ -73,6 +73,7 @@ static void gen_load(Type *type) {
             printf("  movsx rax, byte ptr [rax]\n");
             break;
         case TYP_INT:
+        case TYP_ENUM:
             printf("  movsxd rax, dword ptr [rax]\n");
             break;
         case TYP_PTR:
@@ -94,6 +95,7 @@ static void gen_store(Type *type) {
             printf("  mov [rdi], al\n");
             break;
         case TYP_INT:
+        case TYP_ENUM:
             printf("  mov [rdi], eax\n");
             break;
         case TYP_PTR:
@@ -451,7 +453,14 @@ static void gen_expr(Node *node, GenContext *ctx) {
         case NT_INT:
             printf("  push %d\n", node->integer);
             return;
-        case NT_IDENT:
+        case NT_IDENT: {
+            Symbol *mem = find_enum_val(ctx->defined_types, node->main_token);
+            if (mem) {
+                printf("  push %d\n", mem->value);
+                return;
+            }
+            // fallthrough
+        }
         case NT_DOT:
         case NT_ARROW:
             gen_addr(node, ctx);
@@ -656,6 +665,7 @@ static void gen_stmt(Node *node, GenContext *ctx) {
 static char *type2asm(Type *type) {
     switch (type->tag) {
         case TYP_CHAR:  return ".byte";
+        case TYP_ENUM:
         case TYP_INT:   return ".long";
         case TYP_PTR:   return ".quad";
         case TYP_ARRAY: return type2asm(type->base);
@@ -670,6 +680,7 @@ static void gen_globalvar(Symbol *var) {
     switch (var->type->tag) {
         case TYP_VOID: panic("codegen: error at gen_globalvar");
         case TYP_CHAR:
+        case TYP_ENUM:
         case TYP_INT: {
             if (var->init && var->init->tag != NT_INT) panic("expression is not supported as initializers");
             int init_val = var->init ? var->init->integer : 0;

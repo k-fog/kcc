@@ -65,7 +65,8 @@ static bool is_type_specifier(Token *token) {
         || token->tag == TT_KW_INT
         || token->tag == TT_KW_CHAR
         || token->tag == TT_KW_STRUCT
-        || token->tag == TT_KW_UNION;
+        || token->tag == TT_KW_UNION
+        || token->tag == TT_KW_ENUM;
 }
 
 // NodeList
@@ -175,6 +176,15 @@ Symbol *find_member(Symbol *symlist, Token *ident, int *offset) {
             if (offset) *offset += sym->offset;
             return sym;
         }
+    }
+    return NULL;
+}
+
+Symbol *find_enum_val(Symbol *defined_types, Token *ident) {
+    for (Symbol *sym = defined_types; sym != NULL; sym = sym->next) {
+        if (sym->tag != ST_ENUM) continue;
+        Symbol *mem = find_symbol(ST_MEMBER, sym->type->tagged_typ.list, ident);
+        if (mem) return mem;
     }
     return NULL;
 }
@@ -438,6 +448,26 @@ static Type *union_decl(Parser *parser) {
     return union_typ;
 }
 
+static Type *enum_decl(Parser *parser) {
+    Node *ident = NULL;
+    Type *enum_typ = enum_new(ident, NULL);
+    if (peek(parser)->tag == TT_IDENT) ident = ident_new(consume(parser));
+    Symbol *list = NULL;
+    if (consume(parser)->tag != TT_BRACE_L) panic("expected \'{\'");
+    int index = 0;
+    while (peek(parser)->tag == TT_IDENT) {
+        Node *mnode = ident_new(consume(parser));
+        list = symbol_new(ST_MEMBER, mnode->main_token, type_int, list);
+        list->value = index++;
+        if (peek(parser)->tag == TT_COMMA) consume(parser);
+    }
+    list = reverse_symbols(list);
+    enum_typ->tagged_typ.list = list;
+    if (consume(parser)->tag != TT_BRACE_R) panic("expected \'}\'");
+    append_type(parser, ST_ENUM, ident ? ident->main_token : NULL, enum_typ);
+    return enum_typ;
+}
+
 static Type *decl_spec(Parser *parser) {
     if (peek(parser)->tag == TT_KW_CONST) consume(parser); // ignore
     Token *token = consume(parser);
@@ -459,11 +489,21 @@ static Type *decl_spec(Parser *parser) {
         if (next->tag == TT_IDENT) {
             Symbol *union_sym = find_symbol(ST_UNION, parser->defined_types, next);
             if (union_sym != NULL) {
-                consume(parser); // struct tag
+                consume(parser); // union tag
                 return union_sym->type;
             }
         }
         return union_decl(parser);
+    } else if (token->tag == TT_KW_ENUM) {
+        Token *next = peek(parser);
+        if (next->tag == TT_IDENT) {
+            Symbol *enum_sym = find_symbol(ST_ENUM, parser->defined_types, next);
+            if (enum_sym != NULL) {
+                consume(parser); // enum tag
+                return enum_sym->type;
+            }
+        }
+        return enum_decl(parser);
     }
     else panic("expected type");
     return NULL;
@@ -899,6 +939,7 @@ static Node *stmt(Parser *parser) {
         case TT_KW_INT:
         case TT_KW_STRUCT:
         case TT_KW_UNION:
+        case TT_KW_ENUM:
             node = local_decl(parser); 
             break;
         case TT_KW_RETURN:

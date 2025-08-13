@@ -67,6 +67,7 @@ typedef enum {
     TT_KW_CASE,             // case
     TT_KW_DEFAULT,          // default
     TT_KW_UNION,            // union
+    TT_KW_ENUM,             // enum
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -201,7 +202,7 @@ TokenList *tokenlist_new(int capacity);
 void tokenlist_append(TokenList *tlist, Token *token);
 
 typedef enum {
-    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_UNION, ST_MEMBER,
+    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_UNION, ST_ENUM, ST_MEMBER,
 } SymbolTag;
 
 struct Symbol {
@@ -212,6 +213,7 @@ struct Symbol {
 
     union {
         int offset; // for local variable, struct
+        int value;  // for enum
         Node *init; // for global variable
     };
 };
@@ -229,13 +231,14 @@ typedef struct {
 
 Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident);
 Symbol *find_member(Symbol *symlist, Token *ident, int *offset);
+Symbol *find_enum_val(Symbol *defined_types, Token *ident);
 
 Parser *parser_new(Token *tokens);
 Program *parse(Parser *parser);
 
 // type
 struct Type {
-    enum { TYP_VOID, TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY, TYP_STRUCT, TYP_UNION } tag;
+    enum { TYP_VOID, TYP_CHAR, TYP_INT, TYP_PTR, TYP_ARRAY, TYP_STRUCT, TYP_UNION, TYP_ENUM } tag;
     int array_size; // array
     union {
         Type *base; // pointer to
@@ -256,7 +259,7 @@ struct Env {
 
 bool is_integer(Type *type);
 bool is_ptr_or_arr(Type *type);
-Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types);
+Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol *defined_types);
 
 int sizeof_type(Type *type);
 int alignof_type(Type *type);
@@ -265,6 +268,7 @@ Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
 Type *struct_new(Node *ident, Symbol *list, int size, int align);
 Type *union_new(Node *ident, Symbol *list, int size, int align);
+Type *enum_new(Node *ident, Symbol *list);
 void type_funcs(Program *prog);
 
 // codegen

@@ -346,5 +346,12 @@ assert 'int main(){ struct T{ struct{ int a; }; struct{ int b; }; }; struct T t;
 assert 'int main(){ struct U{ union{ int a; int b; }; }; struct U u; u.a=10; u.b+=5; return u.a; }' 15
 assert 'int main(){ struct S{ union{ int x; }; }; struct S arr[2]; arr[0].x=11; arr[1].x=31; return arr[0].x+arr[1].x; }' 42
 
+assert 'int main(){ enum E{A,B,C}; return A+B+C; }' 3
+assert 'int main(){ enum E{A,B}; enum E e=B; return e==B; }' 1
+assert 'int main(){ enum E{X,}; return X; }' 0
+assert 'int main(){ enum {A,B}; int n=B; switch(n){case A: return 1; case B: return 7;} return 0; }' 7
+assert 'int main(){ enum {C0,C1}; return C1; }' 1
+assert 'int main(){ enum T{Q}; struct P{ enum T t; }; struct P p; p.t=Q; return p.t; }' 0
+
 
 echo "all tests passed"
