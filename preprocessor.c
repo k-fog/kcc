@@ -61,7 +61,7 @@ Token *preprocess(Preprocessor *pp) {
             Preprocessor *pp2 = preprocessor_new(src);
             Token *tokens2 = preprocess(pp2);
             prev->next = tokens2;
-            while (tokens2->next) tokens2 = tokens2->next;
+            while (tokens2->next && tokens2->next->tag != TT_EOF) tokens2 = tokens2->next;
             tokens2->next = token_file->next;
             t = token_file;
         } else if (token_directive->tag == TT_PP_IFDEF) {
