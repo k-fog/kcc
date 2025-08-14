@@ -548,7 +548,10 @@ static Type *decl_spec(Parser *parser) {
         }
     } else {
         Type *typ = check_defined_type(parser, ST_TYPEDEF, token);
-        if (!typ) panic("expected type");
+        if (!typ) {
+            Token *token = peek(parser);
+            panic("expected type but got %.*s", token->len, token->start);
+        }
         return typ;
     }
     return NULL;

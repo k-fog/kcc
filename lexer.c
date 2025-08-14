@@ -25,6 +25,9 @@ struct {
     {"typedef",  TT_KW_TYPEDEF},
     {"define",   TT_PP_DEFINE},
     {"include",  TT_PP_INCLUDE},
+    {"ifdef",    TT_PP_IFDEF},
+    {"ifndef",   TT_PP_IFNDEF},
+    {"endif",    TT_PP_ENDIF},
     {NULL, -1},
 };
 
@@ -237,7 +240,7 @@ Token *tokenize(Lexer *lexer) {
                 if (isdigit(*start)) {
                     while (isdigit(peek(lexer))) end = consume(lexer);
                     token->next = token_new(TT_INT, start, end - start + 1);
-                } else if (isalpha(*start)) {
+                } else if (isalpha(*start) || peek(lexer) == '_') {
                     while (isalnum(peek(lexer)) || peek(lexer) == '_') end = consume(lexer);
                     int len = end - start + 1;
                     TokenTag tag = lookup_ident(start, len); // TT_IDENT or TT_<keyword>

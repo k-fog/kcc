@@ -1,3 +1,4 @@
+#ifdef __STDC__
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -6,9 +7,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+void panic(char *fmt, ...);
+#endif
+
+#ifndef __STDC__
+#define bool int
+#define true 1
+#define false 0
+void panic();
+#endif
 
 #define COMPILER_NAME "KCC"
-void panic(char *fmt, ...);
 
 // lexer
 typedef struct {
@@ -73,6 +82,9 @@ typedef enum {
     TT_KW_TYPEDEF,          // typedef
     TT_PP_DEFINE,           // define
     TT_PP_INCLUDE,          // include
+    TT_PP_IFDEF,            // ifdef
+    TT_PP_IFNDEF,           // ifndef
+    TT_PP_ENDIF,            // endif
     TT_EOF,
     META_TT_NUM,
 } TokenTag;

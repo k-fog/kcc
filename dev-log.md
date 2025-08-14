@@ -439,6 +439,7 @@ main(){ fib(10); } // => 55
 ## 2025-08-14
 - 単純な置換のみできる`#define`を追加
 - `#include`を追加できたはず
+- セルフホストのために`#ifdef __STDC__`, `#ifndef __STDC__`を追加
 
 ## セルフホストに向けたTODOまとめ
 - [x] continue, break

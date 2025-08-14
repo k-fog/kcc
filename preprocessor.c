@@ -26,6 +26,14 @@ static char *strndupl(const char *str, int len) {
     return buffer;
 }
 
+static Token *ident_stdc() {
+    Token *token = calloc(1, sizeof(Token));
+    token->tag = TT_IDENT;
+    token->start = "__STDC__";
+    token->len = 8;
+    return token;
+}
+
 Token *preprocess(Preprocessor *pp) {
     Lexer *lexer = lexer_new(pp->input);
     Token *tokens = tokenize(lexer);
@@ -41,12 +49,13 @@ Token *preprocess(Preprocessor *pp) {
         if (token_directive->tag == TT_PP_DEFINE) {
             Token *token_from = token_directive? token_directive->next : NULL;
             Token *token_to = token_from ? token_from->next : NULL;
-            if (!token_from || !token_to) panic("preprocess error");
+            if (!token_from || !token_to) panic("preprocess error: #define");
             append_define(pp, token_from, token_to);
             prev->next = token_to->next;
+            t = token_to;
         } else if (token_directive->tag == TT_PP_INCLUDE) {
             Token *token_file = token_directive->next;
-            if (!token_file || token_file->tag != TT_STRING) panic("preprocess error");
+            if (!token_file || token_file->tag != TT_STRING) panic("preprocess error: #include");
             char *path = strndupl(token_file->start + 1, token_file->len - 2);
             char *src = read_file(path);
             Preprocessor *pp2 = preprocessor_new(src);
@@ -54,6 +63,22 @@ Token *preprocess(Preprocessor *pp) {
             prev->next = tokens2;
             while (tokens2->next) tokens2 = tokens2->next;
             tokens2->next = token_file->next;
+            t = token_file;
+        } else if (token_directive->tag == TT_PP_IFDEF) {
+            Token *pp_token = token_directive->next;
+            if (!pp_token || !tokeneq(pp_token, ident_stdc()))
+                panic("#ifdef is only implemented for __STDC__");
+            while (t->tag != TT_PP_ENDIF) t = t->next; // skip to #endif
+            prev->next = t->next;
+        } else if (token_directive->tag == TT_PP_IFNDEF) {
+            Token *pp_token = token_directive->next;
+            if (!pp_token || !tokeneq(pp_token, ident_stdc()))
+                panic("#ifndef is only implemented for __STDC__");
+            prev->next = pp_token->next;
+            t = pp_token;
+        } else if (token_directive->tag == TT_PP_ENDIF) {
+            prev->next = token_directive->next; // skip
+            t = token_directive;
         } else panic("preprocess error: expected define or include after '#'");
     }
     for (Token *t = head.next; t != NULL; t = t->next) {
