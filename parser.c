@@ -474,7 +474,7 @@ static Type *enum_decl(Parser *parser, Token *ident_token) {
     int index = 0;
     while (peek(parser)->tag == TT_IDENT) {
         Node *mnode = ident_new(consume(parser));
-        list = symbol_new(ST_MEMBER, mnode->main_token, type_int, list);
+        list = symbol_new(ST_MEMBER, mnode->main_token, type_int(), list);
         list->value = index++;
         if (peek(parser)->tag == TT_COMMA) consume(parser);
     }
@@ -509,9 +509,9 @@ static Type *decl_spec(Parser *parser) {
     if (peek(parser)->tag == TT_KW_TYPEDEF && consume(parser))
         return typedef_decl(parser);
     Token *token = consume(parser);
-    if (token->tag == TT_KW_VOID) return type_void;
-    else if (token->tag == TT_KW_CHAR) return type_char;
-    else if (token->tag == TT_KW_INT) return type_int;
+    if (token->tag == TT_KW_VOID) return type_void();
+    else if (token->tag == TT_KW_CHAR) return type_char();
+    else if (token->tag == TT_KW_INT) return type_int();
     else if (token->tag == TT_KW_STRUCT) {
         if (peek(parser)->tag == TT_BRACE_L) {
             return struct_decl(parser, NULL, NULL);
@@ -560,7 +560,7 @@ static Type *decl_spec(Parser *parser) {
     } else {
         Type *typ = check_defined_type(parser, ST_TYPEDEF, token);
         if (!typ) {
-            Token *token = peek(parser);
+            token = peek(parser);
             panic("expected type but got %.*s", token->len, token->start);
         }
         return typ;

@@ -23,7 +23,8 @@ assert() {
     input="$1"
     expected="$2"
 
-    echo "$input" | ./kcc - > tmp.s
+    echo "$input" > tmp.c
+    ./kcc2 tmp.c > tmp.s
     cc -o tmp tmp.s $TEST_FNCALL
     ./tmp
     actual="$?"

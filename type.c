@@ -9,11 +9,23 @@ Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol
     return env;
 }
 
-#ifdef __STDC__
-Type *type_void;
-Type *type_char;
-Type *type_int;
-#endif
+Type *type_void() {
+    Type *typ = calloc(1, sizeof(Type));
+    typ->tag = TYP_VOID;
+    return typ;
+}
+
+Type *type_char() {
+    Type *typ = calloc(1, sizeof(Type));
+    typ->tag = TYP_CHAR;
+    return typ;
+}
+
+Type *type_int() {
+    Type *typ = calloc(1, sizeof(Type));
+    typ->tag = TYP_INT;
+    return typ;
+}
 
 Type *pointer_to(Type *base) {
     Type *ptr = calloc(1, sizeof(Type));
@@ -100,7 +112,7 @@ bool is_ptr_or_arr(Type *type) {
 }
 
 static Type *promote_if_integer(Type *type) {
-    if (is_integer(type)) return type_int;
+    if (is_integer(type)) return type_int();
     else return type;
 }
 
@@ -134,7 +146,7 @@ static Node *typed(Node *node, Env *env) {
     if (!node || node->type != NULL) return node;
     switch (node->tag) {
         case NT_INT:
-            node->type = type_int;
+            node->type = type_int();
             break;
         case NT_IDENT: {
             Symbol *var = find_symbol(ST_LVAR, env->local_vars, node->main_token);
@@ -145,12 +157,12 @@ static Node *typed(Node *node, Env *env) {
             break;
         }
         case NT_STRING:
-            node->type = array_of(type_char, node->main_token->len - 2 + 1); // -2: '"' * 2, +1: '\0'
+            node->type = array_of(type_char(), node->main_token->len - 2 + 1); // -2: '"' * 2, +1: '\0'
             break;
         case NT_ADD: {
             Type *lhs_typ = promote_if_integer(typed(node->expr.lhs, env)->type);
             Type *rhs_typ = promote_if_integer(typed(node->expr.rhs, env)->type);
-            if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
+            if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int();
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
             else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_PTR) node->type = rhs_typ;
             else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
@@ -161,11 +173,11 @@ static Node *typed(Node *node, Env *env) {
         case NT_SUB: {
             Type *lhs_typ = promote_if_integer(typed(node->expr.lhs, env)->type);
             Type *rhs_typ = promote_if_integer(typed(node->expr.rhs, env)->type);
-            if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
+            if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int();
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
             else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
-            else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_PTR) node->type = type_int;
-            else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_PTR) node->type = type_int;
+            else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_PTR) node->type = type_int();
+            else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_PTR) node->type = type_int();
             else panic("undefined: int - ptr");
             break;
         }
@@ -176,7 +188,7 @@ static Node *typed(Node *node, Env *env) {
             // TOOD: type check
             typed(node->expr.lhs, env);
             typed(node->expr.rhs, env);
-            node->type = type_int;
+            node->type = type_int();
             break;
         }
         case NT_MUL:
@@ -187,19 +199,19 @@ static Node *typed(Node *node, Env *env) {
             // TODO: type check
             typed(node->expr.lhs, env);
             typed(node->expr.rhs, env);
-            node->type = type_int;
+            node->type = type_int();
             break;
         case NT_COMMA: {
             typed(node->expr.lhs, env);
             typed(node->expr.rhs, env); // TODO: type check
-            node->type = type_int;
+            node->type = type_int();
             break;
         }
         case NT_COND: {
             typed(node->cond_expr.cond, env); // TODO: type check
             typed(node->cond_expr.then, env);
             typed(node->cond_expr.els, env);
-            node->type = type_int;
+            node->type = type_int();
             break;
         }
         case NT_NEG:
@@ -261,7 +273,7 @@ static Node *typed(Node *node, Env *env) {
             for (int i = 0; i < node->fncall.args->len; i++)
                 typed(node->fncall.args->nodes[i], env);
             Symbol *func = find_symbol(ST_FUNC, env->func_types, node->main_token);
-            if (!func) node->type = type_int;
+            if (!func) node->type = type_int();
             else node->type = func->type;
             break;
         }
@@ -342,7 +354,7 @@ static Node *typed(Node *node, Env *env) {
             break;
         case NT_SIZEOF:
             typed(node->unary_expr, env);
-            node->type = type_int;
+            node->type = type_int();
             break;
         case NT_TYPENAME:
             panic("typed: unreachable");

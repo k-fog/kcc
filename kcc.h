@@ -14,16 +14,10 @@ void panic(char *fmt, ...);
 #define bool char
 #define true 1
 #define false 0
-struct _IO_FILE {};
-typedef struct _IO_FILE FILE;
-extern FILE *stdin;
-extern FILE *stdout;
-extern FILE *stderr;
-#define EOF '\0'
+typedef struct _IO_FILE {} FILE;
 #define NULL 0
 void panic();
 void *calloc();
-int exit();
 #endif
 
 #define COMPILER_NAME "KCC"
@@ -284,9 +278,9 @@ struct Type {
     };
 };
 
-extern Type *type_void;
-extern Type *type_int;
-extern Type *type_char;
+Type *type_void();
+Type *type_int();
+Type *type_char();
 
 struct Env {
     Symbol *local_vars;

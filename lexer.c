@@ -220,8 +220,8 @@ Token *tokenize(Lexer *lexer) {
                     if (*end == '\\' && *(end + 1) == '\"') consume_tok(lexer);
                 }
                 consume_tok(lexer); // end "
-                int len = end - start + 2; // string literal's token contains double quotes
-                token->next = token_new(TT_STRING, start, len);
+                int len_1 = end - start + 2; // string literal's token contains double quotes
+                token->next = token_new(TT_STRING, start, len_1);
                 break;
             }
             case '\'': {
@@ -243,8 +243,8 @@ Token *tokenize(Lexer *lexer) {
                     token->next = token_new(TT_INT, start, end - start + 1);
                 } else if (isalpha(*start) || *start == '_') {
                     while (isalnum(peek_tok(lexer)) || peek_tok(lexer) == '_') end = consume_tok(lexer);
-                    int len = end - start + 1;
-                    TokenTag tag = lookup_ident(start, len); // TT_IDENT or TT_<keyword>
+                    int len_2 = end - start + 1;
+                    TokenTag tag = lookup_ident(start, len_2); // TT_IDENT or TT_<keyword>
                     token->next = token_new(tag, start, end - start + 1);
                 } else {
                     panic("tokenize error: %c", *start);

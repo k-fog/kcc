@@ -17,11 +17,9 @@ void panic() {
 #endif
 
 char *read_file(char *path) {
-    FILE *fp = stdin;
-    if (strcmp(path, "-") != 0) {
-        fp = fopen(path, "r");
-        if (!fp) panic("cannot open file");
-    }
+    FILE *fp;
+    fp = fopen(path, "r");
+    if (!fp) panic("cannot open file");
 
     int capacity = 2048;
     int len = 0;
@@ -29,7 +27,7 @@ char *read_file(char *path) {
     if (!buf) panic("cannot allocate memory");
 
     int c;
-    while ((c = fgetc(fp)) != EOF) {
+    while ((c = fgetc(fp)) != -1) {
         if (capacity <= len + 2) { // +2: \n\0
             capacity *= 2;
             char *tmp = realloc(buf, capacity);
@@ -42,22 +40,15 @@ char *read_file(char *path) {
     buf[len++] = '\n';
     buf[len++] = '\0';
 
-    if (fp != stdin) fclose(fp);
+    fclose(fp);
     return buf;
 }
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        fprintf(stderr, "invalid arg\n");
+        printf("invalid arg\n");
         return 1;
     }
-
-    type_void = calloc(1, sizeof(Type));
-    type_void->tag = TYP_VOID;
-    type_int = calloc(1, sizeof(Type));
-    type_int->tag = TYP_INT;
-    type_char= calloc(1, sizeof(Type));
-    type_char->tag = TYP_CHAR;
 
     char *src = read_file(argv[1]);
     Preprocessor *pp = preprocessor_new(src, NULL);
