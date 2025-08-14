@@ -24,6 +24,7 @@ struct {
     {"enum",     TT_KW_ENUM},
     {"typedef",  TT_KW_TYPEDEF},
     {"define",   TT_PP_DEFINE},
+    {"include",  TT_PP_INCLUDE},
     {NULL, -1},
 };
 

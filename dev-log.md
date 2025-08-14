@@ -438,6 +438,7 @@ main(){ fib(10); } // => 55
 
 ## 2025-08-14
 - 単純な置換のみできる`#define`を追加
+- `#include`を追加できたはず
 
 ## セルフホストに向けたTODOまとめ
 - [x] continue, break
@@ -447,7 +448,7 @@ main(){ fib(10); } // => 55
 - [x] enum
 - [x] typedef
 - [x] #define
-- [ ] #include
+- [x] #include
 - [ ] 構造体の初期化子
 
 ## クオリティ向上のためのTODOまとめ

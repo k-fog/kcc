@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define COMPILER_NAME "KCC"
 void panic(char *fmt, ...);
 
 // lexer
@@ -71,6 +72,7 @@ typedef enum {
     TT_KW_ENUM,             // enum
     TT_KW_TYPEDEF,          // typedef
     TT_PP_DEFINE,           // define
+    TT_PP_INCLUDE,          // include
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -299,3 +301,6 @@ typedef struct {
 } GenContext;
 void print_token(Token *token);
 void gen(Program *prog);
+
+// main
+char *read_file(char *path);

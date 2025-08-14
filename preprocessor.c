@@ -19,6 +19,13 @@ static Symbol *append_define(Preprocessor *pp, Token *token, Token *pp_token) {
     return symbol;
 }
 
+static char *strndupl(const char *str, int len) {
+    char *buffer = malloc(len + 1);
+    memcpy(buffer, str, len);
+    buffer[len] = '\0';
+    return buffer;
+}
+
 Token *preprocess(Preprocessor *pp) {
     Lexer *lexer = lexer_new(pp->input);
     Token *tokens = tokenize(lexer);
@@ -30,12 +37,24 @@ Token *preprocess(Preprocessor *pp) {
             prev = t;
             continue;
         }
-        Token *token_define = t->next;
-        Token *token_from = token_define ? token_define->next : NULL;
-        Token *token_to = token_from ? token_from->next : NULL;
-        if (!token_define || !token_from || !token_to) panic("preprocess error");
-        append_define(pp, token_from, token_to);
-        prev->next = token_to->next;
+        Token *token_directive = t->next;
+        if (token_directive->tag == TT_PP_DEFINE) {
+            Token *token_from = token_directive? token_directive->next : NULL;
+            Token *token_to = token_from ? token_from->next : NULL;
+            if (!token_from || !token_to) panic("preprocess error");
+            append_define(pp, token_from, token_to);
+            prev->next = token_to->next;
+        } else if (token_directive->tag == TT_PP_INCLUDE) {
+            Token *token_file = token_directive->next;
+            if (!token_file || token_file->tag != TT_STRING) panic("preprocess error");
+            char *path = strndupl(token_file->start + 1, token_file->len - 2);
+            char *src = read_file(path);
+            Preprocessor *pp2 = preprocessor_new(src);
+            Token *tokens2 = preprocess(pp2);
+            prev->next = tokens2;
+            while (tokens2->next) tokens2 = tokens2->next;
+            tokens2->next = token_file->next;
+        } else panic("preprocess error: expected define or include after '#'");
     }
     for (Token *t = head.next; t != NULL; t = t->next) {
         for (Symbol *sym = pp->defines; sym != NULL; sym = sym->next) {

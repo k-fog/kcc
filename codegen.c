@@ -755,7 +755,7 @@ static void gen_func(Node *node, GenContext *ctx) {
 }
 
 void gen(Program *prog) {
-    printf("# COMPILED BY KCC\n");
+    printf("# COMPILED BY %s\n", COMPILER_NAME);
     printf(".intel_syntax noprefix\n\n");
 
     // generate strings
