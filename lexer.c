@@ -23,6 +23,7 @@ struct {
     {"union",    TT_KW_UNION},
     {"enum",     TT_KW_ENUM},
     {"typedef",  TT_KW_TYPEDEF},
+    {"define",   TT_PP_DEFINE},
     {NULL, -1},
 };
 
@@ -74,6 +75,9 @@ Token *tokenize(Lexer *lexer) {
         switch (*start) {
             case '\0':
                 token->next = token_new(TT_EOF, start, 1);
+                break;
+            case '#':
+                token->next = token_new(TT_HASH, start, 1);
                 break;
             case '+':
                 if (peek(lexer) == '+') {

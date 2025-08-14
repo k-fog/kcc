@@ -102,7 +102,7 @@ static Type *promote_if_integer(Type *type) {
     else return type;
 }
 
-static bool identeq(Token *a, Token *b) {
+bool tokeneq(Token *a, Token *b) {
     if (!a || !b) return false;
     return strncmp(a->start, b->start, a->len) == 0;
 }
@@ -113,7 +113,7 @@ static bool is_compatible(Type *a, Type *b) {
         return is_compatible(a->base, b->base);
     }
     else if (a->tag == TYP_STRUCT && b->tag == TYP_STRUCT)
-        return identeq(a->tagged_typ.ident, b->tagged_typ.ident);
+        return tokeneq(a->tagged_typ.ident, b->tagged_typ.ident);
     else if (a->tag == TYP_ENUM && is_integer(b))
         return true; // TODO: type check
     else return is_integer(a) && is_integer(b);

@@ -264,8 +264,8 @@ int main(int argc, char *argv[]) {
     return 0;
 #else
     char *src = read_file(argv[1]);
-    Lexer *lexer = lexer_new(src);
-    Token *tokens = tokenize(lexer);
+    Preprocessor *pp = preprocessor_new(src);
+    Token *tokens = preprocess(pp);
     Parser *parser = parser_new(tokens);
     Program *prog = parse(parser);
     type_funcs(prog);

@@ -50,6 +50,7 @@ typedef enum {
     TT_BRACKET_R,           // ]
     TT_COLON,               // :
     TT_SEMICOLON,           // ;
+    TT_HASH,                // #
     TT_KW_RETURN,           // return
     TT_KW_IF,               // if
     TT_KW_ELSE,             // else
@@ -69,6 +70,7 @@ typedef enum {
     TT_KW_UNION,            // union
     TT_KW_ENUM,             // enum
     TT_KW_TYPEDEF,          // typedef
+    TT_PP_DEFINE,           // define
     TT_EOF,
     META_TT_NUM,
 } TokenTag;
@@ -84,11 +86,21 @@ struct Token {
 Lexer *lexer_new(const char *input);
 Token *tokenize(Lexer *lexer);
 
+// preprocessor
+typedef struct Symbol Symbol;
+typedef struct {
+    const char *input;
+    int pos;
+    Symbol *defines;
+} Preprocessor;
+
+Preprocessor *preprocessor_new(const char *input);
+Token *preprocess(Preprocessor *pp);
+
 // parser
 typedef struct Node Node;
 typedef struct NodeList NodeList;
 typedef struct TokenList TokenList;
-typedef struct Symbol Symbol;
 typedef struct Type Type;
 typedef struct Env Env;
 
@@ -203,7 +215,7 @@ TokenList *tokenlist_new(int capacity);
 void tokenlist_append(TokenList *tlist, Token *token);
 
 typedef enum {
-    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_UNION, ST_ENUM, ST_MEMBER, ST_TYPEDEF
+    ST_LVAR, ST_GVAR, ST_FUNC, ST_STRUCT, ST_UNION, ST_ENUM, ST_MEMBER, ST_TYPEDEF, ST_DEFINE,
 } SymbolTag;
 
 struct Symbol {
@@ -216,6 +228,7 @@ struct Symbol {
         int offset; // for local variable, struct
         int value;  // for enum
         Node *init; // for global variable
+        Token *pp_token; // for #define macro
     };
 };
 
@@ -260,6 +273,7 @@ struct Env {
 
 bool is_integer(Type *type);
 bool is_ptr_or_arr(Type *type);
+bool tokeneq(Token *a, Token *b);
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol *defined_types);
 
 int sizeof_type(Type *type);

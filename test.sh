@@ -250,21 +250,8 @@ int main() {
     return tests[1][1] + 5;
 }' 9
 assert '
-int main() {
-    char a=1;
-    char b=2;
-    char c=3;
-    char d=4;
-    int x = 65535;
-    x = a;
-    return x + 5;
-}' 6
-assert '
-int main() {
-    int x = 65535; // 0x00 00 FF FF
-    char *c = &x;
-    return *c;
-}' 255
+int main() {char a=1; char b=2; char c=3; char d=4; int x = 65535; x = a; return x + 5; }' 6
+assert 'int main() { int x = 65535; /* 0x00 00 FF FF */ char *c = &x; return *c; }' 255
 assert 'int main(){ int i = 0; while(1) { if (++i == 10) break; } return 3;}' 3
 assert 'int main(){ int a = 0; for (int i = 0; i <= 8; i++) { if (i % 2 != 0) continue; a += i; } return a; }' 20
 assert 'int main(){int s=0; for(int i=1;i<=10;i++){ if(i%2==0) continue; s+=i;} return s;}' 25
@@ -278,64 +265,15 @@ assert 'int main() {int a = 0; do { a++; } while (a < 10); return a; }' 10
 assert 'int main() {int a = 0, sum = 0; do { a++; if (a % 2 == 0) continue; sum+=a; } while (a < 10); return sum; }' 25
 assert 'int main() {int a = 0; do { a++; if (a == 10) break; } while (1); return a; }' 10
 
-assert 'int main() {
-    int a = 2;
-    switch (a) {
-        case 0: return 1;
-        case 1: return 2;
-        case 2: return 3;
-        default: return 4;
-    }
-}' 3
-assert 'int main() {
-    int a = 1;
-    switch (a) {
-        case 0: break;
-        case 1: a += 3; // fallthrough
-        case 2: a += 4; break;
-        default: return 3;
-    }
-}' 8
-assert 'int main() {
-    int a = 0;
-    switch (a) {
-        default: return 4;
-        case 0: return 1;
-        case 1: return 2;
-        case 2: return 3;
-    }
-}' 1
+assert 'int main() { int a = 2; switch (a) { case 0: return 1; case 1: return 2; case 2: return 3; default: return 4; }}' 3
+assert 'int main() { int a = 1; switch (a) { case 0: break; case 1: a += 3; /* fallthrough */ case 2: a += 4; break; default: return 3; }}' 8
+assert 'int main() { int a = 0; switch (a) { default: return 4; case 0: return 1; case 1: return 2; case 2: return 3; } }' 1
 
-assert 'int main() {
-    union {
-        int x;
-        char y;
-    } u;
-    u.x = 258;
-    return u.y;
-}' 2
-assert 'union test {int x; int y;};
-int main() {
-    union test u;
-    u.x = 123;
-    return u.y;
-}' 123
-assert 'union test {int x; char y;};
-int main() {
-    union test u;
-    u.x = 258;
-    return u.y;
-}' 2
-assert 'union test {int x; int y;} u;
-int main() {
-    u.x = 123;
-    return u.y;
-}' 123
-assert 'struct test {int x; union {int y; int z;};} s;
-int main() {
-    s.y = 123;
-    return s.z;
-}' 123
+assert 'int main() { union { int x; char y; } u; u.x = 258; return u.y; }' 2
+assert 'union test {int x; int y;}; int main() { union test u; u.x = 123; return u.y; }' 123
+assert 'union test {int x; char y;}; int main() { union test u; u.x = 258; return u.y; }' 2
+assert 'union test {int x; int y;} u; int main() { u.x = 123; return u.y; }' 123
+assert 'struct test {int x; union {int y; int z;};} s; int main() { s.y = 123; return s.z; }' 123
 assert 'int main(){ struct S{ union{ int a; int b; }; int c; } s; s.a=3; s.c=4; return s.a + s.c; }' 7
 assert 'int main(){ struct S{ struct{ int x; }; }; struct S s; s.x=5; return s.x; }' 5
 assert "int main(){ struct A{ union{ struct{ int x; int y; }; int arr[2]; }; }; struct A a; a.x=2; a.y=3; return a.arr[0]+a.arr[1]; }" 5
@@ -365,5 +303,9 @@ assert 'typedef int I; typedef I I2; int main(){ I2 x=42; return x; }' 42
 assert 'typedef enum {A,B} E; int main(){ E e=A; return e+B; }' 1
 assert 'typedef struct Node Node; struct Node{ int v; Node* next; }; int main(){ struct Node a; a.v=19; a.next=0; struct Node b; b.v=23; b.next=0; a.next=&b; return a.v + a.next->v; }' 42
 assert 'typedef int* IP; void add_two(IP p){ *p+=2; } int main(){ int x=40; add_two(&x); return x; }' 42
+assert '#define MACRO 5
+int main() {return MACRO;}' 5
+assert '#define MACRO "hello"
+int main() {return MACRO[0];}' 104
 
 echo "all tests passed"
