@@ -447,6 +447,9 @@ main(){ fib(10); } // => 55
   - ```
     &(lexer->input[lexer->pos++])
     ```
+  - ```
+    while ((c = fgetc(fp)) != -1) {
+    ```
 - continueとbreak
 
 ## セルフホストに向けたTODOまとめ

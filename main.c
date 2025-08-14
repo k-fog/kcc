@@ -27,7 +27,9 @@ char *read_file(char *path) {
     if (!buf) panic("cannot allocate memory");
 
     int c;
-    while ((c = fgetc(fp)) != -1) {
+    while (true) {
+        c = fgetc(fp);
+        if (c == -1) break;
         if (capacity <= len + 2) { // +2: \n\0
             capacity *= 2;
             char *tmp = realloc(buf, capacity);
