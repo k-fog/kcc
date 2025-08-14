@@ -760,13 +760,9 @@ static void gen_func(Node *node, GenContext *ctx) {
         Node *node = params->nodes[i];
         Symbol *var = find_symbol(ST_LVAR, ctx->local_vars, node->ident->main_token);
         int offset = var->offset;
-        printf("  mov rax, rbp\n");
-        printf("  sub rax, %d\n", offset);
-        printf("  push rax\n");
-        if (var->type->tag == TYP_CHAR) printf("  mov [rax], %s\n", argreg8[i]);
-        else if (var->type->tag == TYP_INT) printf("  mov [rax], %s\n", argreg32[i]);
-        else printf("  mov [rax], %s\n", argreg64[i]);
-        // printf("  mov [rbp-%d], %s\n", offset, argreg[i]);
+        if (var->type->tag == TYP_CHAR) printf("  mov [rbp-%d], %s\n", offset, argreg8[i]);
+        else if (var->type->tag == TYP_INT || var->type->tag == TYP_ENUM) printf("  mov [rbp-%d], %s\n", offset, argreg32[i]);
+        else printf("  mov [rbp-%d], %s\n", offset, argreg64[i]);
     }
 
     if (body->tag != NT_BLOCK) panic("codegen: expected block");

@@ -8,9 +8,9 @@ kcc: $(OBJS)
 
 kcc2: kcc
 	./kcc codegen.c > codegen2.s
-	$(CC) -S -o - lexer.c > lexer2.s
+	./kcc lexer.c > lexer2.s
 	./kcc main.c > main2.s
-	$(CC) -S -o - parser.c > parser2.s
+	./kcc parser.c > parser2.s
 	./kcc preprocessor.c > preprocessor2.s
 	./kcc type.c > type2.s
 	$(CC) -o $@ codegen2.s lexer2.s main2.s parser2.s preprocessor2.s type2.s

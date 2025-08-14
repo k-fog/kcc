@@ -245,7 +245,7 @@ Token *tokenize(Lexer *lexer) {
                     while (isalnum(peek_tok(lexer)) || peek_tok(lexer) == '_') end = consume_tok(lexer);
                     int len_2 = end - start + 1;
                     TokenTag tag = lookup_ident(start, len_2); // TT_IDENT or TT_<keyword>
-                    token->next = token_new(tag, start, end - start + 1);
+                    token->next = token_new(tag, start, len_2);
                 } else {
                     panic("tokenize error: %c", *start);
                 }
