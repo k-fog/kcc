@@ -14,6 +14,11 @@ void panic(char *fmt, ...);
 #define bool int
 #define true 1
 #define false 0
+#define stdin 0
+#define stdout 1
+#define stderr 2
+#define FILE void
+#define NULL 0
 void panic();
 #endif
 
@@ -80,6 +85,8 @@ typedef enum {
     TT_KW_UNION,            // union
     TT_KW_ENUM,             // enum
     TT_KW_TYPEDEF,          // typedef
+    TT_KW_STATIC,           // static
+    TT_KW_EXTERN,           // extern
     TT_PP_DEFINE,           // define
     TT_PP_INCLUDE,          // include
     TT_PP_IFDEF,            // ifdef
@@ -104,11 +111,10 @@ Token *tokenize(Lexer *lexer);
 typedef struct Symbol Symbol;
 typedef struct {
     const char *input;
-    int pos;
     Symbol *defines;
 } Preprocessor;
 
-Preprocessor *preprocessor_new(const char *input);
+Preprocessor *preprocessor_new(const char *input, Symbol *defines);
 Token *preprocess(Preprocessor *pp);
 
 // parser
@@ -285,9 +291,18 @@ struct Env {
     Symbol *defined_types;
 };
 
+#ifdef __STDC__
 bool is_integer(Type *type);
 bool is_ptr_or_arr(Type *type);
 bool tokeneq(Token *a, Token *b);
+#endif
+
+#ifndef __STDC__
+bool is_integer();
+bool is_ptr_or_arr();
+bool tokeneq();
+#endif
+
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol *defined_types);
 
 int sizeof_type(Type *type);
