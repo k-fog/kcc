@@ -11,15 +11,18 @@ void panic(char *fmt, ...);
 #endif
 
 #ifndef __STDC__
-#define bool int
+#define bool char
 #define true 1
 #define false 0
-#define stdin 0
-#define stdout 1
-#define stderr 2
-#define FILE void
+struct _IO_FILE {};
+typedef struct _IO_FILE FILE;
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
+#define EOF '\0'
 #define NULL 0
 void panic();
+void *calloc();
 #endif
 
 #define COMPILER_NAME "KCC"
@@ -291,17 +294,9 @@ struct Env {
     Symbol *defined_types;
 };
 
-#ifdef __STDC__
 bool is_integer(Type *type);
 bool is_ptr_or_arr(Type *type);
 bool tokeneq(Token *a, Token *b);
-#endif
-
-#ifndef __STDC__
-bool is_integer();
-bool is_ptr_or_arr();
-bool tokeneq();
-#endif
 
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol *defined_types);
 

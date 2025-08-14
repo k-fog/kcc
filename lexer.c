@@ -2,39 +2,40 @@
 
 struct {
     char *str; TokenTag tag;
-} keywords[] = {
-    {"return",   TT_KW_RETURN},
-    {"if",       TT_KW_IF},
-    {"else",     TT_KW_ELSE},
-    {"while",    TT_KW_WHILE},
-    {"for",      TT_KW_FOR},
-    {"void",     TT_KW_VOID},
-    {"int",      TT_KW_INT},
-    {"char",     TT_KW_CHAR},
-    {"sizeof",   TT_KW_SIZEOF},
-    {"struct",   TT_KW_STRUCT},
-    {"const",    TT_KW_CONST},
-    {"break",    TT_KW_BREAK},
-    {"continue", TT_KW_CONTINUE},
-    {"do",       TT_KW_DO},
-    {"switch",   TT_KW_SWITCH},
-    {"case",     TT_KW_CASE},
-    {"default",  TT_KW_DEFAULT},
-    {"union",    TT_KW_UNION},
-    {"enum",     TT_KW_ENUM},
-    {"typedef",  TT_KW_TYPEDEF},
-    {"define",   TT_PP_DEFINE},
-    {"include",  TT_PP_INCLUDE},
-    {"ifdef",    TT_PP_IFDEF},
-    {"ifndef",   TT_PP_IFNDEF},
-    {"endif",    TT_PP_ENDIF},
-    {NULL, -1},
-};
+} keywords[28];
 
 Lexer *lexer_new(const char *input) {
     Lexer *lexer = calloc(1, sizeof(Lexer));
     lexer->input = input;
     lexer->pos = 0;
+    keywords[0].str = "return";   keywords[0].tag = TT_KW_RETURN;
+    keywords[1].str = "if";       keywords[1].tag = TT_KW_IF;
+    keywords[2].str = "else";     keywords[2].tag = TT_KW_ELSE;
+    keywords[3].str = "while";    keywords[3].tag = TT_KW_WHILE;
+    keywords[4].str = "for";      keywords[4].tag = TT_KW_FOR;
+    keywords[5].str = "void";     keywords[5].tag = TT_KW_VOID;
+    keywords[6].str = "int";      keywords[6].tag = TT_KW_INT;
+    keywords[7].str = "char";     keywords[7].tag = TT_KW_CHAR;
+    keywords[8].str = "sizeof";   keywords[8].tag = TT_KW_SIZEOF;
+    keywords[9].str = "struct";   keywords[9].tag = TT_KW_STRUCT;
+    keywords[10].str = "const";   keywords[10].tag = TT_KW_CONST;
+    keywords[11].str = "static";  keywords[11].tag = TT_KW_STATIC;
+    keywords[12].str = "extern";  keywords[12].tag = TT_KW_EXTERN;
+    keywords[13].str = "break";   keywords[13].tag = TT_KW_BREAK;
+    keywords[14].str = "continue";keywords[14].tag = TT_KW_CONTINUE;
+    keywords[15].str = "do";      keywords[15].tag = TT_KW_DO;
+    keywords[16].str = "switch";  keywords[16].tag = TT_KW_SWITCH;
+    keywords[17].str = "case";    keywords[17].tag = TT_KW_CASE;
+    keywords[18].str = "default"; keywords[18].tag = TT_KW_DEFAULT;
+    keywords[19].str = "union";   keywords[19].tag = TT_KW_UNION;
+    keywords[20].str = "enum";    keywords[20].tag = TT_KW_ENUM;
+    keywords[21].str = "typedef"; keywords[21].tag = TT_KW_TYPEDEF;
+    keywords[22].str = "define";  keywords[22].tag = TT_PP_DEFINE;
+    keywords[23].str = "include"; keywords[23].tag = TT_PP_INCLUDE;
+    keywords[24].str = "ifdef";   keywords[24].tag = TT_PP_IFDEF;
+    keywords[25].str = "ifndef";  keywords[25].tag = TT_PP_IFNDEF;
+    keywords[26].str = "endif";   keywords[26].tag = TT_PP_ENDIF;
+    keywords[27].str = NULL;      keywords[27].tag = -1;
     return lexer;
 }
 
@@ -240,7 +241,7 @@ Token *tokenize(Lexer *lexer) {
                 if (isdigit(*start)) {
                     while (isdigit(peek(lexer))) end = consume(lexer);
                     token->next = token_new(TT_INT, start, end - start + 1);
-                } else if (isalpha(*start) || peek(lexer) == '_') {
+                } else if (isalpha(*start) || *start == '_') {
                     while (isalnum(peek(lexer)) || peek(lexer) == '_') end = consume(lexer);
                     int len = end - start + 1;
                     TokenTag tag = lookup_ident(start, len); // TT_IDENT or TT_<keyword>

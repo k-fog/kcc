@@ -307,5 +307,6 @@ assert '#define MACRO 5
 int main() {return MACRO;}' 5
 assert '#define MACRO "hello"
 int main() {return MACRO[0];}' 104
+assert 'typedef struct Node Node; struct Node{ int v; }; int main(){ Node *a; Node b; a = &b; a->v=42; return a->v; }' 42
 
 echo "all tests passed"

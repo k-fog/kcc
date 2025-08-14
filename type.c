@@ -9,9 +9,9 @@ Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol
     return env;
 }
 
-Type *type_void = &(Type){TYP_VOID, 0};
-Type *type_char = &(Type){TYP_CHAR, 0};
-Type *type_int = &(Type){TYP_INT, 0};
+Type *type_void;
+Type *type_char;
+Type *type_int;
 
 Type *pointer_to(Type *base) {
     Type *ptr = calloc(1, sizeof(Type));
@@ -104,7 +104,8 @@ static Type *promote_if_integer(Type *type) {
 
 bool tokeneq(Token *a, Token *b) {
     if (!a || !b) return false;
-    return strncmp(a->start, b->start, a->len) == 0;
+    int len = a->len > b->len ? a->len : b->len;
+    return strncmp(a->start, b->start, len) == 0;
 }
 
 static bool is_compatible(Type *a, Type *b) {

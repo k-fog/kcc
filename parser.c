@@ -18,36 +18,38 @@ enum OpPrecedence {
     PREC_MEMBER,
 };
 
-int precedences[META_TT_NUM] = {
-    [TT_EQ]         = PREC_ASSIGN,
-    [TT_PLUS_EQ]    = PREC_ASSIGN,
-    [TT_MINUS_EQ]   = PREC_ASSIGN,
-    [TT_STAR_EQ]    = PREC_ASSIGN,
-    [TT_SLASH_EQ]   = PREC_ASSIGN,
-    [TT_EQ_EQ]      = PREC_EQUALS,
-    [TT_BANG_EQ]    = PREC_EQUALS,
-    [TT_ANGLE_L]    = PREC_LESSGREATER,
-    [TT_ANGLE_R]    = PREC_LESSGREATER,
-    [TT_ANGLE_L_EQ] = PREC_LESSGREATER,
-    [TT_ANGLE_R_EQ] = PREC_LESSGREATER,
-    [TT_PLUS]       = PREC_ADD,
-    [TT_MINUS]      = PREC_ADD,
-    [TT_STAR]       = PREC_MUL,
-    [TT_SLASH]      = PREC_MUL,
-    [TT_PERCENT]    = PREC_MUL,
-    [TT_QUESTION]   = PREC_COND,
-    [TT_COMMA]      = PREC_COMMA,
-    [TT_AND_AND]    = PREC_LOGICAL,
-    [TT_PIPE_PIPE]  = PREC_LOGICAL,
-    [TT_PERIOD]        = PREC_MEMBER,
-    [TT_MINUS_ANGLE_R] = PREC_MEMBER,
-    [TT_PAREN_L]    = PREC_INDEX,
-    [TT_BRACKET_L]  = PREC_INDEX,
-    // otherwise PREC_NONE (== 0)
-};
+enum OpPrecedence precedences(TokenTag tag) {
+    switch (tag) {
+        case TT_EQ:         return PREC_ASSIGN;
+        case TT_PLUS_EQ:    return PREC_ASSIGN;
+        case TT_MINUS_EQ:   return PREC_ASSIGN;
+        case TT_STAR_EQ:    return PREC_ASSIGN;
+        case TT_SLASH_EQ:   return PREC_ASSIGN;
+        case TT_EQ_EQ:      return PREC_EQUALS;
+        case TT_BANG_EQ:    return PREC_EQUALS;
+        case TT_ANGLE_L:    return PREC_LESSGREATER;
+        case TT_ANGLE_R:    return PREC_LESSGREATER;
+        case TT_ANGLE_L_EQ: return PREC_LESSGREATER;
+        case TT_ANGLE_R_EQ: return PREC_LESSGREATER;
+        case TT_PLUS:       return PREC_ADD;
+        case TT_MINUS:      return PREC_ADD;
+        case TT_STAR:       return PREC_MUL;
+        case TT_SLASH:      return PREC_MUL;
+        case TT_PERCENT:    return PREC_MUL;
+        case TT_QUESTION:   return PREC_COND;
+        case TT_COMMA:      return PREC_COMMA;
+        case TT_AND_AND:    return PREC_LOGICAL;
+        case TT_PIPE_PIPE:  return PREC_LOGICAL;
+        case TT_PERIOD:     return PREC_MEMBER;
+        case TT_MINUS_ANGLE_R: return PREC_MEMBER;
+        case TT_PAREN_L:    return PREC_INDEX;
+        case TT_BRACKET_L:  return PREC_INDEX;
+        default: return PREC_NONE;
+    }
+}
 
 static bool is_infix(TokenTag tag) {
-    return precedences[tag] != PREC_NONE;
+    return precedences(tag) != PREC_NONE;
 }
 
 static bool is_right_assoc(TokenTag tag) {
@@ -141,7 +143,7 @@ static Symbol *append_type(Parser *parser, SymbolTag tag, Token *ident, Type *ty
 
 Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident) {
     for (Symbol *sym = symlist; sym != NULL; sym = sym->next) {
-        if (ident->len != sym->token->len) continue;
+        if (!sym->token || ident->len != sym->token->len) continue;
         if (sym->tag == tag && strncmp(sym->token->start, ident->start, sym->token->len) == 0) return sym;
     }
     return NULL;
@@ -374,6 +376,9 @@ static Type *check_defined_type(Parser *parser, SymbolTag tag, Token *token) {
 }
 
 static bool is_type_specifier(Parser *parser, Token *token) {
+    if (token->tag == TT_KW_CONST) return true;
+    if (token->tag == TT_KW_STATIC) return true;
+    if (token->tag == TT_KW_EXTERN) return true;
     if (token->tag == TT_KW_VOID
         || token->tag == TT_KW_INT
         || token->tag == TT_KW_CHAR
@@ -389,13 +394,17 @@ static Symbol *struct_decl_list(Parser *parser) {
     Symbol *list = NULL;
     while (is_type_specifier(parser, peek(parser))) {
         Type *type_spec = decl_spec(parser);
-        Node *declr = NULL;
-        if (peek(parser)->tag != TT_SEMICOLON) declr = declarator(parser, type_spec);
-        list = symbol_new(ST_MEMBER,
-                          declr ? declr->main_token : NULL,
-                          declr ? declr->type : type_spec,
-                          list);
-        if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
+        Token *token;
+        do {
+            Node *declr = NULL;
+            if (peek(parser)->tag != TT_SEMICOLON) declr = declarator(parser, type_spec);
+            list = symbol_new(ST_MEMBER,
+                              declr ? declr->main_token : NULL,
+                              declr ? declr->type : type_spec,
+                              list);
+            token = consume(parser);
+        } while (token->tag == TT_COMMA);
+        if (token->tag != TT_SEMICOLON) panic("expected ';' but got %.*s", token->len, token->start);
     }
     return list;
 }
@@ -495,6 +504,8 @@ static Type *typedef_decl(Parser *parser) {
 
 static Type *decl_spec(Parser *parser) {
     if (peek(parser)->tag == TT_KW_CONST) consume(parser); // ignore
+    if (peek(parser)->tag == TT_KW_STATIC) consume(parser); // ignore
+    if (peek(parser)->tag == TT_KW_EXTERN) consume(parser); // ignore
     if (peek(parser)->tag == TT_KW_TYPEDEF && consume(parser))
         return typedef_decl(parser);
     Token *token = consume(parser);
@@ -694,7 +705,7 @@ static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = expr_prefix(parser);
     Token *token = peek(parser);
     while (is_infix(token->tag)) {
-        int prec = precedences[token->tag];
+        int prec = precedences(token->tag);
         bool left_assoc = !is_right_assoc(token->tag);
 
         if (left_assoc && prec <= min_bp) break;
