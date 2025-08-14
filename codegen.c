@@ -1,13 +1,13 @@
 #include "kcc.h"
 
 
-static char *argreg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
-static char *argreg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
-static char *argreg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
-static char *str_label = ".L.STR";
+static char *argreg8[6];
+static char *argreg32[6];
+static char *argreg64[6];
+static char *str_label;
 
 void print_token(Token *token) {
-    const char *start = token->start;
+    char *start = token->start;
     int len = token->len;
     printf("%.*s", len, start);
 }
@@ -20,31 +20,50 @@ GenContext *gencontext_new(Node *current_func, Symbol *local_vars, Symbol *globa
     ctx->global_vars = global_vars;
     ctx->func_types = func_types;
     ctx->defined_types = defined_types;
-    ctx->id_stack_top = 0;
+    ctx->break_id_top = 0;
+    ctx->continue_id_top = 0;
     return ctx;
 }
 
-void push_jump_id(GenContext *ctx, int id) {
-    int top = ctx->id_stack_top;
+static void push_break_id(GenContext *ctx, int id) {
+    int top = ctx->break_id_top;
     if (top == LOOP_STACK_SIZE) panic("internal error: too nested loop");
-    ctx->loop_id_stack[top] = id;
-    ctx->id_stack_top++;
+    ctx->break_id_stack[top] = id;
+    (ctx->break_id_top)++;
     return;
 }
 
-void pop_jump_id(GenContext *ctx, int id) {
-    ctx->id_stack_top--;
+static void pop_break_id(GenContext *ctx, int id) {
+    (ctx->break_id_top)--;
     return;
 }
 
-int current_loop_id(GenContext *ctx) {
-    int top = ctx->id_stack_top;
-    return ctx->loop_id_stack[top - 1];
+static int current_break_id(GenContext *ctx) {
+    int top = ctx->break_id_top;
+    return ctx->break_id_stack[top - 1];
 }
 
+static void push_continue_id(GenContext *ctx, int id) {
+    int top = ctx->continue_id_top;
+    if (top == LOOP_STACK_SIZE) panic("internal error: too nested loop");
+    ctx->continue_id_stack[top] = id;
+    (ctx->continue_id_top)++;
+    return;
+}
+
+static void pop_continue_id(GenContext *ctx, int id) {
+    (ctx->continue_id_top)--;
+    return;
+}
+
+static int current_continue_id(GenContext *ctx) {
+    int top = ctx->continue_id_top;
+    return ctx->continue_id_stack[top - 1];
+}
+
+int id_counter_global = 0;
 static int count() {
-    static int i = 0;
-    return i++;
+    return id_counter_global++;
 }
 
 static void gen_load(Type *type);
@@ -278,8 +297,8 @@ static void gen_expr_assign(Node *node, GenContext *ctx) {
 
         if (is_ptr_or_arr(lt) && is_integer(rt)) {
             // ptr +=/-= int
-            if (node->tag != NT_ASSIGN_ADD && node->tag != NT_ASSIGN_SUB)
-                panic("codegen: invalid operands (ptr op ptr)");
+            // if (node->tag != NT_ASSIGN_ADD && node->tag != NT_ASSIGN_SUB)
+            //     panic("codegen: invalid operands (ptr op ptr)");
             printf("  pop rdi\n");
             printf("  imul rdi, %d\n", sizeof_type(lt->base));
             printf("  pop rsi\n");
@@ -348,9 +367,9 @@ static void gen_expr_binary(Node *node, GenContext *ctx) {
             return;
         } else {
             // ptr op ptr
-            if (node->tag != NT_EQ && node->tag != NT_NE
-                && node->tag != NT_LT && node->tag != NT_LE)
-                panic("codegen: invalid operands (pointer op pointer)");
+            // if (node->tag != NT_EQ && node->tag != NT_NE
+            //     && node->tag != NT_LT && node->tag != NT_LE)
+            //     panic("codegen: invalid operands (pointer op pointer)");
             printf("  pop rdi\n");
             printf("  pop rax\n");
         }
@@ -535,7 +554,7 @@ static void gen_stmt(Node *node, GenContext *ctx) {
     int id = count();
     if (node->tag == NT_RETURN) {
         Node *fnode = ctx->current_func;
-        const char *name = fnode->func.name->main_token->start;
+        char *name = fnode->func.name->main_token->start;
         int name_len = fnode->func.name->main_token->len;
         if (node->unary_expr) {
             gen_expr(node->unary_expr, ctx);
@@ -561,7 +580,8 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         printf(".L%d.END:\n", id);
         return;
     } else if (node->tag == NT_WHILE) {
-        push_jump_id(ctx, id);
+        push_break_id(ctx, id);
+        push_continue_id(ctx, id);
         printf(".L%d.WHILE:\n", id);
         printf(".L%d.CONTINUE:\n", id);
         gen_expr(node->whilestmt.cond, ctx);
@@ -571,10 +591,12 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         gen_stmt(node->whilestmt.body, ctx);
         printf("  jmp .L%d.WHILE\n", id);
         printf(".L%d.END:\n", id);
-        pop_jump_id(ctx, id);
+        pop_break_id(ctx, id);
+        pop_continue_id(ctx, id);
         return;
     } else if (node->tag == NT_DO_WHILE) {
-        push_jump_id(ctx, id);
+        push_break_id(ctx, id);
+        push_continue_id(ctx, id);
         printf(".L%d.DO:\n", id);
         gen_stmt(node->whilestmt.body, ctx);
         printf(".L%d.CONTINUE:\n", id);
@@ -583,7 +605,8 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         printf("  cmp rax, 0\n");
         printf("  jne .L%d.DO\n", id);
         printf(".L%d.END:\n", id);
-        pop_jump_id(ctx, id);
+        pop_break_id(ctx, id);
+        pop_continue_id(ctx, id);
         return;
     } else if (node->tag == NT_CASE) {
         for (int i = 0; i < node->caseblock.stmts->len; i++) {
@@ -592,7 +615,7 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         }
         return;
     } else if (node->tag == NT_SWITCH) {
-        push_jump_id(ctx, id);
+        push_break_id(ctx, id);
         int default_id = -1;
         for (int i = 0; i < node->switchstmt.cases->len; i++) {
             Node *child = node->switchstmt.cases->nodes[i];
@@ -618,10 +641,11 @@ static void gen_stmt(Node *node, GenContext *ctx) {
             gen_stmt(child, ctx);
         }
         printf(".L%d.END:\n", id);
-        pop_jump_id(ctx, id);
+        pop_break_id(ctx, id);
         return;
     } else if (node->tag == NT_FOR) {
-        push_jump_id(ctx, id);
+        push_break_id(ctx, id);
+        push_continue_id(ctx, id);
         if (node->forstmt.def) {
             if (node->forstmt.def->tag == NT_LOCALDECL) gen_lvardecl(node->forstmt.def, ctx);
             else {
@@ -644,14 +668,15 @@ static void gen_stmt(Node *node, GenContext *ctx) {
         }
         printf("  jmp .L%d.FOR\n", id);
         printf(".L%d.END:\n", id);
-        pop_jump_id(ctx, id);
+        pop_break_id(ctx, id);
+        pop_continue_id(ctx, id);
         return;
     } else if (node->tag == NT_BREAK) {
-        int goto_id = current_loop_id(ctx);
+        int goto_id = current_break_id(ctx);
         printf("  jmp .L%d.END\n", goto_id);
         return;
     } else if (node->tag == NT_CONTINUE) {
-        int goto_id = current_loop_id(ctx);
+        int goto_id = current_continue_id(ctx);
         printf("  jmp .L%d.CONTINUE\n", goto_id);
         return;
     } else if (node->tag == NT_LOCALDECL) return gen_lvardecl(node, ctx);
@@ -716,7 +741,7 @@ static void gen_globalvar(Symbol *var) {
 
 static void gen_func(Node *node, GenContext *ctx) {
     int offset = ctx->local_vars ? ctx->local_vars->offset : 0;
-    const char *name = node->func.name->main_token->start;
+    char *name = node->func.name->main_token->start;
     int name_len = node->func.name->main_token->len;
     Node *body = node->func.body;
 
@@ -755,6 +780,28 @@ static void gen_func(Node *node, GenContext *ctx) {
 }
 
 void gen(Program *prog) {
+    argreg8[0] = "dil";
+    argreg8[1] = "sil";
+    argreg8[2] = "dl";
+    argreg8[3] = "cl";
+    argreg8[4] = "r8b";
+    argreg8[5] = "r9b";
+    
+    argreg32[0] = "edi";
+    argreg32[1] = "esi";
+    argreg32[2] = "edx";
+    argreg32[3] = "ecx";
+    argreg32[4] = "r8d";
+    argreg32[5] = "r9d";
+    
+    argreg64[0] = "rdi";
+    argreg64[1] = "rsi";
+    argreg64[2] = "rdx";
+    argreg64[3] = "rcx";
+    argreg64[4] = "r8";
+    argreg64[5] = "r9";
+    str_label = ".L.STR";
+
     printf("# COMPILED BY %s\n", COMPILER_NAME);
     printf(".intel_syntax noprefix\n\n");
 

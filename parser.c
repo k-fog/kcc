@@ -2,7 +2,7 @@
 
 
 enum OpPrecedence {
-    PREC_NONE = 0, // for syntax error check
+    PREC_NONE, // for syntax error check
     PREC_LOWEST,
     PREC_COMMA,
     PREC_ASSIGN,
@@ -77,7 +77,7 @@ void nodelist_append(NodeList *nlist, Node *node) {
         nlist->capacity = nlist->capacity * 2 + 1;
         nlist->nodes = realloc(nlist->nodes, nlist->capacity * sizeof(Node*));
     }
-    nlist->nodes[nlist->len++] = node;
+    nlist->nodes[(nlist->len)++] = node;
 }
 
 // TokenList
@@ -95,7 +95,7 @@ void tokenlist_append(TokenList *tlist, Token *token) {
         tlist->capacity = tlist->capacity * 2 + 1;
         tlist->tokens = realloc(tlist->tokens, tlist->capacity * sizeof(Token*));
     }
-    tlist->tokens[tlist->len++] = token;
+    tlist->tokens[(tlist->len)++] = token;
 }
 
 // Symbol
@@ -588,7 +588,7 @@ static Node *integer(Parser *parser) {
     int val = 0;
     Token *token = consume(parser);
     if (token->tag != TT_INT) panic("expected an integer");
-    const char *p = token->start;
+    char *p = token->start;
     for (int i = 0; i < token->len; i++)
         val = val * 10 + (p[i] - '0');
     return int_new(token, val);
@@ -619,7 +619,7 @@ static Node *unary(Parser *parser) {
 }
 
 static int int_from_charlit(Token *token) {
-    const char *start = token->start + 1; // ignore '
+    char *start = token->start + 1; // ignore '
     if (*start == '\\') {
         start++;
         switch (*start) {
@@ -866,11 +866,11 @@ static Node *direct_declarator(Parser *parser, Type *type) {
         node->type = placeholder;
     } else if (token->tag == TT_PAREN_L) {
         consume(parser); // (
-        *placeholder = *type;
+        memcpy(placeholder, type, sizeof(Type));
         node = declarator(parser, placeholder);
         if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
     }
-    *placeholder = *array(parser, type);
+    memcpy(placeholder, array(parser, type), sizeof(Type));
     return node;
 }
 
@@ -880,14 +880,14 @@ static Node *direct_abstract_declarator(Parser *parser, Type *type) {
     Type *placeholder = calloc(1, sizeof(Type));
     if (token->tag == TT_PAREN_L) {
         consume(parser); // (
-        *placeholder = *type;
+        memcpy(placeholder, type, sizeof(Type));
         node = abstract_declarator(parser, placeholder);
         if (consume(parser)->tag != TT_PAREN_R) panic("expected \')\'");
     } else {
         node = node_new(NT_TYPENAME, NULL);
         node->type = placeholder;
     }
-    *placeholder = *array(parser, type);
+    memcpy(placeholder, array(parser, type), sizeof(Type));
     return node;
 }
 

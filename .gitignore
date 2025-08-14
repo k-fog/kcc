@@ -1,4 +1,5 @@
 kcc
+kcc2
 *.o
 *.s
 tmp

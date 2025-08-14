@@ -23,13 +23,14 @@ extern FILE *stderr;
 #define NULL 0
 void panic();
 void *calloc();
+int exit();
 #endif
 
 #define COMPILER_NAME "KCC"
 
 // lexer
 typedef struct {
-    const char *input;
+    char *input;
     int pos;
 } Lexer;
 
@@ -102,22 +103,22 @@ typedef enum {
 typedef struct Token Token;
 struct Token {
     TokenTag tag;
-    const char *start;
+    char *start;
     int len;
     Token *next;
 };
 
-Lexer *lexer_new(const char *input);
+Lexer *lexer_new(char *input);
 Token *tokenize(Lexer *lexer);
 
 // preprocessor
 typedef struct Symbol Symbol;
 typedef struct {
-    const char *input;
+    char *input;
     Symbol *defines;
 } Preprocessor;
 
-Preprocessor *preprocessor_new(const char *input, Symbol *defines);
+Preprocessor *preprocessor_new(char *input, Symbol *defines);
 Token *preprocess(Preprocessor *pp);
 
 // parser
@@ -128,7 +129,7 @@ typedef struct Type Type;
 typedef struct Env Env;
 
 typedef struct {
-    const Token *tokens;
+    Token *tokens;
     Token *current_token;
     Node *current_func;
     Symbol *func_types;
@@ -313,8 +314,10 @@ void type_funcs(Program *prog);
 // codegen
 #define LOOP_STACK_SIZE 16
 typedef struct {
-    int loop_id_stack[LOOP_STACK_SIZE];
-    int id_stack_top;
+    int break_id_stack[LOOP_STACK_SIZE];
+    int break_id_top;
+    int continue_id_stack[LOOP_STACK_SIZE];
+    int continue_id_top;
     Node *current_func;
     Symbol *local_vars;
     Symbol *global_vars;

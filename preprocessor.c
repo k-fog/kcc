@@ -1,6 +1,6 @@
 #include "kcc.h"
 
-Preprocessor *preprocessor_new(const char *input, Symbol *defines) {
+Preprocessor *preprocessor_new(char *input, Symbol *defines) {
     Preprocessor *pp = calloc(1, sizeof(Preprocessor));
     pp->input = input;
     pp->defines = defines;
@@ -18,7 +18,7 @@ static Symbol *append_define(Preprocessor *pp, Token *token, Token *pp_token) {
     return symbol;
 }
 
-static char *strndupl(const char *str, int len) {
+static char *strndupl(char *str, int len) {
     char *buffer = malloc(len + 1);
     memcpy(buffer, str, len);
     buffer[len] = '\0';
@@ -46,7 +46,7 @@ Token *preprocess(Preprocessor *pp) {
         }
         Token *token_directive = t->next;
         if (token_directive->tag == TT_PP_DEFINE) {
-            Token *token_from = token_directive? token_directive->next : NULL;
+            Token *token_from = token_directive ? token_directive->next : NULL;
             Token *token_to = token_from ? token_from->next : NULL;
             if (!token_from || !token_to) panic("preprocess error: #define");
             append_define(pp, token_from, token_to);

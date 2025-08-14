@@ -443,6 +443,11 @@ main(){ fib(10); } // => 55
   - 空白ファイルの時にバグ
   - プリプロセッサのバグ修正
 - セルフホストのために`#ifdef __STDC__`, `#ifndef __STDC__`を追加
+- 動かない集
+  - ```
+    &(lexer->input[lexer->pos++])
+    ```
+- continueとbreak
 
 ## セルフホストに向けたTODOまとめ
 - [x] continue, break

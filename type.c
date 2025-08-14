@@ -9,9 +9,11 @@ Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol
     return env;
 }
 
+#ifdef __STDC__
 Type *type_void;
 Type *type_char;
 Type *type_int;
+#endif
 
 Type *pointer_to(Type *base) {
     Type *ptr = calloc(1, sizeof(Type));
@@ -104,8 +106,8 @@ static Type *promote_if_integer(Type *type) {
 
 bool tokeneq(Token *a, Token *b) {
     if (!a || !b) return false;
-    int len = a->len > b->len ? a->len : b->len;
-    return strncmp(a->start, b->start, len) == 0;
+    if (a->len != b->len) return false;
+    return strncmp(a->start, b->start, a->len) == 0;
 }
 
 static bool is_compatible(Type *a, Type *b) {
@@ -194,9 +196,9 @@ static Node *typed(Node *node, Env *env) {
             break;
         }
         case NT_COND: {
-            if (!is_integer(typed(node->cond_expr.cond, env)->type)) panic("invalid operands");
-            if (!is_integer(typed(node->cond_expr.then, env)->type)) panic("invalid operands");
-            if (!is_integer(typed(node->cond_expr.els, env)->type)) panic("invalid operands");
+            typed(node->cond_expr.cond, env); // TODO: type check
+            typed(node->cond_expr.then, env);
+            typed(node->cond_expr.els, env);
             node->type = type_int;
             break;
         }

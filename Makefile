@@ -6,6 +6,15 @@ OBJS=$(SRCS:.c=.o)
 kcc: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
+kcc2: kcc
+	./kcc codegen.c > codegen2.s
+	./kcc lexer.c > lexer2.s
+	./kcc main.c > main2.s
+	./kcc parser.c > parser2.s
+	./kcc preprocessor.c > preprocessor2.s
+	./kcc type.c > type2.s
+	$(CC) -o $@ codegen2.s lexer2.s main2.s parser2.s preprocessor2.s type2.s
+
 debug: CFLAGS += -DDEBUG
 debug: clean $(OBJS)
 	$(CC) $(CFLAGS) -o kcc $(OBJS) $(LDFLAGS)
@@ -16,6 +25,6 @@ test: kcc
 	./test.sh
 
 clean:
-	rm -f kcc *.o *~ tmp*
+	rm -f kcc *.o *~ tmp* *.s
 
 .PHONY: debug test clean

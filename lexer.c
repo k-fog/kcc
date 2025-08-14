@@ -4,7 +4,7 @@ struct {
     char *str; TokenTag tag;
 } keywords[28];
 
-Lexer *lexer_new(const char *input) {
+Lexer *lexer_new(char *input) {
     Lexer *lexer = calloc(1, sizeof(Lexer));
     lexer->input = input;
     lexer->pos = 0;
@@ -39,7 +39,7 @@ Lexer *lexer_new(const char *input) {
     return lexer;
 }
 
-static Token *token_new(TokenTag tag, const char *start, int len) {
+static Token *token_new(TokenTag tag, char *start, int len) {
     Token *t = calloc(1, sizeof(Token));
     t->tag = tag;
     t->start = start;
@@ -48,21 +48,21 @@ static Token *token_new(TokenTag tag, const char *start, int len) {
     return t;
 }
 
-static char peek(Lexer *lexer) {
+static char peek_tok(Lexer *lexer) {
     return lexer->input[lexer->pos];
 }
 
-static const char *consume(Lexer *lexer) {
-    return &(lexer->input[lexer->pos++]);
+static char *consume_tok(Lexer *lexer) {
+    return &(lexer->input[(lexer->pos)++]);
 }
 
 static void skip_space(Lexer *lexer) {
-    while (isspace(peek(lexer))) consume(lexer);
+    while (isspace(peek_tok(lexer))) consume_tok(lexer);
 }
 
 // if the given token matches a keyword, return its TokenTag.
 // otherwise, return TT_IDENT.
-static TokenTag lookup_ident(const char *str, int len) {
+static TokenTag lookup_ident(char *str, int len) {
     for (int i = 0; keywords[i].str != NULL; i++) {
         if (strlen(keywords[i].str) != len) continue;
         else if (strncmp(str, keywords[i].str, len) == 0) return keywords[i].tag;
@@ -74,8 +74,8 @@ Token *tokenize(Lexer *lexer) {
     Token head, *token = &head;
     while (token->tag != TT_EOF) {
         skip_space(lexer);
-        const char *start = consume(lexer);
-        const char *end = start;
+        char *start = consume_tok(lexer);
+        char *end = start;
 
         switch (*start) {
             case '\0':
@@ -85,49 +85,49 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_HASH, start, 1);
                 break;
             case '+':
-                if (peek(lexer) == '+') {
-                    consume(lexer);
+                if (peek_tok(lexer) == '+') {
+                    consume_tok(lexer);
                     token->next = token_new(TT_PLUS_PLUS, start, 2);
-                } else if (peek(lexer) == '=') {
-                    consume(lexer);
+                } else if (peek_tok(lexer) == '=') {
+                    consume_tok(lexer);
                     token->next = token_new(TT_PLUS_EQ, start, 2);
                 } else {
                     token->next = token_new(TT_PLUS, start, 1);
                 }
                 break;
             case '-':
-                if (peek(lexer) == '-') {
-                    consume(lexer);
+                if (peek_tok(lexer) == '-') {
+                    consume_tok(lexer);
                     token->next = token_new(TT_MINUS_MINUS, start, 2);
-                } else if (peek(lexer) == '=') {
-                    consume(lexer);
+                } else if (peek_tok(lexer) == '=') {
+                    consume_tok(lexer);
                     token->next = token_new(TT_MINUS_EQ, start, 2);
-                } else if (peek(lexer) == '>') {
-                    consume(lexer);
+                } else if (peek_tok(lexer) == '>') {
+                    consume_tok(lexer);
                     token->next = token_new(TT_MINUS_ANGLE_R, start, 2);
                 } else {
                     token->next = token_new(TT_MINUS, start, 1);
                 }
                 break;
             case '*':
-                if (peek(lexer) == '=') {
-                    consume(lexer);
+                if (peek_tok(lexer) == '=') {
+                    consume_tok(lexer);
                     token->next = token_new(TT_STAR_EQ, start, 2);
                 } else {
                     token->next = token_new(TT_STAR, start, 1);
                 }
                 break;
             case '/':
-                if (peek(lexer) == '/') {
-                    while (peek(lexer) != '\n' && peek(lexer) != '\0') consume(lexer);
+                if (peek_tok(lexer) == '/') {
+                    while (peek_tok(lexer) != '\n' && peek_tok(lexer) != '\0') consume_tok(lexer);
                     continue;
-                } else if (peek(lexer) == '*') {
-                    char *q = strstr(consume(lexer), "*/");
+                } else if (peek_tok(lexer) == '*') {
+                    char *q = strstr(consume_tok(lexer), "*/");
                     if (!q) panic("\'*/\' not found");
                     lexer->pos = q - lexer->input + 2;
                     continue;
-                } else if (peek(lexer) == '=') {
-                    consume(lexer);
+                } else if (peek_tok(lexer) == '=') {
+                    consume_tok(lexer);
                     token->next = token_new(TT_SLASH_EQ, start, 2);
                 } else {
                     token->next = token_new(TT_SLASH, start, 1);
@@ -155,18 +155,18 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_PERCENT, start, 1);
                 break;
             case '=':
-                if (peek(lexer) != '=') {
+                if (peek_tok(lexer) != '=') {
                     token->next = token_new(TT_EQ, start, 1);
                 } else {
-                    consume(lexer);
+                    consume_tok(lexer);
                     token->next = token_new(TT_EQ_EQ, start, 2);
                 }
                 break;
             case '!':
-                if (peek(lexer) != '=') {
+                if (peek_tok(lexer) != '=') {
                     token->next = token_new(TT_BANG, start, 1);
                 } else {
-                    consume(lexer);
+                    consume_tok(lexer);
                     token->next = token_new(TT_BANG_EQ, start, 2);
                 }
                 break;
@@ -174,18 +174,18 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_QUESTION, start, 1);
                 break;
             case '<':
-                if (peek(lexer) != '=') {
+                if (peek_tok(lexer) != '=') {
                     token->next = token_new(TT_ANGLE_L, start, 1);
                 } else {
-                    consume(lexer);
+                    consume_tok(lexer);
                     token->next = token_new(TT_ANGLE_L_EQ, start, 2);
                 }
                 break;
             case '>':
-                if (peek(lexer) != '=') {
+                if (peek_tok(lexer) != '=') {
                     token->next = token_new(TT_ANGLE_R, start, 1);
                 } else {
-                    consume(lexer);
+                    consume_tok(lexer);
                     token->next = token_new(TT_ANGLE_R_EQ, start, 2);
                 }
                 break;
@@ -199,38 +199,38 @@ Token *tokenize(Lexer *lexer) {
                 token->next = token_new(TT_COMMA, start, 1);
                 break;
             case '&':
-                if (peek(lexer) != '&') {
+                if (peek_tok(lexer) != '&') {
                     token->next = token_new(TT_AMPERSAND, start, 1);
                 } else {
-                    consume(lexer);
+                    consume_tok(lexer);
                     token->next = token_new(TT_AND_AND, start, 1);
                 }
                 break;
             case '|':
-                if (peek(lexer) != '|') {
+                if (peek_tok(lexer) != '|') {
                     panic("unimplemented: |");
                 } else {
-                    consume(lexer);
+                    consume_tok(lexer);
                     token->next = token_new(TT_PIPE_PIPE, start, 1);
                 }
                 break;
             case '"': {
-                while (peek(lexer) != '"') {
-                    end = consume(lexer);
-                    if (*end == '\\' && *(end + 1) == '\"') consume(lexer);
+                while (peek_tok(lexer) != '"') {
+                    end = consume_tok(lexer);
+                    if (*end == '\\' && *(end + 1) == '\"') consume_tok(lexer);
                 }
-                consume(lexer); // end "
+                consume_tok(lexer); // end "
                 int len = end - start + 2; // string literal's token contains double quotes
                 token->next = token_new(TT_STRING, start, len);
                 break;
             }
             case '\'': {
-                if (peek(lexer) == '\\') {
-                    consume(lexer); // consume back slash
-                    end = consume(lexer);
+                if (peek_tok(lexer) == '\\') {
+                    consume_tok(lexer); // consume_tok back slash
+                    end = consume_tok(lexer);
                 }
-                while (peek(lexer) != '\'') end = consume(lexer);
-                end = consume(lexer); // end '
+                while (peek_tok(lexer) != '\'') end = consume_tok(lexer);
+                end = consume_tok(lexer); // end '
                 token->next = token_new(TT_CHAR, start, end - start + 1);
                 break;
             }
@@ -239,10 +239,10 @@ Token *tokenize(Lexer *lexer) {
                 break;
             default:
                 if (isdigit(*start)) {
-                    while (isdigit(peek(lexer))) end = consume(lexer);
+                    while (isdigit(peek_tok(lexer))) end = consume_tok(lexer);
                     token->next = token_new(TT_INT, start, end - start + 1);
                 } else if (isalpha(*start) || *start == '_') {
-                    while (isalnum(peek(lexer)) || peek(lexer) == '_') end = consume(lexer);
+                    while (isalnum(peek_tok(lexer)) || peek_tok(lexer) == '_') end = consume_tok(lexer);
                     int len = end - start + 1;
                     TokenTag tag = lookup_ident(start, len); // TT_IDENT or TT_<keyword>
                     token->next = token_new(tag, start, end - start + 1);
