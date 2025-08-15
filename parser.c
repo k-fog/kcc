@@ -144,7 +144,7 @@ static Symbol *append_type(Parser *parser, SymbolTag tag, Token *ident, Type *ty
 Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident) {
     for (Symbol *sym = symlist; sym != NULL; sym = sym->next) {
         if (!sym->token || ident->len != sym->token->len) continue;
-        if (sym->tag == tag && strncmp(sym->token->start, ident->start, sym->token->len) == 0) return sym;
+        if (sym->tag == tag && tokeneq(ident, sym->token)) return sym;
     }
     return NULL;
 }
@@ -165,7 +165,7 @@ Symbol *find_member(Symbol *symlist, Token *ident, int *offset) {
             continue;
         }
         if (ident->len != sym->token->len) continue;
-        if (sym->tag == ST_MEMBER && strncmp(sym->token->start, ident->start, sym->token->len) == 0) {
+        if (sym->tag == ST_MEMBER && tokeneq(ident, sym->token)) {
             if (offset) *offset += sym->offset;
             return sym;
         }
@@ -398,10 +398,15 @@ static Symbol *struct_decl_list(Parser *parser) {
         do {
             Node *declr = NULL;
             if (peek(parser)->tag != TT_SEMICOLON) declr = declarator(parser, type_spec);
-            list = symbol_new(ST_MEMBER,
-                              declr ? declr->main_token : NULL,
-                              declr ? declr->type : type_spec,
-                              list);
+            Token *ident = NULL;
+            Type *type = NULL;
+            if (declr) {
+                ident = declr->main_token;
+                type = declr->type;
+            } else {
+                type = type_spec;
+            }
+            list = symbol_new(ST_MEMBER, ident, type, list);
             token = consume(parser);
         } while (token->tag == TT_COMMA);
         if (token->tag != TT_SEMICOLON) panic("expected ';' but got %.*s", token->len, token->start);

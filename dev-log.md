@@ -450,7 +450,9 @@ main(){ fib(10); } // => 55
   - ```
     while ((c = fgetc(fp)) != -1) {
     ```
-- continueとbreak
+  - ~~continueとbreak~~
+  - 3項演算子
+
 
 ## セルフホストに向けたTODOまとめ
 - [x] continue, break

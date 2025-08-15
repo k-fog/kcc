@@ -762,7 +762,8 @@ static void gen_func(Node *node, GenContext *ctx) {
         int offset = var->offset;
         if (var->type->tag == TYP_CHAR) printf("  mov [rbp-%d], %s\n", offset, argreg8[i]);
         else if (var->type->tag == TYP_INT || var->type->tag == TYP_ENUM) printf("  mov [rbp-%d], %s\n", offset, argreg32[i]);
-        else printf("  mov [rbp-%d], %s\n", offset, argreg64[i]);
+        else if (var->type->tag == TYP_PTR) printf("  mov [rbp-%d], %s\n", offset, argreg64[i]);
+        else panic("codegen: unexpected type");
     }
 
     if (body->tag != NT_BLOCK) panic("codegen: expected block");

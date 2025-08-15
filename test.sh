@@ -1,6 +1,8 @@
 #!/bin/bash
 
+CC=$1
 TEST_FNCALL="test_fncall"
+echo "test target: " $1
 
 cat <<EOF | gcc -xc - -c -o $TEST_FNCALL
 #include <stdlib.h>
@@ -24,7 +26,7 @@ assert() {
     expected="$2"
 
     echo "$input" > tmp.c
-    ./kcc2 tmp.c > tmp.s
+    ./"$CC" tmp.c > tmp.s
     cc -o tmp tmp.s $TEST_FNCALL
     ./tmp
     actual="$?"

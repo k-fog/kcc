@@ -21,8 +21,13 @@ debug: clean $(OBJS)
 
 $(OBJS): kcc.h
 
-test: kcc2
-	./test.sh
+test: kcc
+	./test.sh kcc
+	rm tmp.c
+
+test2: kcc2
+	./test.sh kcc2
+	rm tmp.c
 
 clean:
 	rm -f kcc kcc2 *.o *~ tmp* *.s
