@@ -23,18 +23,6 @@ kcc3: kcc2
 	./kcc2 preprocessor.c > preprocessor3.s
 	./kcc2 type.c > type3.s
 	$(CC) -o $@ codegen3.s lexer3.s main3.s parser3.s preprocessor3.s type3.s
-	@echo "===== check diff ====="
-	diff codegen2.s codegen3.s
-	diff lexer2.s lexer3.s
-	diff main2.s main3.s
-	diff parser2.s parser3.s
-	diff preprocessor2.s preprocessor3.s
-	diff type2.s type3.s
-	@echo "===== checked ====="
-
-debug: CFLAGS += -DDEBUG
-debug: clean $(OBJS)
-	$(CC) $(CFLAGS) -o kcc $(OBJS) $(LDFLAGS)
 
 $(OBJS): kcc.h
 
@@ -45,6 +33,14 @@ test2: kcc2
 	./test.sh kcc2
 
 test3: kcc3
+	@echo "===== check diff ====="
+	diff codegen2.s codegen3.s
+	diff lexer2.s lexer3.s
+	diff main2.s main3.s
+	diff parser2.s parser3.s
+	diff preprocessor2.s preprocessor3.s
+	diff type2.s type3.s
+	@echo "===== checked ====="
 	./test.sh kcc3
 
 clean:
