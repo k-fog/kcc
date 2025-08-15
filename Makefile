@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-std=c11 -g -static -Wall
-SRCS=$(wildcard *.c)
+SRCS=codegen.c lexer.c main.c parser.c preprocessor.c type.c
 OBJS=$(SRCS:.c=.o)
 
 kcc: $(OBJS)
@@ -15,6 +15,23 @@ kcc2: kcc
 	./kcc type.c > type2.s
 	$(CC) -o $@ codegen2.s lexer2.s main2.s parser2.s preprocessor2.s type2.s
 
+kcc3: kcc2
+	./kcc2 codegen.c > codegen3.s
+	./kcc2 lexer.c > lexer3.s
+	./kcc2 main.c > main3.s
+	./kcc2 parser.c > parser3.s
+	./kcc2 preprocessor.c > preprocessor3.s
+	./kcc2 type.c > type3.s
+	$(CC) -o $@ codegen3.s lexer3.s main3.s parser3.s preprocessor3.s type3.s
+	@echo "===== check diff ====="
+	diff codegen2.s codegen3.s
+	diff lexer2.s lexer3.s
+	diff main2.s main3.s
+	diff parser2.s parser3.s
+	diff preprocessor2.s preprocessor3.s
+	diff type2.s type3.s
+	@echo "===== checked ====="
+
 debug: CFLAGS += -DDEBUG
 debug: clean $(OBJS)
 	$(CC) $(CFLAGS) -o kcc $(OBJS) $(LDFLAGS)
@@ -23,13 +40,14 @@ $(OBJS): kcc.h
 
 test: kcc
 	./test.sh kcc
-	rm tmp.c
 
 test2: kcc2
 	./test.sh kcc2
-	rm tmp.c
+
+test3: kcc3
+	./test.sh kcc3
 
 clean:
-	rm -f kcc kcc2 *.o *~ tmp* *.s
+	rm -f kcc kcc2 kcc3 *.o *~ tmp* *.s
 
-.PHONY: debug test clean
+.PHONY: debug test test2 test3 clean
