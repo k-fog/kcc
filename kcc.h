@@ -96,7 +96,7 @@ typedef struct {
     Symbol *defines;
 } Preprocessor;
 
-Preprocessor *preprocessor_new(const char *input);
+Preprocessor *preprocessor_new(const char *input, Symbol *defines);
 Token *preprocess(Preprocessor *pp);
 
 // parser

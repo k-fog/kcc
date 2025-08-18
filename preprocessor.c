@@ -1,10 +1,9 @@
 #include "kcc.h"
 
-Preprocessor *preprocessor_new(const char *input) {
+Preprocessor *preprocessor_new(const char *input, Symbol *defines) {
     Preprocessor *pp = calloc(1, sizeof(Preprocessor));
     pp->input = input;
-    pp->pos = 0;
-    pp->defines = NULL;
+    pp->defines = defines;
     return pp;
 }
 
@@ -39,21 +38,27 @@ Token *preprocess(Preprocessor *pp) {
         }
         Token *token_directive = t->next;
         if (token_directive->tag == TT_PP_DEFINE) {
-            Token *token_from = token_directive? token_directive->next : NULL;
+            Token *token_from = token_directive ? token_directive->next : NULL;
             Token *token_to = token_from ? token_from->next : NULL;
-            if (!token_from || !token_to) panic("preprocess error");
+            if (!token_from || !token_to) panic("preprocess error: #define");
             append_define(pp, token_from, token_to);
             prev->next = token_to->next;
+            t = token_to;
         } else if (token_directive->tag == TT_PP_INCLUDE) {
             Token *token_file = token_directive->next;
-            if (!token_file || token_file->tag != TT_STRING) panic("preprocess error");
+            if (!token_file || token_file->tag != TT_STRING) panic("preprocess error: #include");
             char *path = strndupl(token_file->start + 1, token_file->len - 2);
             char *src = read_file(path);
-            Preprocessor *pp2 = preprocessor_new(src);
+            Preprocessor *pp2 = preprocessor_new(src, pp->defines);
             Token *tokens2 = preprocess(pp2);
-            prev->next = tokens2;
-            while (tokens2->next) tokens2 = tokens2->next;
-            tokens2->next = token_file->next;
+            pp->defines = pp2->defines;
+            if (tokens2->tag != TT_EOF) {
+                prev->next = tokens2;
+                while (tokens2->next && tokens2->next->tag != TT_EOF) tokens2 = tokens2->next;
+                tokens2->next = token_file->next;
+                prev = tokens2;
+            }
+            t = token_file;
         } else panic("preprocess error: expected define or include after '#'");
     }
     for (Token *t = head.next; t != NULL; t = t->next) {
