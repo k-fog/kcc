@@ -15,7 +15,6 @@ enum OpPrecedence {
     PREC_PREFIX,
     PREC_CALL,
     PREC_INDEX,
-    PREC_MEMBER,
 };
 
 int precedences[META_TT_NUM] = {
@@ -39,8 +38,6 @@ int precedences[META_TT_NUM] = {
     [TT_COMMA]      = PREC_COMMA,
     [TT_AND_AND]    = PREC_LOGICAL,
     [TT_PIPE_PIPE]  = PREC_LOGICAL,
-    [TT_PERIOD]        = PREC_MEMBER,
-    [TT_MINUS_ANGLE_R] = PREC_MEMBER,
     [TT_PAREN_L]    = PREC_INDEX,
     [TT_BRACKET_L]  = PREC_INDEX,
     // otherwise PREC_NONE (== 0)
@@ -48,6 +45,13 @@ int precedences[META_TT_NUM] = {
 
 static bool is_infix(TokenTag tag) {
     return precedences[tag] != PREC_NONE;
+}
+
+static bool is_postfix(TokenTag tag) {
+    return tag == TT_PERIOD
+        || tag == TT_MINUS_ANGLE_R
+        || tag == TT_PLUS_PLUS
+        || tag == TT_MINUS_MINUS;
 }
 
 static bool is_right_assoc(TokenTag tag) {
@@ -293,9 +297,6 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
         case TT_COMMA:      tag = NT_COMMA; break;
         case TT_AND_AND:    tag = NT_AND; break;
         case TT_PIPE_PIPE:  tag = NT_OR; break;
-        case TT_PERIOD:
-        case TT_MINUS_ANGLE_R:
-            return member_access_new(token, lhs, rhs);
         default: panic("expr_new: invalid token tag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
@@ -647,16 +648,23 @@ static Node *expr_prefix(Parser *parser) {
             node = unary(parser);
             break;
     }
-    return expr_postfix(parser, node);
+    return node;
 }
 
 static Node *expr_postfix(Parser *parser, Node *lhs) {
     switch (peek(parser)->tag) {
+        case TT_MINUS_ANGLE_R:
+        case TT_PERIOD: {
+            Token *token_op = consume(parser);
+            Token *token_ident = consume(parser);
+            lhs = member_access_new(token_op, lhs, ident_new(token_ident));
+            break;
+        }
         case TT_PLUS_PLUS:
         case TT_MINUS_MINUS:
             lhs = postfix_new(consume(parser), lhs);
             break;
-        default: break;
+        default: panic("expected postfix operator");
     }
     return lhs;
 }
@@ -689,8 +697,13 @@ static Node *expr_array_index(Parser *parser, Token *token, Node *lhs) {
 
 static Node *expr_bp(Parser *parser, int min_bp) {
     Node *lhs = expr_prefix(parser);
-    Token *token = peek(parser);
-    while (is_infix(token->tag)) {
+    for (Token *token = peek(parser); ; token = peek(parser)) {
+        if (is_postfix(token->tag)) {
+            lhs = expr_postfix(parser, lhs);
+            continue;
+        }
+
+        if (!is_infix(token->tag)) break;
         int prec = precedences[token->tag];
         bool left_assoc = !is_right_assoc(token->tag);
 
@@ -712,7 +725,6 @@ static Node *expr_bp(Parser *parser, int min_bp) {
                 lhs->expr.rhs = tmp;
             }
         }
-        token = peek(parser);
     }
     return lhs;
 }
@@ -1010,7 +1022,9 @@ static Node *stmt(Parser *parser) {
             break;
         }
     }
-    if (consume(parser)->tag != TT_SEMICOLON) panic("expected \';\'");
+    Token *token = consume(parser);
+    if (token->tag != TT_SEMICOLON)
+        panic("expected \';\' but got %.*s", token->len, token->start);
     return node;
 }
 

@@ -307,5 +307,8 @@ assert '#define MACRO 5
 int main() {return MACRO;}' 5
 assert '#define MACRO "hello"
 int main() {return MACRO[0];}' 104
+assert 'struct {int a;} x; int main() {x.a=0;x.a++;return x.a;}' 1
+assert 'struct {int a;} *x; int main() {x=malloc(4);x->a=5;x->a--;return x->a;}' 4
+assert 'struct {int a;} x; int main() {x.a=0;++x.a;return x.a;}' 1
 
 echo "all tests passed"

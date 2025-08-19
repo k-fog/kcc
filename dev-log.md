@@ -445,12 +445,8 @@ main(){ fib(10); } // => 55
 - （セルフホストのために`#ifdef __STDC__`, `#ifndef __STDC__`を追加）
   - [`seccamp_selfhost`](https://github.com/k-fog/kcc/tree/seccamp_selfhost) ブランチ
 - 動かない集
-  - ```
-    &(lexer->input[lexer->pos++])
-    ```
-  - ```
-    while ((c = fgetc(fp)) != -1) {
-    ```
+  - ~~`&(lexer->input[lexer->pos++])`~~
+  - `while ((c = fgetc(fp)) != -1) {`
   - continueとbreak
   - 3項演算子
     - 型付けが間違ってる
@@ -468,6 +464,7 @@ main(){ fib(10); } // => 55
 - セキュリティキャンプ期間中にセルフホストを達成するために、
   キャンプ4日目からはkccの実装に使う機能を削減する方向にシフトした
 - そのため、誤った実装箇所を発見しても放置したままなので修正したい。
+- 後置演算子のパースの誤りを修正
 
 ## セルフホストに向けたTODOまとめ
 - [x] continue, break
