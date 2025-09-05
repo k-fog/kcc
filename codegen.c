@@ -210,6 +210,8 @@ static void gen_fncall(Node *node, GenContext *ctx) {
     print_token(node->main_token);
     printf("\n");
     printf(".L.FNCALL%d.END:\n", id);
+    if (node->type->tag == TYP_CHAR) printf("  movsx rax, al\n");
+    else if (node->type->tag == TYP_INT) printf("  movsxd rax, eax\n");
     printf("  push rax\n");
 }
 

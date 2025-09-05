@@ -17,7 +17,10 @@ void panic(char *fmt, ...);
 typedef struct _IO_FILE {} FILE;
 #define NULL 0
 void panic();
+void *malloc();
 void *calloc();
+void *realloc();
+FILE *fopen();
 #endif
 
 #define COMPILER_NAME "KCC"
