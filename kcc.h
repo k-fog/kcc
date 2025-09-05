@@ -286,6 +286,7 @@ struct Env {
 };
 
 bool is_integer(Type *type);
+bool is_scalar(Type *type);
 bool is_ptr_or_arr(Type *type);
 bool tokeneq(Token *a, Token *b);
 Env *env_new(Symbol *local_vars, Symbol *global_vars, Symbol *func_types, Symbol *defined_types);

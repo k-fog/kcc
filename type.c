@@ -93,6 +93,11 @@ bool is_integer(Type *type) {
     else return false;
 }
 
+bool is_scalar(Type *type) {
+    if (is_integer(type)) return true;
+    return type->tag == TYP_PTR;
+}
+
 bool is_ptr_or_arr(Type *type) {
     return type->tag == TYP_PTR || type->tag == TYP_ARRAY;
 }
@@ -192,10 +197,14 @@ static Node *typed(Node *node, Env *env) {
             break;
         }
         case NT_COND: {
-            if (!is_integer(typed(node->cond_expr.cond, env)->type)) panic("invalid operands");
-            if (!is_integer(typed(node->cond_expr.then, env)->type)) panic("invalid operands");
-            if (!is_integer(typed(node->cond_expr.els, env)->type)) panic("invalid operands");
-            node->type = type_int;
+            if (!is_scalar(typed(node->cond_expr.cond, env)->type)) panic("invalid operands: ?:");
+            Type *typ_then = typed(node->cond_expr.then, env)->type;
+            Type *typ_els = typed(node->cond_expr.els, env)->type;
+            if (!is_compatible(typ_then, typ_els)) panic("invalid operands: ?:");
+
+            if (is_integer(typ_then)) node->type = type_int; // promote
+            else if (typ_then->tag == TYP_PTR) node->type = typ_then;
+            else panic("unimplemented type");
             break;
         }
         case NT_NEG:
