@@ -146,7 +146,7 @@ static Symbol *append_type(Parser *parser, SymbolTag tag, Token *ident, Type *ty
 Symbol *find_symbol(SymbolTag tag, Symbol *symlist, Token *ident) {
     for (Symbol *sym = symlist; sym != NULL; sym = sym->next) {
         if (ident->len != sym->token->len) continue;
-        if (sym->tag == tag && strncmp(sym->token->start, ident->start, sym->token->len) == 0) return sym;
+        if (sym->tag == tag && tokeneq(ident, sym->token)) return sym;
     }
     return NULL;
 }
@@ -167,7 +167,7 @@ Symbol *find_member(Symbol *symlist, Token *ident, int *offset) {
             continue;
         }
         if (ident->len != sym->token->len) continue;
-        if (sym->tag == ST_MEMBER && strncmp(sym->token->start, ident->start, sym->token->len) == 0) {
+        if (sym->tag == ST_MEMBER && tokeneq(ident, sym->token)) {
             if (offset) *offset += sym->offset;
             return sym;
         }
@@ -836,21 +836,15 @@ static Node *switch_stmt(Parser *parser) {
 }
 
 static Type *array(Parser *parser, Type *type) {
-    int len = 0;
-    int capacity = 4;
-    int *stack = calloc(capacity, sizeof(int));
+    Stack *stack = stack_new(4);
     while (peek(parser)->tag == TT_BRACKET_L) {
         consume(parser); // [
         int size = integer(parser)->integer;
-        if (capacity <= len) {
-            capacity *= 2;
-            stack = realloc(stack, capacity * sizeof(int));
-        }
-        stack[len++] = size;
+        stack_push(stack, size);
         if (consume(parser)->tag != TT_BRACKET_R) panic("expected \']\'");
     }
-    for (int i = len - 1; 0 <= i; i--) {
-        type = array_of(type, stack[i]);
+    while (stack->top != 0) {
+        type = array_of(type, stack_pop(stack));
     }
     return type;
 }

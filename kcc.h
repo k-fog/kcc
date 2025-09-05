@@ -10,6 +10,18 @@
 #define COMPILER_NAME "KCC"
 void panic(char *fmt, ...);
 
+// util
+typedef struct Stack Stack;
+struct Stack {
+    int top;
+    int capacity;
+    int *data;
+};
+Stack* stack_new(int capacity);
+int stack_top(Stack *stack);
+int stack_pop(Stack *stack);
+void stack_push(Stack *stack, int val);
+
 // lexer
 typedef struct {
     const char *input;
@@ -291,13 +303,13 @@ void type_funcs(Program *prog);
 // codegen
 #define LOOP_STACK_SIZE 16
 typedef struct {
-    int loop_id_stack[LOOP_STACK_SIZE];
-    int id_stack_top;
     Node *current_func;
     Symbol *local_vars;
     Symbol *global_vars;
     Symbol *func_types;
     Symbol *defined_types;
+    Stack *break_id_stack;
+    Stack *continue_id_stack;
 } GenContext;
 void print_token(Token *token);
 void gen(Program *prog);

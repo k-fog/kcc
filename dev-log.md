@@ -446,8 +446,8 @@ main(){ fib(10); } // => 55
   - [`seccamp_selfhost`](https://github.com/k-fog/kcc/tree/seccamp_selfhost) ブランチ
 - 動かない集
   - ~~`&(lexer->input[lexer->pos++])`~~
-  - `while ((c = fgetc(fp)) != -1) {`
-  - continueとbreak
+  - ~~`while ((c = fgetc(fp)) != -1) {`~~
+  - ~~continueとbreak~~
   - 3項演算子
     - 型付けが間違ってる
 - セキュキャン2025 4日目の記録

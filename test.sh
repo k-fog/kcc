@@ -314,5 +314,6 @@ assert 'void *malloc(); struct {int a;} *x; int main() {x=malloc(4);x->a=5;x->a-
 assert 'struct {int a;} x; int main() {x.a=0;++x.a;return x.a;}' 1
 assert 'int main() {return ident(-1) == -1;}' 1
 assert 'char ident_char(); int main() {return ident_char(-1) == -1;}' 1
+assert 'int main(){ int ans=0; for (int i=0;i<10;i++) { switch (i) { case 2: continue; default: break; } ans+=i;} return ans;}' 43
 
 echo "all tests passed"
