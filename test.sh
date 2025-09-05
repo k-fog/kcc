@@ -5,6 +5,7 @@ TEST_FNCALL="test_fncall"
 cat <<EOF | gcc -xc - -c -o $TEST_FNCALL
 #include <stdlib.h>
 int ident(int a) { return a; }
+char ident_char(char a) { return a; }
 int add2(int a, int b) { return a + b; }
 int add3(int a, int b, int c) { return a + b + c; }
 int add4(int a, int b, int c, int d) { return a + b + c + d; }
@@ -218,8 +219,9 @@ assert 'int main(){struct s {int x; int y;}; struct s x; x.x=1; x.y=2;return x.x
 assert 'struct s {int x; int y; char z;} var; int main() {var.x = 1; var.y = 2; var.z = 3; return var.x + var.y + var.z;}' 6
 assert 'struct {int a;} sa; struct {char b;} sb; int main() {sa.a=1; sb.b=2; return sa.a+sb.b; }' 3
 assert 'struct {int *a;} pa; int x=5; int main() {pa.a = &x; return *pa.a;}' 5
-assert 'struct test {int a; int b;}; int main() {struct test *var = malloc(8); var->a=1; var->b=2; return var->a + var->b;}' 3
+assert 'void *malloc(); struct test {int a; int b;}; int main() {struct test *var = malloc(8); var->a=1; var->b=2; return var->a + var->b;}' 3
 assert '
+void *malloc();
 struct cons { int car; struct cons *cdr; };
 int main() {
     struct cons *second = malloc(16);
@@ -308,7 +310,9 @@ int main() {return MACRO;}' 5
 assert '#define MACRO "hello"
 int main() {return MACRO[0];}' 104
 assert 'struct {int a;} x; int main() {x.a=0;x.a++;return x.a;}' 1
-assert 'struct {int a;} *x; int main() {x=malloc(4);x->a=5;x->a--;return x->a;}' 4
+assert 'void *malloc(); struct {int a;} *x; int main() {x=malloc(4);x->a=5;x->a--;return x->a;}' 4
 assert 'struct {int a;} x; int main() {x.a=0;++x.a;return x.a;}' 1
+assert 'int main() {return ident(-1) == -1;}' 1
+assert 'char ident_char(); int main() {return ident_char(-1) == -1;}' 1
 
 echo "all tests passed"

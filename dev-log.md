@@ -466,6 +466,23 @@ main(){ fib(10); } // => 55
 - そのため、誤った実装箇所を発見しても放置したままなので修正したい。
 - 後置演算子のパースの誤りを修正
 
+## 2025-09-05
+
+```sh
+assert 'int main() {int a[3] = {0,1,2}; int i=0; while (a[i] != 2) i++; return i;}' 2
+assert 'int main() {int a[3] = {0,1,2};  int i=0; while (ident(a[i]) != 2) i++; return i;}' 2
+assert 'int main() {int a[3] = {0,1,-1}; int i=0; while (a[i] != -1) i++; return i;}' 2
+assert 'int main() {int a[3] = {0,1,-1}; int i=0; while (ident(a[i]) != -1) i++; return i;}' 2
+```
+- 一番下のケースだけが通らない
+- さらに小さくする。以下のケースも通らない
+  ```sh
+  assert 'int main() {return ident(-1) == -1;}' 1
+  ```
+  - gdbで調べた。すると、gccでコンパイルした`ident(-1)`は32bitの-1 (=0xffff_ffff)を返すのに対して、
+    比較対象は64bitの-1 (=0xffff_ffff_ffff_ffff)だったので、正しく計算できていなかった。
+  - 関数呼び出しの後に、符号拡張をすることにした
+
 ## セルフホストに向けたTODOまとめ
 - [x] continue, break
 - [x] do while
