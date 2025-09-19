@@ -149,8 +149,8 @@ static Node *typed(Node *node, Env *env) {
             node->type = array_of(type_char, node->main_token->len - 2 + 1); // -2: '"' * 2, +1: '\0'
             break;
         case NT_ADD: {
-            Type *lhs_typ = promote_if_integer(typed(node->expr.lhs, env)->type);
-            Type *rhs_typ = promote_if_integer(typed(node->expr.rhs, env)->type);
+            Type *lhs_typ = promote_if_integer(typed(node->bin_expr.lhs, env)->type);
+            Type *rhs_typ = promote_if_integer(typed(node->bin_expr.rhs, env)->type);
             if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
             else if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_PTR) node->type = rhs_typ;
@@ -160,8 +160,8 @@ static Node *typed(Node *node, Env *env) {
             break;
         }
         case NT_SUB: {
-            Type *lhs_typ = promote_if_integer(typed(node->expr.lhs, env)->type);
-            Type *rhs_typ = promote_if_integer(typed(node->expr.rhs, env)->type);
+            Type *lhs_typ = promote_if_integer(typed(node->bin_expr.lhs, env)->type);
+            Type *rhs_typ = promote_if_integer(typed(node->bin_expr.rhs, env)->type);
             if (lhs_typ->tag == TYP_INT && rhs_typ->tag == TYP_INT) node->type = type_int;
             else if (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT) node->type = lhs_typ;
             else if (lhs_typ->tag == TYP_ARRAY && rhs_typ->tag == TYP_INT) node->type = pointer_to(lhs_typ->base);
@@ -175,8 +175,8 @@ static Node *typed(Node *node, Env *env) {
         case NT_LT:
         case NT_LE: {
             // TOOD: type check
-            typed(node->expr.lhs, env);
-            typed(node->expr.rhs, env);
+            typed(node->bin_expr.lhs, env);
+            typed(node->bin_expr.rhs, env);
             node->type = type_int;
             break;
         }
@@ -186,13 +186,13 @@ static Node *typed(Node *node, Env *env) {
         case NT_AND:
         case NT_OR:
             // TODO: type check
-            typed(node->expr.lhs, env);
-            typed(node->expr.rhs, env);
+            typed(node->bin_expr.lhs, env);
+            typed(node->bin_expr.rhs, env);
             node->type = type_int;
             break;
         case NT_COMMA: {
-            typed(node->expr.lhs, env);
-            typed(node->expr.rhs, env); // TODO: type check
+            typed(node->bin_expr.lhs, env);
+            typed(node->bin_expr.rhs, env); // TODO: type check
             node->type = type_int;
             break;
         }
@@ -230,8 +230,8 @@ static Node *typed(Node *node, Env *env) {
         case NT_ASSIGN_SUB:
         case NT_ASSIGN_MUL:
         case NT_ASSIGN_DIV: {
-            Type *lhs_typ = typed(node->expr.lhs, env)->type;
-            Type *rhs_typ = typed(node->expr.rhs, env)->type;
+            Type *lhs_typ = typed(node->bin_expr.lhs, env)->type;
+            Type *rhs_typ = typed(node->bin_expr.rhs, env)->type;
             if (rhs_typ->tag == TYP_ARRAY) rhs_typ = pointer_to(rhs_typ->base);
             if ((node->tag == NT_ASSIGN_ADD || node->tag == NT_ASSIGN_SUB || node->tag == NT_ASSIGN)
                 && (lhs_typ->tag == TYP_PTR && rhs_typ->tag == TYP_INT))

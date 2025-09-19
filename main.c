@@ -174,8 +174,8 @@ void dump_nodes(Node *node) {
             else if (node->tag == NT_ASSIGN_SUB) printf("(-= ");
             else if (node->tag == NT_ASSIGN_MUL) printf("(*= ");
             else if (node->tag == NT_ASSIGN_DIV) printf("(/= ");
-            dump_nodes(node->expr.lhs);
-            dump_nodes(node->expr.rhs);
+            dump_nodes(node->bin_expr.lhs);
+            dump_nodes(node->bin_expr.rhs);
             break;
     }
     printf("\b)->");

@@ -253,13 +253,13 @@ static void gen_expr_postfix(Node *node, GenContext *ctx) {
 
 static void gen_expr_assign(Node *node, GenContext *ctx) {
     printf("  # gen_expr_assign\n");
-    gen_addr(node->expr.lhs, ctx);
-    gen_expr(node->expr.rhs, ctx);
+    gen_addr(node->bin_expr.lhs, ctx);
+    gen_expr(node->bin_expr.rhs, ctx);
     if (node->tag == NT_ASSIGN) {
         printf("  pop rax\n");
     } else {
-        Type *lt = node->expr.lhs->type;
-        Type *rt = node->expr.rhs->type;
+        Type *lt = node->bin_expr.lhs->type;
+        Type *rt = node->bin_expr.rhs->type;
 
         if (is_ptr_or_arr(lt) && is_integer(rt)) {
             // ptr +=/-= int
@@ -300,11 +300,11 @@ static void gen_expr_assign(Node *node, GenContext *ctx) {
 }
 
 static void gen_expr_binary(Node *node, GenContext *ctx) {
-    gen_expr(node->expr.lhs, ctx);
-    gen_expr(node->expr.rhs, ctx);
+    gen_expr(node->bin_expr.lhs, ctx);
+    gen_expr(node->bin_expr.rhs, ctx);
 
-    Type *lt = node->expr.lhs->type;
-    Type *rt = node->expr.rhs->type;
+    Type *lt = node->bin_expr.lhs->type;
+    Type *rt = node->bin_expr.rhs->type;
 
     if (is_ptr_or_arr(lt) && is_integer(rt)) {
         // ptr +/- int
@@ -405,11 +405,11 @@ static void gen_expr_cond(Node *node, GenContext *ctx) {
 static void gen_expr_logical(Node *node, GenContext *ctx) {
     int id = count();
     if (node->tag == NT_AND) {
-        gen_expr(node->expr.lhs, ctx);
+        gen_expr(node->bin_expr.lhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je  .L%d.END\n", id);
-        gen_expr(node->expr.rhs, ctx);
+        gen_expr(node->bin_expr.rhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf(".L%d.END:\n", id);
@@ -417,11 +417,11 @@ static void gen_expr_logical(Node *node, GenContext *ctx) {
         printf("  movzb rax, al\n");
         printf("  push rax\n");
     } else if (node->tag == NT_OR) {
-        gen_expr(node->expr.lhs, ctx);
+        gen_expr(node->bin_expr.lhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  jne .L%d.END\n", id);
-        gen_expr(node->expr.rhs, ctx);
+        gen_expr(node->bin_expr.rhs, ctx);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf(".L%d.END:\n", id);

@@ -132,13 +132,13 @@ typedef enum {     // token node->???
     NT_INT,        // <integer> integer
     NT_IDENT,      // <identifier> main_token
     NT_STRING,     // <string> main_token, index: index of string_literals
-    NT_ADD,        // + expr
-    NT_SUB,        // - expr
-    NT_MUL,        // * expr
-    NT_DIV,        // / expr
-    NT_MOD,        // % expr
-    NT_EQ,         // == expr
-    NT_NE,         // != expr
+    NT_ADD,        // + bin_expr
+    NT_SUB,        // - bin_expr
+    NT_MUL,        // * bin_expr
+    NT_DIV,        // / bin_expr
+    NT_MOD,        // % bin_expr
+    NT_EQ,         // == bin_expr
+    NT_NE,         // != bin_expr
     NT_LT,         // < expr
     NT_LE,         // <= expr
     NT_NEG,        // - unary_expr
@@ -149,15 +149,15 @@ typedef enum {     // token node->???
     NT_PREDEC,     // -- unary_expr
     NT_POSTINC,    // ++ pre_expr 
     NT_POSTDEC,    // -- pre_expr
-    NT_ASSIGN,     // = expr
-    NT_ASSIGN_ADD, // += expr
-    NT_ASSIGN_SUB, // -= expr
-    NT_ASSIGN_MUL, // *= expr
-    NT_ASSIGN_DIV, // /= expr
+    NT_ASSIGN,     // =  bin_expr
+    NT_ASSIGN_ADD, // += bin_expr
+    NT_ASSIGN_SUB, // -= bin_expr
+    NT_ASSIGN_MUL, // *= bin_expr
+    NT_ASSIGN_DIV, // /= bin_expr
     NT_COND,       // ?: conditional
-    NT_COMMA,      // , expr
-    NT_AND,        // && expr
-    NT_OR,         // || expr
+    NT_COMMA,      // ,  bin_expr
+    NT_AND,        // && bin_expr
+    NT_OR,         // || bin_expr
     NT_DOT,        // . member_access
     NT_ARROW,      // -> member_access
     NT_FNCALL,     // <function call> fncall
@@ -191,7 +191,7 @@ struct Node {
         Node *unary_expr;
         Node *pre_expr;
         Node *ident;
-        struct { Node *lhs, *rhs; } expr;
+        struct { Node *lhs, *rhs; } bin_expr;
         struct { Node *name; NodeList *args; } fncall;
         struct { Node *cond; Node *then; Node *els; } ifstmt;
         struct { Node *cond; Node *then; Node *els; } cond_expr;

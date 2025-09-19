@@ -300,8 +300,8 @@ static Node *expr_new(Token *token, Node *lhs, Node *rhs) {
         default: panic("expr_new: invalid token tag=%d", token->tag);
     }
     Node *node = node_new(tag, token);
-    node->expr.lhs = lhs;
-    node->expr.rhs = rhs;
+    node->bin_expr.lhs = lhs;
+    node->bin_expr.rhs = rhs;
     return node;
 }
 
@@ -720,9 +720,9 @@ static Node *expr_bp(Parser *parser, int min_bp) {
 
             // if token is ">" or ">=", swap lhs, rhs
             if (token->tag == TT_ANGLE_R || token->tag == TT_ANGLE_R_EQ) {
-                Node *tmp = lhs->expr.lhs;
-                lhs->expr.lhs = lhs->expr.rhs;
-                lhs->expr.rhs = tmp;
+                Node *tmp = lhs->bin_expr.lhs;
+                lhs->bin_expr.lhs = lhs->bin_expr.rhs;
+                lhs->bin_expr.rhs = tmp;
             }
         }
     }
